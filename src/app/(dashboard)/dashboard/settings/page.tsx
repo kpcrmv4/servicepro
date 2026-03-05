@@ -2,306 +2,450 @@
 
 import { useState } from "react"
 import {
-  Save,
-  Store,
+  Building2,
   Clock,
-  Palette,
+  Wrench,
+  Hash,
   Bell,
-  Shield,
-  Printer,
-  Globe,
+  CreditCard,
   Upload,
+  Save,
+  Check,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs"
+
+type SettingsSection = "shop" | "hours" | "labor" | "document" | "notification" | "plan"
+
+const sections: { key: SettingsSection; label: string; icon: React.ElementType }[] = [
+  { key: "shop", label: "ข้อมูลอู่", icon: Building2 },
+  { key: "hours", label: "เวลาทำงาน", icon: Clock },
+  { key: "labor", label: "ค่าแรงมาตรฐาน", icon: Wrench },
+  { key: "document", label: "เลขที่เอกสาร", icon: Hash },
+  { key: "notification", label: "การแจ้งเตือน", icon: Bell },
+  { key: "plan", label: "แผนและการชำระเงิน", icon: CreditCard },
+]
+
+const workingHours = [
+  { day: "จันทร์", open: "08:30", close: "18:00", isOpen: true },
+  { day: "อังคาร", open: "08:30", close: "18:00", isOpen: true },
+  { day: "พุธ", open: "08:30", close: "18:00", isOpen: true },
+  { day: "พฤหัสบดี", open: "08:30", close: "18:00", isOpen: true },
+  { day: "ศุกร์", open: "08:30", close: "18:00", isOpen: true },
+  { day: "เสาร์", open: "09:00", close: "16:00", isOpen: true },
+  { day: "อาทิตย์", open: "09:00", close: "14:00", isOpen: false },
+]
+
+const laborRates = [
+  { id: "L01", name: "เปลี่ยนถ่ายน้ำมันเครื่อง", rate: 300 },
+  { id: "L02", name: "เปลี่ยนผ้าเบรก (ต่อล้อ)", rate: 400 },
+  { id: "L03", name: "ตั้งศูนย์ถ่วงล้อ", rate: 500 },
+  { id: "L04", name: "เปลี่ยนสายพานไทม์มิ่ง", rate: 2500 },
+  { id: "L05", name: "ซ่อมเครื่องยนต์ (ต่อชม.)", rate: 800 },
+  { id: "L06", name: "ซ่อมระบบแอร์", rate: 1500 },
+  { id: "L07", name: "เปลี่ยนโช้คอัพ (ต่อคู่)", rate: 800 },
+  { id: "L08", name: "ซ่อมระบบไฟฟ้า (ต่อชม.)", rate: 600 },
+]
+
+const documentFormats = [
+  { label: "ใบเสนอราคา", prefix: "QT", format: "QT-{YYYY}-{NNNN}", current: "QT-2026-0048" },
+  { label: "ใบสั่งงาน", prefix: "JOB", format: "JOB-{YYYY}-{NNNN}", current: "JOB-2026-0152" },
+  { label: "ใบแจ้งหนี้", prefix: "INV", format: "INV-{YYYY}-{NNNN}", current: "INV-2026-0045" },
+  { label: "ใบเสร็จรับเงิน", prefix: "REC", format: "REC-{YYYY}-{NNNN}", current: "REC-2026-0032" },
+]
+
+const notifications = [
+  { id: "n1", label: "แจ้งเตือนงานใหม่", description: "เมื่อมีงานซ่อมเข้ามาใหม่", enabled: true },
+  { id: "n2", label: "แจ้งเตือนงานเสร็จ", description: "เมื่อช่างซ่อมงานเสร็จ", enabled: true },
+  { id: "n3", label: "แจ้งเตือนสต็อกใกล้หมด", description: "เมื่ออะไหล่ถึงจุดสั่งซื้อ", enabled: true },
+  { id: "n4", label: "แจ้งเตือนใบแจ้งหนี้ค้าง", description: "เมื่อใบแจ้งหนี้เกินกำหนดชำระ", enabled: false },
+  { id: "n5", label: "แจ้งเตือนประกันหมดอายุ", description: "แจ้งเตือนลูกค้าก่อนประกันหมดอายุ 30 วัน", enabled: true },
+  { id: "n6", label: "สรุปรายวัน", description: "ส่งสรุปยอดรายรับ-รายจ่ายประจำวัน", enabled: false },
+]
 
 export default function SettingsPage() {
-  const [shopName, setShopName] = useState("อู่ช่างสมชาย")
-  const [phone, setPhone] = useState("02-123-4567")
-  const [email, setEmail] = useState("contact@changsamchai.com")
-  const [address, setAddress] = useState("123/45 ถ.พหลโยธิน แขวงจตุจักร เขตจตุจักร กรุงเทพฯ 10900")
-  const [taxId, setTaxId] = useState("0-1234-56789-01-2")
-  const [openTime, setOpenTime] = useState("08:00")
-  const [closeTime, setCloseTime] = useState("18:00")
+  const [activeSection, setActiveSection] = useState<SettingsSection>("shop")
+  const [notifState, setNotifState] = useState<Record<string, boolean>>(
+    Object.fromEntries(notifications.map((n) => [n.id, n.enabled]))
+  )
 
   return (
-    <div className="flex flex-col">
-      <PageHeader
-        title="ตั้งค่า"
-        action={
-          <Button>
-            <Save className="h-4 w-4" />
-            บันทึก
-          </Button>
-        }
-      />
+    <div className="space-y-0">
+      <PageHeader title="ตั้งค่า" />
 
-      <div className="p-6">
-        <Tabs defaultValue="general">
-          <TabsList>
-            <TabsTrigger value="general">
-              <Store className="h-4 w-4 mr-1.5" />
-              ทั่วไป
-            </TabsTrigger>
-            <TabsTrigger value="schedule">
-              <Clock className="h-4 w-4 mr-1.5" />
-              เวลาทำการ
-            </TabsTrigger>
-            <TabsTrigger value="notifications">
-              <Bell className="h-4 w-4 mr-1.5" />
-              การแจ้งเตือน
-            </TabsTrigger>
-            <TabsTrigger value="printing">
-              <Printer className="h-4 w-4 mr-1.5" />
-              การพิมพ์
-            </TabsTrigger>
-          </TabsList>
+      <div className="flex flex-col gap-6 p-6 lg:flex-row">
+        {/* Left: Settings Menu */}
+        <nav className="w-full shrink-0 lg:w-56">
+          <div className="flex gap-1 overflow-x-auto lg:flex-col">
+            {sections.map((section) => {
+              const Icon = section.icon
+              return (
+                <button
+                  key={section.key}
+                  onClick={() => setActiveSection(section.key)}
+                  className={cn(
+                    "flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    activeSection === section.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {section.label}
+                </button>
+              )
+            })}
+          </div>
+        </nav>
 
-          {/* General Settings */}
-          <TabsContent value="general">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="rounded-xl border border-border">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-foreground">ข้อมูลร้าน</h3>
+        {/* Right: Content */}
+        <div className="flex-1">
+          {/* ข้อมูลอู่ */}
+          {activeSection === "shop" && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-lg font-semibold text-card-foreground">ข้อมูลอู่</h2>
+              <p className="mt-1 text-sm text-muted-foreground">ข้อมูลพื้นฐานของอู่ซ่อมรถ</p>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-logo">โลโก้ร้าน</Label>
-                    <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 rounded-xl bg-primary flex items-center justify-center text-primary-foreground text-xl font-bold">
-                        อู่
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4 mr-1.5" />
-                        อัพโหลดโลโก้
-                      </Button>
+              <div className="mt-6 space-y-5">
+                {/* Logo */}
+                <div>
+                  <label className="text-sm font-medium text-card-foreground">โลโก้</label>
+                  <div className="mt-2 flex items-center gap-4">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted text-muted-foreground">
+                      <Upload className="h-6 w-6" />
                     </div>
+                    <button className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+                      อัปโหลดรูป
+                    </button>
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-name">ชื่อร้าน</Label>
-                    <Input
-                      id="shop-name"
-                      value={shopName}
-                      onChange={(e) => setShopName(e.target.value)}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-card-foreground">ชื่ออู่</label>
+                    <input
+                      type="text"
+                      defaultValue="เซอร์วิสโปร ออโต้เซอร์วิส"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">โทรศัพท์</Label>
-                      <Input
-                        id="phone"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">อีเมล</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="address">ที่อยู่</Label>
-                    <Textarea
-                      id="address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      rows={3}
+                  <div>
+                    <label className="text-sm font-medium text-card-foreground">เลขประจำตัวผู้เสียภาษี</label>
+                    <input
+                      type="text"
+                      defaultValue="0-1234-56789-01-2"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="tax-id">เลขประจำตัวผู้เสียภาษี</Label>
-                    <Input
-                      id="tax-id"
-                      value={taxId}
-                      onChange={(e) => setTaxId(e.target.value)}
+                <div>
+                  <label className="text-sm font-medium text-card-foreground">ที่อยู่</label>
+                  <textarea
+                    defaultValue="123/45 ถ.สุขุมวิท แขวงบางจาก เขตพระโขนง กรุงเทพฯ 10260"
+                    rows={2}
+                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-card-foreground">เบอร์โทร</label>
+                    <input
+                      type="text"
+                      defaultValue="02-123-4567"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-xl border border-border">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-foreground">ตั้งค่าระบบ</h3>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">ภาษา</p>
-                        <p className="text-xs text-muted-foreground">เลือกภาษาที่แสดงในระบบ</p>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-input text-sm">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                        ไทย
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">สกุลเงิน</p>
-                        <p className="text-xs text-muted-foreground">สกุลเงินที่ใช้ในระบบ</p>
-                      </div>
-                      <span className="text-sm text-muted-foreground">THB (฿)</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">VAT</p>
-                        <p className="text-xs text-muted-foreground">อัตราภาษีมูลค่าเพิ่ม</p>
-                      </div>
-                      <span className="text-sm text-muted-foreground">7%</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">เลขที่ใบงานถัดไป</p>
-                        <p className="text-xs text-muted-foreground">รูปแบบ: JOB-YYYY-NNNN</p>
-                      </div>
-                      <span className="text-sm font-mono text-muted-foreground">JOB-2026-0020</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">เลขที่ใบเสนอราคาถัดไป</p>
-                        <p className="text-xs text-muted-foreground">รูปแบบ: QT-YYYY-NNNN</p>
-                      </div>
-                      <span className="text-sm font-mono text-muted-foreground">QT-2026-0050</span>
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium text-card-foreground">อีเมล</label>
+                    <input
+                      type="email"
+                      defaultValue="info@servicepro.co.th"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-card-foreground">บัญชีธนาคาร</label>
+                  <div className="mt-1.5 grid gap-4 sm:grid-cols-3">
+                    <input
+                      type="text"
+                      defaultValue="กสิกรไทย"
+                      placeholder="ธนาคาร"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <input
+                      type="text"
+                      defaultValue="123-4-56789-0"
+                      placeholder="เลขบัญชี"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <input
+                      type="text"
+                      defaultValue="บจ. เซอร์วิสโปร ออโต้"
+                      placeholder="ชื่อบัญชี"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    <Save className="h-4 w-4" /> บันทึก
+                  </button>
+                </div>
+              </div>
             </div>
-          </TabsContent>
+          )}
 
-          {/* Schedule Settings */}
-          <TabsContent value="schedule">
-            <Card className="rounded-xl border border-border max-w-xl">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="font-semibold text-foreground">เวลาทำการ</h3>
+          {/* เวลาทำงาน */}
+          {activeSection === "hours" && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-lg font-semibold text-card-foreground">เวลาทำงาน</h2>
+              <p className="mt-1 text-sm text-muted-foreground">กำหนดเวลาเปิด-ปิดทำการของอู่</p>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="open">เวลาเปิด</Label>
-                    <Input id="open" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="close">เวลาปิด</Label>
-                    <Input id="close" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
-                  </div>
-                </div>
-
-                <h4 className="font-medium text-sm text-foreground pt-2">วันทำการ</h4>
-                <div className="space-y-3">
-                  {[
-                    { day: "จันทร์", enabled: true },
-                    { day: "อังคาร", enabled: true },
-                    { day: "พุธ", enabled: true },
-                    { day: "พฤหัสบดี", enabled: true },
-                    { day: "ศุกร์", enabled: true },
-                    { day: "เสาร์", enabled: true },
-                    { day: "อาทิตย์", enabled: false },
-                  ].map((d) => (
-                    <div key={d.day} className="flex items-center justify-between">
-                      <span className="text-sm">{d.day}</span>
-                      <Switch defaultChecked={d.enabled} />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Notification Settings */}
-          <TabsContent value="notifications">
-            <Card className="rounded-xl border border-border max-w-xl">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="font-semibold text-foreground">ตั้งค่าการแจ้งเตือน</h3>
-
-                <div className="space-y-4">
-                  {[
-                    { title: "แจ้งเตือนงานใหม่", desc: "เมื่อมีงานซ่อมใหม่เข้ามาในระบบ", defaultOn: true },
-                    { title: "แจ้งเตือนงานเสร็จ", desc: "เมื่อช่างอัพเดทสถานะงานเป็นเสร็จสิ้น", defaultOn: true },
-                    { title: "แจ้งเตือนสต็อกต่ำ", desc: "เมื่ออะไหล่เหลือน้อยกว่าจุดสั่งซื้อ", defaultOn: true },
-                    { title: "แจ้งเตือน LINE", desc: "ส่งการแจ้งเตือนผ่าน LINE Notify", defaultOn: false },
-                    { title: "แจ้งเตือนอีเมล", desc: "ส่งสรุปรายวันทางอีเมล", defaultOn: false },
-                    { title: "แจ้งเตือนลูกค้า", desc: "ส่ง SMS/LINE แจ้งสถานะงานให้ลูกค้า", defaultOn: true },
-                  ].map((item) => (
-                    <div key={item.title} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
+              <div className="mt-6 space-y-3">
+                {workingHours.map((wh) => (
+                  <div
+                    key={wh.day}
+                    className={cn(
+                      "flex items-center gap-4 rounded-lg border border-border p-3",
+                      !wh.isOpen && "opacity-50"
+                    )}
+                  >
+                    <div className="w-24 text-sm font-medium text-card-foreground">{wh.day}</div>
+                    <label className="flex items-center gap-2">
+                      <div className={cn(
+                        "relative h-5 w-9 rounded-full transition-colors cursor-pointer",
+                        wh.isOpen ? "bg-primary" : "bg-muted"
+                      )}>
+                        <div className={cn(
+                          "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
+                          wh.isOpen ? "translate-x-4" : "translate-x-0.5"
+                        )} />
                       </div>
-                      <Switch defaultChecked={item.defaultOn} />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      <span className="text-xs text-muted-foreground">{wh.isOpen ? "เปิด" : "ปิด"}</span>
+                    </label>
+                    {wh.isOpen && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          defaultValue={wh.open}
+                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <span className="text-sm text-muted-foreground">ถึง</span>
+                        <input
+                          type="time"
+                          defaultValue={wh.close}
+                          className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
 
-          {/* Printing Settings */}
-          <TabsContent value="printing">
-            <Card className="rounded-xl border border-border max-w-xl">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="font-semibold text-foreground">ตั้งค่าการพิมพ์</h3>
+              <div className="mt-6 flex justify-end">
+                <button className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  <Save className="h-4 w-4" /> บันทึก
+                </button>
+              </div>
+            </div>
+          )}
 
-                <div className="space-y-4">
+          {/* ค่าแรงมาตรฐาน */}
+          {activeSection === "labor" && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-lg font-semibold text-card-foreground">ค่าแรงมาตรฐาน</h2>
+              <p className="mt-1 text-sm text-muted-foreground">กำหนดอัตราค่าแรงสำหรับงานแต่ละประเภท</p>
+
+              <div className="mt-6">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="pb-3 text-left text-xs font-medium text-muted-foreground">รายการ</th>
+                      <th className="pb-3 text-right text-xs font-medium text-muted-foreground">ค่าแรง (บาท)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {laborRates.map((rate) => (
+                      <tr key={rate.id} className="border-b border-border last:border-0">
+                        <td className="py-3 text-sm text-card-foreground">{rate.name}</td>
+                        <td className="py-3 text-right">
+                          <input
+                            type="number"
+                            defaultValue={rate.rate}
+                            className="w-28 rounded-lg border border-border bg-background px-3 py-1.5 text-right text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  <Save className="h-4 w-4" /> บันทึก
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* เลขที่เอกสาร */}
+          {activeSection === "document" && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-lg font-semibold text-card-foreground">เลขที่เอกสาร</h2>
+              <p className="mt-1 text-sm text-muted-foreground">กำหนดรูปแบบเลขที่เอกสารอัตโนมัติ</p>
+
+              <div className="mt-6 space-y-4">
+                {documentFormats.map((doc) => (
+                  <div key={doc.prefix} className="rounded-lg border border-border p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-card-foreground">{doc.label}</h3>
+                      <span className="rounded-full bg-muted px-3 py-0.5 text-xs font-mono text-muted-foreground">
+                        ล่าสุด: {doc.current}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Prefix</label>
+                        <input
+                          type="text"
+                          defaultValue={doc.prefix}
+                          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">รูปแบบ</label>
+                        <input
+                          type="text"
+                          defaultValue={doc.format}
+                          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  <Save className="h-4 w-4" /> บันทึก
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* การแจ้งเตือน */}
+          {activeSection === "notification" && (
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-lg font-semibold text-card-foreground">การแจ้งเตือน</h2>
+              <p className="mt-1 text-sm text-muted-foreground">ตั้งค่าการแจ้งเตือนต่างๆ ของระบบ</p>
+
+              <div className="mt-6 space-y-4">
+                {notifications.map((notif) => (
+                  <div key={notif.id} className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-card-foreground">{notif.label}</h3>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{notif.description}</p>
+                    </div>
+                    <button
+                      onClick={() => setNotifState((prev) => ({ ...prev, [notif.id]: !prev[notif.id] }))}
+                      className={cn(
+                        "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                        notifState[notif.id] ? "bg-primary" : "bg-muted"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+                        notifState[notif.id] ? "translate-x-5" : "translate-x-0.5"
+                      )} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  <Save className="h-4 w-4" /> บันทึก
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* แผนและการชำระเงิน */}
+          {activeSection === "plan" && (
+            <div className="space-y-6">
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold text-card-foreground">แผนปัจจุบัน</h2>
+                <p className="mt-1 text-sm text-muted-foreground">รายละเอียดแผนการใช้งานและการชำระเงิน</p>
+
+                <div className="mt-6 rounded-xl border-2 border-primary bg-primary/5 p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">แสดงโลโก้บนเอกสาร</p>
-                      <p className="text-xs text-muted-foreground">แสดงโลโก้ร้านบนใบเสนอราคา/ใบแจ้งหนี้</p>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
+                          PRO
+                        </span>
+                        <h3 className="text-lg font-bold text-card-foreground">แผน Professional</h3>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">เหมาะสำหรับอู่ขนาดกลาง 5-15 ช่าง</p>
                     </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">ขนาดกระดาษ</p>
-                      <p className="text-xs text-muted-foreground">ขนาดกระดาษเริ่มต้น</p>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-card-foreground">{formatCurrency(1990)}<span className="text-sm font-normal text-muted-foreground">/เดือน</span></p>
                     </div>
-                    <span className="text-sm text-muted-foreground">A4</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">พิมพ์ใบรับสินค้าอัตโนมัติ</p>
-                      <p className="text-xs text-muted-foreground">พิมพ์อัตโนมัติเมื่อรับรถเข้าอู่</p>
-                    </div>
-                    <Switch defaultChecked={false} />
+
+                  <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                    {[
+                      "ผู้ใช้ไม่จำกัด",
+                      "เก็บข้อมูล 50 GB",
+                      "รายงานขั้นสูง",
+                      "การแจ้งเตือนอัตโนมัติ",
+                      "ระบบเคลมประกัน",
+                      "API เชื่อมต่อภายนอก",
+                    ].map((feature) => (
+                      <div key={feature} className="flex items-center gap-2 text-card-foreground">
+                        <Check className="h-4 w-4 text-success" />
+                        {feature}
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="footer">ข้อความท้ายเอกสาร</Label>
-                    <Textarea
-                      id="footer"
-                      placeholder="เช่น ขอบคุณที่ใช้บริการ..."
-                      rows={3}
-                    />
+
+                  <div className="mt-4 flex items-center gap-3 border-t border-border pt-4">
+                    <span className="text-xs text-muted-foreground">ต่ออายุ: 1 เม.ย. 2569</span>
+                    <span className="text-xs text-muted-foreground">|</span>
+                    <span className="text-xs text-muted-foreground">ชำระผ่าน: บัตรเครดิต **** 4567</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h3 className="text-base font-semibold text-card-foreground">อัปเกรดแผน</h3>
+                <p className="mt-1 text-sm text-muted-foreground">ต้องการฟีเจอร์เพิ่มเติม?</p>
+                <div className="mt-4 rounded-xl border border-border p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-warning px-3 py-0.5 text-xs font-bold text-white">
+                          ENTERPRISE
+                        </span>
+                        <h4 className="font-semibold text-card-foreground">แผน Enterprise</h4>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">Multi-branch, White label, Priority support</p>
+                    </div>
+                    <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                      อัปเกรด
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
