@@ -631,15 +631,7 @@ Dark Mode:
 - ประวัติการสื่อสารทั้งหมด
 - **Line OA Rich Menu** integration ⭐ (ลูกค้าเช็คสถานะ/จองคิว ผ่าน Line ได้เลย)
 
-#### 5.8 Customer Self-Service Portal
-- ลูกค้าดูสถานะงานผ่าน QR Code / Link
-- ลูกค้าอนุมัติใบเสนอราคาออนไลน์
-- ลูกค้าดูประวัติการซ่อม + Digital Service Book
-- ลูกค้าจองคิวซ่อมออนไลน์
-- **ลูกค้าดู Vehicle Health Report** จาก DVI ⭐
-- **ลูกค้าอนุมัติงานเพิ่มเติม** (จาก Additional Work Request) ⭐
-- **ลูกค้าดูคะแนนสะสม + คูปอง** ⭐
-- **ลูกค้าจัดการข้อมูลรถ** (เพิ่มรถ, อัปเดตเลขไมล์) ⭐
+#### 5.8 Customer Self-Service Portal (ดูรายละเอียดใน Module 10)
 
 ### 👨‍💼 Module 6: ระบบจัดการพนักงาน (Employee Management)
 
@@ -759,11 +751,163 @@ Dark Mode:
 - SSL certificate อัตโนมัติ
 - รองรับ www และ non-www redirect
 
-### 🛒 Module 10: ร้านค้าออนไลน์ - Shop (Premium Only)
+### 📱 Module 10: Customer Portal - หน้าลูกค้า ⭐ NEW
+
+> **แอปหน้าเว็บสำหรับลูกค้าโดยเฉพาะ** (PWA / LIFF in Line OA / Web Link)
+> ลูกค้าเข้าผ่าน: QR Code ที่ร้าน / Link จาก SMS-Line / Line OA Rich Menu / Landing Page
+
+#### 10.1 สมัครสมาชิก & Login (Customer Auth)
+- **สมัครสมาชิกร้าน** ด้วย:
+  - เบอร์โทร + OTP (ง่ายสุด สำหรับลูกค้าไทย)
+  - Line Login (1-tap ผ่าน Line OA)
+  - Email + Password (ทางเลือก)
+- **สมัครครั้งแรก** → กรอกข้อมูลเบื้องต้น:
+  - ชื่อ-นามสกุล, เบอร์โทร, Line ID (optional)
+  - เพิ่มรถคันแรก: ทะเบียน, ยี่ห้อ, รุ่น, ปี, สี
+  - ถ่ายรูปทะเบียนรถ → OCR อ่านข้อมูลอัตโนมัติ (optional, future)
+- **ลูกค้าเก่า** (เคยมาใช้บริการก่อนสมัคร):
+  - สมัครด้วยเบอร์เดิม → ระบบ match กับข้อมูลลูกค้าเดิมอัตโนมัติ
+  - เห็นประวัติซ่อมย้อนหลังทันที (ไม่ต้องเริ่มจากศูนย์)
+- **ไม่ต้องสมัคร** ก็เข้าดูสถานะงานได้ (ผ่าน QR Code / Link เฉพาะ job)
+
+#### 11.2 หน้าหลัก (Customer Home)
+- **ข้อมูลสมาชิก**: ชื่อ, ระดับ Membership (🥉🥈🥇💎), คะแนนสะสม
+- **รถของฉัน** (My Vehicles):
+  - แสดงรถทุกคันเป็น card (รูป + ทะเบียน + ยี่ห้อ-รุ่น)
+  - เพิ่มรถใหม่ได้
+  - กดเข้าดูรายละเอียดแต่ละคัน
+- **งานปัจจุบัน** (Active Jobs):
+  - แสดง job ที่กำลังซ่อมอยู่ (ถ้ามี)
+  - สถานะ real-time + progress bar
+- **การแจ้งเตือน** (Notifications badge)
+- **Quick Actions**:
+  - 📅 จองคิวซ่อม
+  - 📞 โทรหาร้าน
+  - 💬 แชทผ่าน Line
+
+#### 11.3 รถของฉัน - รายคัน (Vehicle Detail Page)
+- **ข้อมูลรถ**: ทะเบียน, ยี่ห้อ, รุ่น, ปี, สี, เลขไมล์ล่าสุด
+- **อัปเดตเลขไมล์** (ลูกค้ากรอกเอง → ระบบคำนวณเวลาเช็คระยะครั้งถัดไปได้แม่นขึ้น)
+- **Tabs**:
+
+##### Tab 1: 📖 สมุดซ่อมรถ (Digital Service Book)
+- Timeline ประวัติซ่อมทั้งหมด (เรียงจากล่าสุด)
+  - แต่ละรายการ: วันที่ | เลขไมล์ | รายการซ่อม | อะไหล่ | ค่าใช้จ่าย
+  - กดขยายดูรายละเอียด + รูปถ่ายก่อน/หลัง
+- **Vehicle Health Score** 🏥 (0-100 คะแนน)
+  - กราฟวงกลมแสดงคะแนน + สีตามระดับ (🟢 80+ / 🟡 50-79 / 🔴 <50)
+  - คำนวณจาก: เช็คระยะตรงเวลา + สภาพจาก DVI + อายุรถ + ไมล์
+- **Download / Share** ประวัติทั้งหมดเป็น PDF (ใช้ตอนขายรถ)
+
+##### Tab 2: 🩺 รายงานตรวจสภาพ (Inspection Reports)
+- รายการ DVI ทั้งหมด (Digital Vehicle Inspection)
+- แต่ละรายการแสดง:
+  - วันที่ตรวจ | ผู้ตรวจ
+  - สรุป: กี่รายการ 🟢 / 🟡 / 🔴
+  - กดเข้าดูรายละเอียด → **Vehicle Health Report** (หน้าสวยงาม)
+    - แสดงทุกจุดที่ตรวจ + รูปจริง + สถานะ traffic light
+    - รายการ 🟡🔴 มีราคาประมาณ
+    - ปุ่ม **"ซ่อมรายการนี้"** → สร้าง booking ทันที
+- **เปรียบเทียบ DVI ครั้งก่อน vs ครั้งนี้** (เห็น trend)
+
+##### Tab 3: ⏰ กำหนดการดูแลรักษา (Maintenance Schedule)
+- รายการที่ต้องทำถัดไป (เรียงตามวันที่ใกล้สุด):
+  - 🔧 เช็คระยะ 30,000 km - อีก 2,000 km / ประมาณ 15 เม.ย.
+  - 🛢️ เปลี่ยนน้ำมันเครื่อง - อีก 1 เดือน
+  - 📋 ต่อ พ.ร.บ. - หมดอายุ 30 มิ.ย.
+  - 🛡️ ต่อประกันภัย - หมดอายุ 15 ก.ค.
+- กดแต่ละรายการ → **จองคิวทำเลย** (pre-fill ข้อมูลรถ + ประเภทงาน)
+
+##### Tab 4: 📄 เอกสาร (Documents)
+- ใบเสนอราคาทั้งหมด (รออนุมัติ / อนุมัติแล้ว)
+- ใบแจ้งหนี้ + ใบเสร็จ
+- ดูออนไลน์ + Download PDF
+
+#### 11.4 ติดตามงานซ่อม (Live Job Tracking)
+- **สถานะ real-time** แบบ delivery tracking:
+  ```
+  ✅ รับรถเข้าซ่อม          14:30
+  ✅ เริ่มซ่อม (ช่าง: สมชาย)  15:00
+  🔄 กำลังซ่อม...            ← สถานะปัจจุบัน
+  ⬜ ตรวจสอบคุณภาพ (QC)
+  ⬜ พร้อมรับรถ
+  ```
+- **รูปถ่าย/วิดีโอ** ระหว่างซ่อม (ช่างอัปโหลด → ลูกค้าเห็นทันที)
+- **แจ้งเตือน** เมื่อสถานะเปลี่ยน (Push / Line / SMS)
+- **ถ้ามี Additional Work Request** → แสดง popup:
+  - "ช่างพบปัญหาเพิ่มเติม" + รูป/วิดีโอ + ราคาประมาณ
+  - ปุ่ม ✅ อนุมัติ / ❌ ไม่ซ่อมตอนนี้ (ทีละรายการ)
+- **Estimated completion time** + countdown
+
+#### 11.5 จองคิวซ่อม (Online Booking)
+- เลือกรถ (จาก "รถของฉัน")
+- เลือกประเภทบริการ:
+  - เช็คระยะ / เปลี่ยนถ่าย / ซ่อมทั่วไป / งานสี-ตัวถัง / แอร์ / อื่นๆ
+- บอกอาการ (text / voice note / ถ่ายรูป)
+- เลือกวัน-เวลา (แสดง slot ที่ว่าง)
+- ยืนยัน → ได้ confirmation + reminder ก่อนวันนัด
+- ระบบ suggest: "จากการตรวจครั้งก่อน คุณมีรายการ 🟡 ที่ยังไม่ได้ซ่อม ต้องการเพิ่มไหม?"
+
+#### 11.6 สมาชิก & สิทธิพิเศษ (My Membership)
+- **ระดับสมาชิก** ปัจจุบัน + progress bar ไประดับถัดไป
+  - "อีก 2 ครั้ง จะเลื่อนเป็น 🥈 Silver (ได้ส่วนลด 5%)"
+- **คะแนนสะสม** + ประวัติรับ/ใช้คะแนน
+- **คูปองของฉัน**: ดูคูปองที่มี + วันหมดอายุ + ใช้คูปองตอนจอง
+- **Referral Code**: แชร์ให้เพื่อน (copy link / share Line / QR)
+  - แสดงจำนวนเพื่อนที่เคยแนะนำ + reward ที่ได้
+
+#### 11.7 แจ้งเตือน (Notification Center)
+- รวมแจ้งเตือนทั้งหมด:
+  - สถานะงานเปลี่ยน
+  - ใบเสนอราคา รออนุมัติ
+  - Additional Work Request รออนุมัติ
+  - ถึงกำหนดเช็คระยะ / ต่อ พ.ร.บ.
+  - โปรโมชั่น / คูปองใหม่
+  - คะแนนสะสมเพิ่ม
+- Mark as read / Mark all as read
+
+#### 10.8 Technical Architecture - Customer Portal
+```
+Route Structure (Next.js):
+/c/                          → redirect to login หรือ home
+/c/login                     → Login (Phone OTP / Line Login)
+/c/register                  → สมัครสมาชิก + เพิ่มรถคันแรก
+/c/home                      → Customer Home (รถ, งานปัจจุบัน, actions)
+/c/vehicles                  → รายการรถทั้งหมด
+/c/vehicles/[id]             → รถรายคัน (service book, DVI, schedule, docs)
+/c/vehicles/[id]/add         → เพิ่มรถใหม่
+/c/jobs/[id]                 → ติดตามงาน (live tracking)
+/c/jobs/[id]/approve         → อนุมัติใบเสนอราคา / งานเพิ่ม
+/c/booking                   → จองคิวซ่อม
+/c/membership                → สมาชิก, คะแนน, คูปอง, referral
+/c/notifications             → ศูนย์แจ้งเตือน
+/c/profile                   → แก้ไขข้อมูลส่วนตัว
+
+-- Public routes (ไม่ต้อง login):
+/c/track/[token]             → ดูสถานะ job (จาก QR Code / Link)
+/c/quote/[token]             → ดู + อนุมัติใบเสนอราคา
+/c/report/[token]            → ดู Vehicle Health Report
+/c/review/[token]            → ให้รีวิว
+
+Auth: Separate customer auth table (ไม่ใช้ auth เดียวกับ staff)
+- customer_accounts (id, customer_id, phone, email, line_user_id,
+  password_hash, otp_code, otp_expires_at, last_login, created_at)
+- customer_sessions (id, customer_account_id, token, device_info,
+  expires_at, created_at)
+
+Security:
+- ลูกค้าเห็นเฉพาะข้อมูลของตัวเอง (RLS by customer_id)
+- Token-based links หมดอายุได้ (สำหรับ public routes)
+- Rate limiting on OTP requests
+```
+
+---
+
+### 🛒 Module 11: ร้านค้าออนไลน์ - Shop (Premium Only)
 
 > ระบบ e-commerce สำหรับขายอะไหล่/สินค้า/ผลิตภัณฑ์ดูแลรถให้ลูกค้า
 
-#### 10.1 Shop Storefront (หน้าร้านออนไลน์)
+#### 11.1 Shop Storefront (หน้าร้านออนไลน์)
 - หน้าร้านสวยงามอยู่ภายใต้ custom domain (เช่น www.mygarage.com/shop)
 - แสดงสินค้าเป็น grid / list view
 - หมวดหมู่สินค้า (Categories)
@@ -775,7 +919,7 @@ Dark Mode:
 - สินค้าที่เกี่ยวข้อง (Related Products)
 - แสดง stock (มีของ / ใกล้หมด / หมด / สั่งจอง)
 
-#### 10.2 ตะกร้าสินค้า (Shopping Cart)
+#### 11.2 ตะกร้าสินค้า (Shopping Cart)
 - เพิ่ม/ลบ/แก้ไขจำนวนสินค้าในตะกร้า
 - บันทึกตะกร้า (persistent cart - login แล้วเห็นตะกร้าเดิม)
 - ใส่คูปองส่วนลด
@@ -783,7 +927,7 @@ Dark Mode:
 - สรุปยอดรวม (สินค้า + ส่วนลด + ค่าส่ง + VAT)
 - Quick checkout vs สมัครสมาชิก
 
-#### 10.3 ระบบสั่งซื้อ (Order Management)
+#### 11.3 ระบบสั่งซื้อ (Order Management)
 - Checkout flow: ตะกร้า → ข้อมูลจัดส่ง → ชำระเงิน → ยืนยัน
 - ช่องทางชำระเงิน:
   - QR PromptPay
@@ -795,7 +939,7 @@ Dark Mode:
 - แจ้งเตือนลูกค้าทุกสถานะ (Email/Line/SMS)
 - ประวัติคำสั่งซื้อ
 
-#### 10.4 จัดการสินค้า (Product Management - Backend)
+#### 11.4 จัดการสินค้า (Product Management - Backend)
 - สร้าง/แก้ไข/ลบ สินค้า
 - **เชื่อมต่อกับระบบคลังอะไหล่ (Module 3)** - สต็อกเดียวกัน!
   - เลือกอะไหล่จากคลังมาขายใน shop
@@ -810,7 +954,7 @@ Dark Mode:
 - ตั้งน้ำหนักสำหรับคำนวณค่าส่ง
 - เปิด/ปิดขาย, ตั้ง featured, ตั้ง sale price
 
-#### 10.5 ระบบจัดส่ง (Shipping)
+#### 11.5 ระบบจัดส่ง (Shipping)
 - ตั้งค่าค่าจัดส่ง:
   - ฟรีค่าส่ง (เมื่อซื้อครบตามกำหนด)
   - อัตราคงที่
@@ -819,7 +963,7 @@ Dark Mode:
 - เชื่อมต่อขนส่ง: Kerry, Flash, Thailand Post, J&T (ในอนาคต)
 - พิมพ์ใบปะหน้าพัสดุ
 
-#### 10.6 รายงาน Shop
+#### 11.6 รายงาน Shop
 - ยอดขายออนไลน์ (วัน/สัปดาห์/เดือน)
 - สินค้าขายดี (Top sellers)
 - สินค้าไม่ขาย (Low performers)
@@ -827,7 +971,7 @@ Dark Mode:
 - Revenue จาก shop vs หน้าร้าน
 - **รวมยอดเข้ากับระบบการเงิน (Module 4)**
 
-#### 10.7 ลูกค้า Shop
+#### 11.7 ลูกค้า Shop
 - ลูกค้าสมัครสมาชิก / สั่งซื้อแบบ guest
 - **เชื่อมต่อกับ CRM (Module 5)** - ลูกค้า shop = ลูกค้าในระบบ
 - ลูกค้ากลับมาดูประวัติ order
@@ -933,6 +1077,11 @@ knowledge_articles (id, tenant_id, title, content, category, vehicle_brand, vehi
 employee_skills (id, user_id, skill_category, skill_level, certified, created_at)
 commission_rules (id, tenant_id, name, job_type, rate_percent, upsell_bonus_percent, is_active, created_at)
 commission_records (id, tenant_id, user_id, job_id, base_amount, commission_amount, upsell_bonus, review_bonus, period, status, created_at)
+
+-- Customer Portal Auth ⭐ NEW
+customer_accounts (id, customer_id, tenant_id, phone, email, line_user_id, password_hash, otp_code, otp_expires_at, is_verified, last_login, created_at)
+customer_sessions (id, customer_account_id, token, device_info, ip_address, expires_at, created_at)
+customer_notifications (id, customer_account_id, tenant_id, type, title, message, data, is_read, created_at)
 
 -- Custom Domain (Premium)
 tenant_domains (id, tenant_id, domain, is_verified, verification_token, ssl_status, created_at)
