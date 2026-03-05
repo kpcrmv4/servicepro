@@ -320,7 +320,18 @@ Dark Mode:
 - พิมพ์ใบรับรถ / ส่ง SMS/Line แจ้งลูกค้า
 - QR Code สำหรับลูกค้าติดตามสถานะ
 
-#### 1.2 ใบเสนอราคา (Quotation)
+#### 1.2 ระบบเคลมประกัน (Insurance Claim Management) ⭐ NEW
+- เลือกบริษัทประกัน จากรายการที่ตั้งไว้
+- บันทึกเลขกรมธรรม์ + วันหมดอายุ
+- ถ่ายรูปความเสียหายตามข้อกำหนดประกัน (มุมมาตรฐาน)
+- สร้างใบประเมินราคาส่งประกัน (แยกค่าแรง/ค่าอะไหล่ตาม format ประกัน)
+- ติดตามสถานะเคลม: ส่งเคลม → รออนุมัติ → อนุมัติแล้ว → เบิกเงินแล้ว
+- บันทึกยอดที่ประกันอนุมัติ vs ยอดจริง (ส่วนต่างเก็บลูกค้า)
+- แจ้งเตือนเคลมค้าง / รอติดตาม
+- รายงานยอดเคลมรายเดือนแยกตามบริษัทประกัน
+- รายการบริษัทประกันคู่สัญญา + เงื่อนไข + contact person
+
+#### 1.3 ใบเสนอราคา (Quotation)
 - สร้างใบเสนอราคาอัตโนมัติจาก job
 - เพิ่ม/ลบ รายการค่าแรง + อะไหล่
 - คำนวณภาษีมูลค่าเพิ่ม (VAT 7%)
@@ -330,7 +341,15 @@ Dark Mode:
 - แปลงเป็น Job Order เมื่อลูกค้าอนุมัติ
 - ประวัติ version ของใบเสนอราคา
 
-#### 1.3 Job Order Management
+#### 1.4 แจ้งพบปัญหาเพิ่มระหว่างซ่อม (Additional Work Request) ⭐ NEW
+- ช่างพบปัญหาเพิ่มเติมระหว่างซ่อม → แจ้งผ่านระบบพร้อมรูปถ่าย/วิดีโอ
+- ระบบสร้าง "ใบเสนอราคาเพิ่มเติม" อัตโนมัติ
+- ส่งแจ้งลูกค้าทันที (Line/SMS) พร้อมรูปประกอบ
+- ลูกค้าอนุมัติ/ปฏิเสธ ออนไลน์ ทีละรายการได้
+- ถ้าอนุมัติ → เพิ่มเข้า Job Order + อัปเดตใบเสนอราคา อัตโนมัติ
+- บันทึกประวัติ "สิ่งที่ลูกค้าปฏิเสธ" ไว้แนะนำครั้งหน้า
+
+#### 1.5 Job Order Management
 - สร้าง Job Order จากใบเสนอราคาที่อนุมัติแล้ว
 - กำหนดช่างรับผิดชอบ
 - กำหนด priority (ด่วน / ปกติ / รอได้)
@@ -340,7 +359,15 @@ Dark Mode:
 - แนบรูป/วิดีโอระหว่างซ่อม
 - แจ้งเตือนเมื่อสถานะเปลี่ยน
 
-#### 1.4 คิวรอ (Queue Board)
+#### 1.6 ระบบรับประกันงานซ่อม (Warranty Tracking) ⭐ NEW
+- ตั้งระยะประกันงานซ่อมแต่ละประเภท (เช่น ซ่อมเครื่อง 6 เดือน, งานสี 1 ปี)
+- ตั้งระยะประกันอะไหล่ (ตาม supplier/ยี่ห้อ)
+- เมื่อลูกค้ากลับมา → ระบบแจ้งอัตโนมัติว่า job เดิมยังอยู่ในประกันหรือไม่
+- สร้าง Warranty Claim job (ไม่คิดเงินลูกค้า)
+- เคลมกลับ supplier ถ้าอะไหล่เสียในประกัน
+- รายงาน warranty claim rate (วัดคุณภาพงาน)
+
+#### 1.7 คิวรอ (Queue Board)
 - Kanban board แสดง job ทั้งหมดตามสถานะ
 - Drag & drop เปลี่ยนสถานะ
 - กรองตาม: ช่าง, ประเภทงาน, priority, วันที่
@@ -372,17 +399,58 @@ Dark Mode:
 - แนบรูปถ่ายในแต่ละ checklist item
 - หมายเหตุ/comment ในแต่ละ item
 
-#### 2.3 เวลาทำงาน (Time Tracking)
+#### 2.3 Digital Vehicle Inspection (DVI) - ใบตรวจสภาพรถดิจิทัล ⭐ NEW
+- **ตรวจสภาพรถรอบคัน** แบบมาตรฐาน (ไม่ใช่แค่จุดที่ลูกค้าแจ้ง)
+- ระบบ traffic light: 🟢 ดี / 🟡 ควรเปลี่ยนเร็วๆนี้ / 🔴 ต้องซ่อมทันที
+- หมวดตรวจ:
+  - เบรค (ผ้าเบรค%, จานเบรค, น้ำมันเบรค)
+  - ยาง (ดอกยาง mm, สภาพ, แรงดันลม)
+  - ช่วงล่าง (ลูกหมากปีกนก, โช้คอัพ, บุชยาง)
+  - ระบบไฟ (ไฟหน้า, ไฟเบรค, ไฟเลี้ยว, ไฟภายใน)
+  - ของเหลว (น้ำมันเครื่อง, น้ำหล่อเย็น, น้ำมันเกียร์, น้ำมันพวงมาลัย)
+  - แบตเตอรี่ (แรงดัน, สภาพ)
+  - สายพาน, ท่อยาง, filter ต่างๆ
+  - ใบปัดน้ำฝน, กระจก
+- ช่างถ่ายรูป/วิดีโอ ทุกจุดที่ตรวจ
+- **สร้าง "Vehicle Health Report" ส่งลูกค้า** (หน้าเว็บสวยงาม)
+  - ลูกค้าเห็นสรุปสภาพรถ + รูปจริง
+  - แสดงรายการ 🟡🔴 พร้อมราคาประมาณ
+  - ลูกค้ากด "อนุมัติซ่อมเพิ่ม" ทีละรายการได้
+  - ⭐ **สร้างโอกาสขายเพิ่ม (Upsell) แบบไม่กดดัน**
+- บันทึกประวัติ inspection ทุกครั้ง → เห็น trend สภาพรถตลอดอายุการใช้งาน
+
+#### 2.4 ช่าง Mobile App Experience ⭐ NEW
+- **หน้าจอเฉพาะช่าง** (ง่าย ใช้งานสะดวกขณะมือเปื้อน)
+  - ปุ่มใหญ่, UI minimal
+  - Voice note (บันทึกเสียงแทนพิมพ์)
+  - ถ่ายรูปง่ายๆ 1 tap
+- ดูงานที่ได้รับมอบหมายวันนี้
+- เริ่มงาน / หยุดพัก / เสร็จงาน (1 tap)
+- เบิกอะไหล่จากมือถือ (scan barcode)
+- แจ้งพบปัญหาเพิ่ม + ถ่ายรูป/วิดีโอ
+- ดู repair history ของรถคันนี้ (เคยซ่อมอะไรมาบ้าง)
+- เข้าถึง Knowledge Base / คู่มือซ่อม
+
+#### 2.5 Knowledge Base & คู่มือซ่อม ⭐ NEW
+- คลังความรู้การซ่อมแยกตามยี่ห้อ/รุ่นรถ
+- Torque specs, ปริมาณน้ำมัน, ขนาดอะไหล่ ที่ใช้บ่อย
+- Tips & Tricks จากช่างรุ่นพี่ (สร้างโดย technician ใน team)
+- Common problems & solutions ตามรุ่นรถ
+- วิดีโอสาธิตขั้นตอนซ่อม (upload ได้)
+- ค้นหาได้ (เช่น "เปลี่ยนผ้าเบรค Civic 2020")
+
+#### 2.6 เวลาทำงาน (Time Tracking)
 - ช่าง clock-in/clock-out แต่ละ job
 - คำนวณเวลาจริงที่ใช้ vs เวลาที่ประมาณ
 - รายงานประสิทธิภาพช่าง
 - รายงาน utilization rate
 
-#### 2.4 การตรวจสอบคุณภาพ (QC - Quality Control)
+#### 2.7 การตรวจสอบคุณภาพ (QC - Quality Control)
 - Checklist QC ก่อนส่งมอบ
 - ผู้ตรวจสอบ sign-off
 - ถ่ายรูปหลังซ่อมเสร็จ
 - เปรียบเทียบ before/after
+- **Test Drive Checklist** ⭐ (เช็คหลังทดสอบขับ: เสียงผิดปกติ, สั่น, เบรค, พวงมาลัย)
 
 ### 📦 Module 3: ระบบจัดการอะไหล่ (Parts & Inventory)
 
@@ -415,11 +483,30 @@ Dark Mode:
 - รับสินค้าตาม PO (partial / full receiving)
 - บันทึกใบกำกับภาษีจาก supplier
 
-#### 3.4 การแจ้งเตือนสต็อก
+#### 3.4 อะไหล่ทดแทน & Cross-reference ⭐ NEW
+- ระบบ **อะไหล่ทดแทน** (Alternative Parts)
+  - อะไหล่ A หมดสต็อก → แนะนำ B, C ที่ใช้แทนได้
+  - แสดงราคา, คุณภาพ, ระยะเวลาจัดส่ง เปรียบเทียบ
+- **Cross-reference** part number ข้ามยี่ห้อ
+  - OEM part number → aftermarket part number
+  - ค้นหาจาก part number ของยี่ห้อหนึ่ง เจอของอีกยี่ห้อ
+- **Parts compatibility** - อะไหล่นี้ใช้ได้กับรถรุ่นไหนบ้าง
+- ประวัติราคาอะไหล่ (ราคาขึ้น/ลง ตาม supplier)
+
+#### 3.5 ระบบเบิกอะไหล่อัจฉริยะ ⭐ NEW
+- ช่าง scan barcode/QR → เบิกอะไหล่เข้า job ทันที
+- **ตัดสต็อกอัตโนมัติ** เมื่อเบิก + บันทึกเข้า job cost
+- ถ้าอะไหล่ไม่มีสต็อก → แจ้งแผนกสต็อกทันที + แนะนำอะไหล่ทดแทน
+- **คืนอะไหล่ที่ไม่ได้ใช้** → สต็อกกลับ + ลดต้นทุน job
+- ประวัติการเบิก/คืนทุก job (ป้องกันอะไหล่สูญหาย)
+- **แจ้งเตือน**: ถ้า job ปิดแล้วยังไม่เบิกอะไหล่ (ลืมลง) หรือ เบิกเกินจำนวนผิดปกติ
+
+#### 3.6 การแจ้งเตือนสต็อก
 - แจ้งเตือนเมื่อสต็อกต่ำกว่า reorder point
 - แจ้งเตือนอะไหล่หมดอายุ
 - แจ้งเตือนอะไหล่ไม่เคลื่อนไหวนาน (dead stock)
 - สร้าง PO อัตโนมัติเมื่อสต็อกต่ำ (auto-reorder)
+- **แจ้งเตือนราคาอะไหล่เปลี่ยน** จาก supplier ⭐
 
 ### 💰 Module 4: ระบบการเงิน (Finance)
 
@@ -477,24 +564,82 @@ Dark Mode:
 - แจ้งเตือน พ.ร.บ. / ประกัน หมดอายุ
 - เลขไมล์ล่าสุด
 
-#### 5.3 การสื่อสาร (Communication)
+#### 5.3 สมุดบันทึกประวัติรถดิจิทัล (Digital Service Book) ⭐ NEW
+- **ลูกค้าได้ "สมุดซ่อมรถออนไลน์"** เข้าดูได้ตลอด (ผ่าน QR / Link / App)
+- แสดง timeline ประวัติซ่อมทั้งชีวิตรถ
+  - วันที่ | เลขไมล์ | รายการซ่อม | อะไหล่ที่เปลี่ยน | ค่าใช้จ่าย
+- แสดง **Vehicle Health Score** (คะแนนสุขภาพรถ 0-100)
+  - คำนวณจาก: อายุรถ, เลขไมล์, ประวัติเช็คระยะตรงเวลาหรือไม่, สภาพจาก DVI ล่าสุด
+- แสดง **รายการที่ต้องดูแลเร็วๆนี้** (จาก DVI สีเหลือง/แดง)
+- แสดง **กำหนดเช็คระยะครั้งถัดไป** + countdown
+- **ใช้เป็นจุดขายตอนขายรถ** (ลูกค้าส่ง link ให้ผู้ซื้อดูประวัติ)
+- ⭐ **ฟีเจอร์นี้ทำให้ลูกค้าอยากกลับมาใช้บริการเพราะข้อมูลอยู่ที่อู่**
+
+#### 5.4 ระบบแจ้งเตือนอัจฉริยะ - ดึงลูกค้ากลับ (Smart Recall) ⭐ NEW
+- **แจ้งเตือนตามระยะ/เวลา (Mileage & Time-based)**:
+  - ถึงกำหนดเช็คระยะ (ทุก 10K/20K km หรือทุก 6 เดือน)
+  - ถึงกำหนดเปลี่ยนน้ำมันเครื่อง
+  - ถึงกำหนดเปลี่ยนยาง (ประมาณจากเลขไมล์)
+  - ถึงกำหนดเปลี่ยนผ้าเบรค (จาก DVI ครั้งก่อน)
+  - ถึงกำหนดต่อ พ.ร.บ. / ประกันภัย / ทะเบียน
+- **แจ้งเตือนจากการวิเคราะห์** (Predictive):
+  - ⭐ อะไหล่ที่เคยเปลี่ยน ใกล้ครบอายุการใช้งาน
+  - ⭐ รายการ DVI สีเหลือง ที่ลูกค้ายังไม่ได้ซ่อม → follow up
+  - ลูกค้าไม่กลับมาใช้บริการนานเกินกำหนด (เช่น 8 เดือน)
+- **ช่องทางแจ้งเตือน**: Line OA / SMS / Email
+- **พร้อม Deep Link** → ลูกค้ากดแล้วจองคิวได้เลย
+- **แจ้งเตือนพร้อมโปรโมชั่น** (เช่น "ถึงกำหนดเช็คระยะ ลดค่าแรง 20% ถ้าจองภายใน 7 วัน")
+
+#### 5.5 ระบบรีวิวและ Feedback ⭐ NEW
+- ส่ง link ขอรีวิว หลังรับรถกลับ (อัตโนมัติ)
+- ลูกค้าให้คะแนน: ⭐1-5 + comment
+- ให้คะแนนแยก: คุณภาพงาน / ความเร็ว / ราคา / บริการ
+- **ถ้าคะแนนต่ำ → แจ้ง Manager ทันที** (Service Recovery)
+- ถ้าคะแนนสูง → ขอให้ลูกค้ารีวิวบน Google Maps / Facebook
+- แสดงคะแนนรวมบน Landing Page (Premium)
+- รายงาน Customer Satisfaction Score (CSAT) รายเดือน
+- แสดง Net Promoter Score (NPS)
+
+#### 5.6 Loyalty & Customer Retention ⭐ ENHANCED
+- **ระบบสะสมคะแนน** (Points)
+  - ทุกการใช้บริการได้คะแนน (เช่น 100 บาท = 1 point)
+  - แลกส่วนลด / ของแถม / บริการฟรี
+- **Membership Tiers** ⭐
+  - 🥉 Bronze: สมาชิกทั่วไป
+  - 🥈 Silver: ใช้บริการ 3+ ครั้ง/ปี → ส่วนลดค่าแรง 5%
+  - 🥇 Gold: ใช้บริการ 6+ ครั้ง/ปี → ส่วนลด 10% + ลำดับความสำคัญสูง
+  - 💎 Platinum: ยอดสะสม 50K+/ปี → ส่วนลด 15% + บริการรับ-ส่งรถ
+- **คูปองส่วนลด**
+  - คูปองวันเกิด (Auto-send)
+  - คูปองครบรอบเป็นลูกค้า
+  - คูปอง "คุณไม่ได้มานาน" (Win-back coupon)
+  - คูปอง Referral (แนะนำเพื่อน)
+- **โปรโมชั่นตามฤดูกาล**
+  - ก่อนหน้าฝน: เช็คช่วงล่าง + ใบปัดน้ำฝน
+  - ก่อนหน้าร้อน: เช็คแอร์ + น้ำหล่อเย็น
+  - ก่อนเทศกาล: เช็คสภาพรถก่อนเดินทาง
+- **Referral Program** ⭐ (แนะนำเพื่อน)
+  - ลูกค้าได้ Referral Code / Link ส่วนตัว
+  - เพื่อนมาใช้บริการ → ทั้งคู่ได้ส่วนลด
+  - ติดตาม referral chain (ใครแนะนำใคร กี่คน)
+
+#### 5.7 การสื่อสาร (Communication)
 - ส่ง SMS แจ้งสถานะงาน
-- ส่ง Line Notify
+- ส่ง Line Notify / Line OA
 - ส่ง Email (invoice, receipt, status update)
 - Template ข้อความสำเร็จรูป
 - ประวัติการสื่อสารทั้งหมด
+- **Line OA Rich Menu** integration ⭐ (ลูกค้าเช็คสถานะ/จองคิว ผ่าน Line ได้เลย)
 
-#### 5.4 Loyalty & Promotions
-- ระบบสะสมคะแนน
-- คูปองส่วนลด
-- โปรโมชั่นตามฤดูกาล
-- ส่ง campaign ให้ลูกค้า (Birthday, ครบรอบ, etc.)
-
-#### 5.5 Customer Self-Service Portal
+#### 5.8 Customer Self-Service Portal
 - ลูกค้าดูสถานะงานผ่าน QR Code / Link
 - ลูกค้าอนุมัติใบเสนอราคาออนไลน์
-- ลูกค้าดูประวัติการซ่อม
+- ลูกค้าดูประวัติการซ่อม + Digital Service Book
 - ลูกค้าจองคิวซ่อมออนไลน์
+- **ลูกค้าดู Vehicle Health Report** จาก DVI ⭐
+- **ลูกค้าอนุมัติงานเพิ่มเติม** (จาก Additional Work Request) ⭐
+- **ลูกค้าดูคะแนนสะสม + คูปอง** ⭐
+- **ลูกค้าจัดการข้อมูลรถ** (เพิ่มรถ, อัปเดตเลขไมล์) ⭐
 
 ### 👨‍💼 Module 6: ระบบจัดการพนักงาน (Employee Management)
 
@@ -503,12 +648,29 @@ Dark Mode:
 - สิทธิ์การเข้าถึง (Role-based)
 - ตารางทำงาน
 - วันหยุด/ลา
+- **Skill Matrix** ⭐ (ช่างแต่ละคนถนัดงานประเภทไหน ระดับไหน)
+  - เครื่องยนต์: ★★★★☆
+  - ช่วงล่าง: ★★★☆☆
+  - ระบบไฟฟ้า: ★★★★★
+  - → ระบบแนะนำช่างที่เหมาะกับ job อัตโนมัติ
 
-#### 6.2 ผลงาน (Performance)
+#### 6.2 ผลงาน (Performance) ⭐ ENHANCED
 - จำนวนงานที่ทำสำเร็จ
-- เวลาเฉลี่ยต่องาน
+- เวลาเฉลี่ยต่องาน vs เวลามาตรฐาน
 - คะแนนคุณภาพ (QC pass rate)
+- **Comeback rate** (อัตรางานกลับมาซ่อมซ้ำ - ยิ่งต่ำยิ่งดี) ⭐
+- **คะแนนรีวิวจากลูกค้า** เฉลี่ยต่อช่าง ⭐
+- **Upsell rate** (อัตราการแนะนำงานเพิ่มที่ลูกค้าอนุมัติ) ⭐
 - Commission / ค่าแรงตาม job
+- **Leaderboard** ⭐ (จัดอันดับช่างแต่ละเดือน - กระตุ้นการแข่งขัน)
+
+#### 6.3 ระบบ Commission & Incentive ⭐ NEW
+- ตั้งค่า commission rate ตามประเภทงาน (% ของค่าแรง)
+- Commission พิเศษจาก upsell (งานเพิ่มเติมที่ช่างแนะนำ)
+- โบนัสจาก customer review score สูง
+- โบนัสจาก QC pass rate สูง
+- สรุป commission รายเดือน → ส่งต่อแผนกบัญชี
+- ช่างเข้าดูรายได้ commission ตัวเองได้
 
 ### 📊 Module 7: Dashboard & Analytics
 
@@ -733,6 +895,44 @@ document_sequences (id, tenant_id, document_type, prefix, next_number, created_a
 
 -- Subscription
 subscription_history (id, tenant_id, plan, amount, payment_method, payment_reference, started_at, expires_at, created_at)
+
+-- Insurance Claims ⭐ NEW
+insurance_companies (id, tenant_id, name, contact_person, phone, email, contract_terms, is_active, created_at)
+insurance_claims (id, tenant_id, job_id, insurance_company_id, policy_number, claim_status, estimated_amount, approved_amount, customer_copay, claim_photos, submitted_at, approved_at, paid_at, notes, created_at)
+
+-- Warranty ⭐ NEW
+warranty_policies (id, tenant_id, name, job_type, duration_days, mileage_limit, terms, created_at)
+warranty_records (id, tenant_id, job_id, job_item_id, part_id, warranty_policy_id, start_date, end_date, start_mileage, max_mileage, status, created_at)
+warranty_claims (id, tenant_id, warranty_record_id, new_job_id, claim_type, description, approved_by, created_at)
+
+-- Digital Vehicle Inspection (DVI) ⭐ NEW
+vehicle_inspections (id, tenant_id, vehicle_id, job_id, inspected_by, overall_score, status, sent_to_customer_at, customer_viewed_at, created_at)
+inspection_items (id, inspection_id, category, item_name, condition, notes, photo_url, video_url, estimated_cost, customer_approved, sort_order, created_at)
+
+-- Additional Work Requests ⭐ NEW
+additional_work_requests (id, job_id, tenant_id, requested_by, description, photos, estimated_cost, status, customer_approved_at, customer_rejected_at, added_to_job_at, created_at)
+
+-- Smart Recall / Reminders ⭐ NEW
+service_reminders (id, tenant_id, vehicle_id, customer_id, reminder_type, trigger_date, trigger_mileage, message_template, status, sent_at, booking_id, created_at)
+declined_services (id, tenant_id, vehicle_id, customer_id, job_id, description, estimated_cost, follow_up_date, status, created_at)
+
+-- Reviews & Feedback ⭐ NEW
+service_reviews (id, tenant_id, job_id, customer_id, overall_rating, quality_rating, speed_rating, price_rating, service_rating, comment, technician_id, is_public, created_at)
+
+-- Loyalty & Referrals ⭐ NEW
+membership_tiers (id, tenant_id, name, min_visits, min_spending, discount_percent, benefits, sort_order, created_at)
+customer_memberships (id, customer_id, tier_id, points_balance, total_spending, total_visits, tier_upgraded_at, created_at)
+points_transactions (id, customer_id, tenant_id, points, type, reference_type, reference_id, description, created_at)
+referral_codes (id, customer_id, tenant_id, code, referral_count, total_discount_given, created_at)
+referrals (id, referral_code_id, referred_customer_id, reward_given, created_at)
+
+-- Knowledge Base ⭐ NEW
+knowledge_articles (id, tenant_id, title, content, category, vehicle_brand, vehicle_model, tags, created_by, views, created_at)
+
+-- Employee Skills & Commission ⭐ NEW
+employee_skills (id, user_id, skill_category, skill_level, certified, created_at)
+commission_rules (id, tenant_id, name, job_type, rate_percent, upsell_bonus_percent, is_active, created_at)
+commission_records (id, tenant_id, user_id, job_id, base_amount, commission_amount, upsell_bonus, review_bonus, period, status, created_at)
 
 -- Custom Domain (Premium)
 tenant_domains (id, tenant_id, domain, is_verified, verification_token, ssl_status, created_at)
@@ -973,20 +1173,81 @@ CREATE POLICY "tenant_isolation" ON table_name
 | # | Feature | แพลน | รายละเอียด |
 |---|---------|------|-----------|
 | 1 | 🏪 Reception | Pro+Premium | รับรถ, ใบเสนอราคา, Job Order, คิวรอ |
-| 2 | 🔧 Repair Planning | Pro+Premium | Calendar, Scheduling, Checklist, QC, Time Tracking |
-| 3 | 📦 Inventory | Pro+Premium | คลังอะไหล่, Stock, PO, Supplier, Alerts |
-| 4 | 💰 Finance | Pro+Premium | Invoice, Receipt, Expense, P&L, Tax Report |
-| 5 | 👥 CRM | Pro+Premium | Customer, Vehicle, Communication, Loyalty |
-| 6 | 👨‍💼 Employees | Pro+Premium | Profile, Performance, Commission |
-| 7 | 📊 Dashboard | Pro+Premium | KPI, Charts, Reports, Export |
-| 8 | ⚙️ Settings | Pro+Premium | Shop Profile, Customization, Subscription |
-| 9 | 📱 PWA | Pro+Premium | Offline, Push Notification, Camera, Install |
-| 10 | 🌐 SaaS | Pro+Premium | Multi-tenant, Subscription, Billing, 2 Plans |
-| 11 | 🔐 Security | Pro+Premium | RLS, Auth, Audit Log, Validation |
-| 12 | 🎨 UI/UX | Pro+Premium | Dark Mode, Modal System, Responsive, i18n |
-| 13 | 🌍 Landing Page | **Premium** | Template Builder, Custom Domain, SEO, Booking Widget |
-| 14 | 🛒 Online Shop | **Premium** | E-Commerce, Products, Cart, Checkout, Orders, Shipping |
-| 15 | 🏷️ White-label | **Premium** | ไม่มี KPServicePro branding, ใช้โลโก้ร้าน |
+| 2 | 🛡️ Insurance Claims | Pro+Premium | ⭐ เคลมประกัน, ติดตามสถานะ, รายงานเคลม |
+| 3 | 📋 Additional Work | Pro+Premium | ⭐ แจ้งพบปัญหาเพิ่ม + ลูกค้าอนุมัติออนไลน์ |
+| 4 | 🔒 Warranty | Pro+Premium | ⭐ ประกันงานซ่อม, ประกันอะไหล่, เคลม supplier |
+| 5 | 🔧 Repair Planning | Pro+Premium | Calendar, Scheduling, Checklist, QC, Time Tracking |
+| 6 | 🩺 Digital Inspection (DVI) | Pro+Premium | ⭐ ตรวจสภาพรถ, Traffic Light, Vehicle Health Report |
+| 7 | 📱 Tech Mobile UX | Pro+Premium | ⭐ UI สำหรับช่าง, Voice Note, 1-tap ถ่ายรูป, Barcode เบิกของ |
+| 8 | 📚 Knowledge Base | Pro+Premium | ⭐ คลังความรู้ซ่อม, Tips ตามรุ่นรถ, วิดีโอสาธิต |
+| 9 | 📦 Inventory | Pro+Premium | คลังอะไหล่, Stock, PO, Supplier, Alerts |
+| 10 | 🔄 Alt Parts & Smart Issue | Pro+Premium | ⭐ อะไหล่ทดแทน, Cross-ref, เบิกอัจฉริยะ, Scan-to-Issue |
+| 11 | 💰 Finance | Pro+Premium | Invoice, Receipt, Expense, P&L, Tax Report |
+| 12 | 👥 CRM | Pro+Premium | Customer, Vehicle, Communication |
+| 13 | 📖 Digital Service Book | Pro+Premium | ⭐ สมุดซ่อมรถดิจิทัล, Health Score, ประวัติตลอดชีพ |
+| 14 | 🔔 Smart Recall | Pro+Premium | ⭐ แจ้งเตือนอัจฉริยะ, Follow-up DVI, Win-back |
+| 15 | ⭐ Reviews & CSAT | Pro+Premium | ⭐ รีวิว, NPS, Service Recovery, Google Review redirect |
+| 16 | 💎 Loyalty & Referral | Pro+Premium | ⭐ Points, Membership Tiers, Referral Program, Coupons |
+| 17 | 👨‍💼 Employees | Pro+Premium | Profile, Skill Matrix, Leaderboard, Commission |
+| 18 | 📊 Dashboard | Pro+Premium | KPI, Charts, Reports, Export |
+| 19 | ⚙️ Settings | Pro+Premium | Shop Profile, Customization, Subscription |
+| 20 | 📱 PWA | Pro+Premium | Offline, Push Notification, Camera, Install |
+| 21 | 🌐 SaaS | Pro+Premium | Multi-tenant, Subscription, Billing, 2 Plans |
+| 22 | 🔐 Security | Pro+Premium | RLS, Auth, Audit Log, Validation |
+| 23 | 🎨 UI/UX | Pro+Premium | Dark Mode, Modal System, Responsive, i18n |
+| 24 | 🌍 Landing Page | **Premium** | Template Builder, Custom Domain, SEO, Booking Widget |
+| 25 | 🛒 Online Shop | **Premium** | E-Commerce, Products, Cart, Checkout, Orders, Shipping |
+| 26 | 🏷️ White-label | **Premium** | ไม่มี KPServicePro branding, ใช้โลโก้ร้าน |
+
+---
+
+## ⭐ Competitive Differentiators - จุดแตกต่างจากคู่แข่ง
+
+### vs ระบบจัดการอู่ซ่อมรถทั่วไปในไทย
+
+| ฟีเจอร์ที่ทำให้แตกต่าง | ทำไมถึงสำคัญ |
+|---|---|
+| **Digital Vehicle Inspection (DVI) + Vehicle Health Report** | ลูกค้าเห็นสภาพรถจริง + เป็นเครื่องมือ upsell ที่ดีที่สุด (ลูกค้าตัดสินใจเอง ไม่รู้สึกถูกกดดัน) |
+| **Digital Service Book + Health Score** | ลูกค้าผูกติดกับอู่ เพราะข้อมูลอยู่ที่นี่ + เพิ่มมูลค่าตอนขายรถ |
+| **Smart Recall (แจ้งเตือนอัจฉริยะ)** | ดึงลูกค้ากลับมาใช้บริการอัตโนมัติ ไม่ต้องจำเอง |
+| **Additional Work Request + ลูกค้าอนุมัติออนไลน์** | เพิ่มรายได้ต่อ job + ลูกค้ามั่นใจ (เห็นรูปจริง) |
+| **Follow-up DVI สีเหลือง** | ลูกค้าปฏิเสธวันนี้ แต่ระบบติดตามให้ → ขายได้ในอนาคต |
+| **Referral Program** | ลูกค้าชวนเพื่อนมา = ลดต้นทุนหาลูกค้าใหม่ |
+| **Membership Tiers** | ยิ่งมาบ่อย ยิ่งได้ส่วนลด = lock ลูกค้าไว้ |
+| **Review → Service Recovery** | คะแนนต่ำ = Manager รู้ทันที = แก้ปัญหาก่อนเสียลูกค้า |
+| **ช่าง Mobile UX + Voice Note** | ช่างใช้งานจริงได้ (มือเปื้อน, ไม่ต้องพิมพ์) |
+| **Knowledge Base** | ช่างใหม่เรียนรู้เร็ว + ลดข้อผิดพลาด |
+| **Commission + Leaderboard** | ช่างมีแรงจูงใจ = งานดีขึ้น = ลูกค้าพอใจ |
+| **Landing Page + Shop (Premium)** | อู่มี digital presence ครบ = ดึงลูกค้าใหม่จาก online |
+
+### วงจรดึงลูกค้ากลับมา (Customer Retention Loop)
+
+```
+ลูกค้ามาใช้บริการ
+    │
+    ▼
+ช่างทำ DVI ตรวจสภาพรถรอบคัน
+    │
+    ├──→ 🟢 ดี → บันทึกไว้
+    ├──→ 🟡 ควรเปลี่ยนเร็วๆ → ลูกค้าเลือกซ่อมตอนนี้ หรือ ไว้ทีหลัง
+    └──→ 🔴 ต้องซ่อม → แจ้งลูกค้า + Additional Work Request
+    │
+    ▼
+ส่ง Vehicle Health Report ให้ลูกค้า
+    │
+    ▼
+งานเสร็จ → ส่งรีวิว → ได้คะแนนสะสม
+    │
+    ▼
+ระบบ Smart Recall ทำงานอัตโนมัติ:
+    ├──→ 🟡 Follow-up: "ตอนนั้นผ้าเบรคเหลือ 30% ตอนนี้น่าจะถึงเวลาเปลี่ยนแล้ว"
+    ├──→ ⏰ เช็คระยะ: "ครบ 10,000 km แล้ว จองเช็คระยะเลย"
+    ├──→ 📅 พ.ร.บ./ประกัน: "พ.ร.บ. จะหมดเดือนหน้า ต่อที่อู่เราได้"
+    └──→ 🎂 Birthday: "สุขสันต์วันเกิด! รับส่วนลด 15%"
+    │
+    ▼
+ลูกค้ากลับมาใช้บริการอีก ← (วนลูป)
+```
 
 ---
 
