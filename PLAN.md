@@ -98,7 +98,26 @@ src/
 │   │   ├── vehicles/             # จัดการรถ
 │   │   ├── employees/            # จัดการพนักงาน
 │   │   ├── reports/              # รายงาน & Analytics
+│   │   ├── shop-manage/          # [Premium] จัดการร้านค้าออนไลน์
+│   │   │   ├── products/         # จัดการสินค้า
+│   │   │   ├── orders/           # จัดการคำสั่งซื้อ
+│   │   │   ├── coupons/          # คูปองส่วนลด
+│   │   │   ├── shipping/         # ตั้งค่าจัดส่ง
+│   │   │   └── analytics/        # รายงานยอดขาย
+│   │   ├── landing-manage/       # [Premium] จัดการ Landing Page
+│   │   │   ├── editor/           # Drag & drop page builder
+│   │   │   ├── seo/              # ตั้งค่า SEO
+│   │   │   └── domain/           # ตั้งค่า Custom Domain
 │   │   └── settings/             # ตั้งค่าระบบ
+│   ├── (public-shop)/            # [Premium] หน้าร้านออนไลน์สาธารณะ
+│   │   ├── shop/                 # หน้าร้าน Shop
+│   │   │   ├── page.tsx          # Shop home
+│   │   │   ├── [category]/       # หมวดหมู่สินค้า
+│   │   │   ├── product/[slug]/   # หน้ารายละเอียดสินค้า
+│   │   │   ├── cart/             # ตะกร้าสินค้า
+│   │   │   ├── checkout/         # Checkout flow
+│   │   │   └── orders/           # ประวัติคำสั่งซื้อ (ลูกค้า)
+│   │   └── [...slug]/            # Landing Page (dynamic sections)
 │   ├── api/                      # API routes
 │   ├── globals.css
 │   └── layout.tsx                # Root layout
@@ -129,20 +148,81 @@ src/
 - ทุก table มี `tenant_id` column
 - RLS policies บังคับให้ user เข้าถึงได้เฉพาะข้อมูลของ tenant ตัวเอง
 
-### 4.2 Subscription Plans
+### 4.2 Subscription Plans (2 แพ็คเกจ)
 
-| แพลน | รายละเอียด | ราคา/ปี |
+| ฟีเจอร์ | **Pro** | **Premium** |
 |---|---|---|
-| **Starter** | 1 สาขา, 3 users, ฟีเจอร์พื้นฐาน | ฿X,XXX |
-| **Professional** | 3 สาขา, 10 users, ฟีเจอร์เต็ม | ฿XX,XXX |
-| **Enterprise** | ไม่จำกัดสาขา/users, API access, priority support | ฿XXX,XXX |
+| **ราคา/ปี** | ฿X,XXX | ฿XX,XXX |
+| **สาขา** | 1 สาขา | ไม่จำกัด |
+| **Users** | 10 users | ไม่จำกัด |
+| **ระบบหน้าร้าน** | ✅ เต็ม | ✅ เต็ม |
+| **วางแผนการซ่อม** | ✅ เต็ม | ✅ เต็ม |
+| **จัดการอะไหล่** | ✅ เต็ม | ✅ เต็ม |
+| **ระบบการเงิน** | ✅ เต็ม | ✅ เต็ม |
+| **CRM ลูกค้า** | ✅ เต็ม | ✅ เต็ม |
+| **Dashboard & Reports** | ✅ เต็ม | ✅ เต็ม |
+| **PWA & Mobile** | ✅ | ✅ |
+| **Dark Mode / i18n** | ✅ | ✅ |
+| **โดเมนเฉพาะร้าน** | ❌ ใช้ subdomain (shop.kpservicepro.com) | ✅ Custom domain (www.myshop.com) |
+| **Landing Page ร้าน** | ❌ | ✅ สร้าง Landing Page สวยงามเฉพาะร้าน |
+| **ร้านค้าออนไลน์ (Shop)** | ❌ | ✅ ขายอะไหล่/สินค้าให้ลูกค้าออนไลน์ |
+| **SEO สำหรับร้าน** | ❌ | ✅ Meta tags, OG, Sitemap, Schema.org |
+| **API Access** | ❌ | ✅ REST API สำหรับ integration |
+| **Priority Support** | ❌ | ✅ ช่องทางพิเศษ |
+| **Branding** | KPServicePro watermark | ✅ White-label (ใช้โลโก้ร้านเอง) |
 
-### 4.3 Subscription Features
-- **ระบบทดลองใช้ฟรี** (14 วัน)
+#### Pro Plan - ระบบจัดการอู่ซ่อมรถครบวงจร
+- ทุกฟีเจอร์หลักของระบบจัดการอู่ซ่อม
+- Subdomain: `yourshop.kpservicepro.com`
+- Customer self-service portal (ดูสถานะงาน, อนุมัติใบเสนอราคา)
+- เหมาะสำหรับอู่ซ่อมรถทั่วไปที่ต้องการระบบจัดการครบวงจร
+
+#### Premium Plan - ระบบครบ + โดเมนเฉพาะ + ร้านค้าออนไลน์
+- ทุกอย่างใน Pro +
+- **Custom Domain**: ใช้โดเมนของร้านเอง (เช่น www.mygarage.com)
+- **Landing Page Builder**: สร้างหน้าเว็บร้านสวยงาม แสดงบริการ, ราคา, รีวิว, แผนที่
+- **Online Shop (E-Commerce)**: ขายอะไหล่/สินค้า/ผลิตภัณฑ์ดูแลรถให้ลูกค้าได้
+- **White-label**: ไม่มี KPServicePro branding, ใช้โลโก้ร้านทั้งหมด
+- เหมาะสำหรับอู่ซ่อมรถที่ต้องการมี digital presence ครบวงจร
+
+### 4.3 Custom Domain Architecture (Premium)
+
+```
+┌──────────────────────────────────────────────────┐
+│                  Vercel Platform                  │
+│                                                  │
+│  ┌────────────────────────────────────────────┐  │
+│  │           Next.js Middleware               │  │
+│  │  ┌──────────────────────────────────────┐  │  │
+│  │  │  Request: www.mygarage.com           │  │  │
+│  │  │  → lookup tenant by custom_domain    │  │  │
+│  │  │  → resolve tenant_id                 │  │  │
+│  │  │  → route to tenant's public site     │  │  │
+│  │  └──────────────────────────────────────┘  │  │
+│  │  ┌──────────────────────────────────────┐  │  │
+│  │  │  Request: shop.kpservicepro.com      │  │  │
+│  │  │  → lookup tenant by subdomain        │  │  │
+│  │  │  → resolve tenant_id                 │  │  │
+│  │  │  → route to tenant's dashboard       │  │  │
+│  │  └──────────────────────────────────────┘  │  │
+│  └────────────────────────────────────────────┘  │
+│                                                  │
+│  Vercel Domains API → Add/verify custom domains  │
+└──────────────────────────────────────────────────┘
+```
+
+- ใช้ **Vercel Domains API** สำหรับเพิ่ม/ลบ custom domain แบบ programmatic
+- Middleware ตรวจสอบ hostname → map ไปยัง tenant
+- SSL certificate อัตโนมัติผ่าน Vercel (Let's Encrypt)
+- DNS: ลูกค้าชี้ CNAME → `cname.kpservicepro.com`
+
+### 4.4 Subscription Features
+- **ระบบทดลองใช้ฟรี** (14 วัน - ทดลองแพลน Pro)
 - **ระบบต่ออายุอัตโนมัติ**
 - **ระบบแจ้งเตือนก่อนหมดอายุ** (30 วัน, 7 วัน, 1 วัน)
 - **ระบบ grace period** (หลังหมดอายุยังเข้าดูข้อมูลได้ 7 วัน แต่ไม่สร้างข้อมูลใหม่)
 - **ระบบ payment** ผ่าน QR PromptPay / บัตรเครดิต / โอนธนาคาร
+- **อัปเกรด Pro → Premium** ได้ทุกเมื่อ (คิดส่วนต่างตามวันที่เหลือ)
 
 ### 4.4 User Roles per Tenant
 | Role | สิทธิ์ |
@@ -474,6 +554,125 @@ Dark Mode:
 - ประวัติการชำระค่าบริการ
 - ใบเสร็จค่าสมาชิก
 
+### 🌐 Module 9: Landing Page ร้าน (Premium Only)
+
+> สร้างเว็บไซต์หน้าร้านสวยงามให้อู่ซ่อมรถ ใช้โดเมนเฉพาะของร้าน
+
+#### 9.1 Landing Page Builder
+- เลือก template สำเร็จรูป (3-5 แบบ เช่น Modern, Classic, Minimal, Bold, Elegant)
+- Drag & drop จัดเรียง sections
+- Customizable sections:
+  - **Hero Banner**: รูปภาพหลัก + tagline + CTA button
+  - **About Us**: ประวัติร้าน, วิสัยทัศน์, ทีมงาน
+  - **Services**: รายการบริการพร้อมราคา + ไอคอน
+  - **Gallery**: รูปผลงาน before/after + วิดีโอ
+  - **Reviews/Testimonials**: รีวิวจากลูกค้าจริง (ดึงจากระบบ CRM)
+  - **Team**: แสดงทีมช่าง + ความเชี่ยวชาญ
+  - **Price List**: ตารางราคาบริการ
+  - **Contact**: แผนที่ Google Maps, เบอร์โทร, Line, เวลาเปิด-ปิด
+  - **FAQ**: คำถามที่พบบ่อย
+  - **Promotion Banner**: โปรโมชั่นปัจจุบัน
+- ปรับแต่งสี, ฟอนต์, โลโก้ ตาม branding ร้าน
+- Responsive ทุกอุปกรณ์
+
+#### 9.2 SEO & Social
+- Meta title, description สำหรับทุกหน้า
+- Open Graph tags (สำหรับ share Facebook/Line)
+- Schema.org structured data (LocalBusiness, AutoRepair)
+- Sitemap.xml อัตโนมัติ
+- Google Analytics / Facebook Pixel integration
+- Social media links
+
+#### 9.3 Online Booking Widget
+- ฝัง booking form บน Landing Page
+- ลูกค้าเลือกวัน/เวลา + ประเภทบริการ
+- ลูกค้าเลือกรถ (หรือเพิ่มรถใหม่)
+- ส่ง confirmation อัตโนมัติ
+- Sync กับ calendar ในระบบหลัก
+
+#### 9.4 Custom Domain Management
+- ตั้งค่า custom domain ในหน้า settings
+- คำแนะนำตั้งค่า DNS (CNAME record)
+- ตรวจสอบสถานะ domain verification
+- SSL certificate อัตโนมัติ
+- รองรับ www และ non-www redirect
+
+### 🛒 Module 10: ร้านค้าออนไลน์ - Shop (Premium Only)
+
+> ระบบ e-commerce สำหรับขายอะไหล่/สินค้า/ผลิตภัณฑ์ดูแลรถให้ลูกค้า
+
+#### 10.1 Shop Storefront (หน้าร้านออนไลน์)
+- หน้าร้านสวยงามอยู่ภายใต้ custom domain (เช่น www.mygarage.com/shop)
+- แสดงสินค้าเป็น grid / list view
+- หมวดหมู่สินค้า (Categories)
+- ค้นหาสินค้า + filter (ราคา, ยี่ห้อ, ประเภท, รุ่นรถ)
+- Sorting: ยอดนิยม, ราคาต่ำ-สูง, ใหม่ล่าสุด
+- สินค้าแนะนำ / สินค้ายอดนิยม / สินค้าลดราคา
+- รูปภาพสินค้าหลายมุม (Image Gallery)
+- รายละเอียดสินค้า: สเปค, รุ่นรถที่ใช้ได้, วิธีการติดตั้ง
+- สินค้าที่เกี่ยวข้อง (Related Products)
+- แสดง stock (มีของ / ใกล้หมด / หมด / สั่งจอง)
+
+#### 10.2 ตะกร้าสินค้า (Shopping Cart)
+- เพิ่ม/ลบ/แก้ไขจำนวนสินค้าในตะกร้า
+- บันทึกตะกร้า (persistent cart - login แล้วเห็นตะกร้าเดิม)
+- ใส่คูปองส่วนลด
+- คำนวณค่าจัดส่ง (ตามน้ำหนัก/ระยะทาง หรือเรทคงที่)
+- สรุปยอดรวม (สินค้า + ส่วนลด + ค่าส่ง + VAT)
+- Quick checkout vs สมัครสมาชิก
+
+#### 10.3 ระบบสั่งซื้อ (Order Management)
+- Checkout flow: ตะกร้า → ข้อมูลจัดส่ง → ชำระเงิน → ยืนยัน
+- ช่องทางชำระเงิน:
+  - QR PromptPay
+  - โอนธนาคาร (แนบสลิป)
+  - เก็บเงินปลายทาง (COD)
+  - บัตรเครดิต/เดบิต (ในอนาคต)
+- สถานะ order: รอชำระ → ชำระแล้ว → กำลังจัด → ส่งแล้ว → สำเร็จ
+- Tracking number (เลขพัสดุ)
+- แจ้งเตือนลูกค้าทุกสถานะ (Email/Line/SMS)
+- ประวัติคำสั่งซื้อ
+
+#### 10.4 จัดการสินค้า (Product Management - Backend)
+- สร้าง/แก้ไข/ลบ สินค้า
+- **เชื่อมต่อกับระบบคลังอะไหล่ (Module 3)** - สต็อกเดียวกัน!
+  - เลือกอะไหล่จากคลังมาขายใน shop
+  - ตั้งราคาขายออนไลน์ (อาจต่างจากราคาหน้าร้าน)
+  - สต็อกอัพเดทอัตโนมัติ (ขายหน้าร้าน = ลดในออนไลน์ด้วย)
+- เพิ่มสินค้าเฉพาะออนไลน์ (ไม่อยู่ในคลังอะไหล่)
+  - ผลิตภัณฑ์ดูแลรถ (แชมพู, wax, น้ำหอม)
+  - Accessories
+  - Merchandise ร้าน
+- Upload รูปสินค้าหลายรูป
+- ตั้ง variants (ขนาด, สี, เกรด)
+- ตั้งน้ำหนักสำหรับคำนวณค่าส่ง
+- เปิด/ปิดขาย, ตั้ง featured, ตั้ง sale price
+
+#### 10.5 ระบบจัดส่ง (Shipping)
+- ตั้งค่าค่าจัดส่ง:
+  - ฟรีค่าส่ง (เมื่อซื้อครบตามกำหนด)
+  - อัตราคงที่
+  - ตามน้ำหนัก
+  - รับที่ร้าน (Pick-up) - เชื่อมกับระบบหน้าร้าน
+- เชื่อมต่อขนส่ง: Kerry, Flash, Thailand Post, J&T (ในอนาคต)
+- พิมพ์ใบปะหน้าพัสดุ
+
+#### 10.6 รายงาน Shop
+- ยอดขายออนไลน์ (วัน/สัปดาห์/เดือน)
+- สินค้าขายดี (Top sellers)
+- สินค้าไม่ขาย (Low performers)
+- Conversion rate (เข้าชม vs สั่งซื้อ)
+- Revenue จาก shop vs หน้าร้าน
+- **รวมยอดเข้ากับระบบการเงิน (Module 4)**
+
+#### 10.7 ลูกค้า Shop
+- ลูกค้าสมัครสมาชิก / สั่งซื้อแบบ guest
+- **เชื่อมต่อกับ CRM (Module 5)** - ลูกค้า shop = ลูกค้าในระบบ
+- ลูกค้ากลับมาดูประวัติ order
+- ลูกค้าใช้ Loyalty Points ชำระเงิน
+- Wishlist (สินค้าที่สนใจ)
+- ลูกค้าเขียนรีวิว + ให้คะแนน
+
 ---
 
 ## 7. โครงสร้าง Database (Supabase/PostgreSQL)
@@ -534,6 +733,29 @@ document_sequences (id, tenant_id, document_type, prefix, next_number, created_a
 
 -- Subscription
 subscription_history (id, tenant_id, plan, amount, payment_method, payment_reference, started_at, expires_at, created_at)
+
+-- Custom Domain (Premium)
+tenant_domains (id, tenant_id, domain, is_verified, verification_token, ssl_status, created_at)
+
+-- Landing Page (Premium)
+landing_pages (id, tenant_id, template, sections, theme_colors, custom_css, seo_title, seo_description, og_image_url, is_published, created_at)
+landing_sections (id, landing_page_id, section_type, title, content, media_urls, sort_order, is_visible, created_at)
+
+-- Shop / E-Commerce (Premium)
+shop_settings (id, tenant_id, is_active, shop_name, shop_description, shipping_policy, return_policy, min_free_shipping, currency, created_at)
+products (id, tenant_id, name, slug, description, category_id, part_id, images, price, sale_price, cost_price, stock_quantity, weight, is_active, is_featured, sort_order, created_at)
+product_categories (id, tenant_id, name, slug, parent_id, image_url, sort_order, created_at)
+product_variants (id, product_id, name, sku, price, stock_quantity, attributes, created_at)
+product_reviews (id, product_id, customer_id, rating, comment, is_approved, created_at)
+
+orders (id, tenant_id, order_number, customer_id, status, subtotal, discount, shipping_fee, vat, total, coupon_id, shipping_address, shipping_method, tracking_number, payment_method, payment_status, paid_at, shipped_at, delivered_at, notes, created_at)
+order_items (id, order_id, product_id, variant_id, name, quantity, unit_price, total, created_at)
+
+coupons (id, tenant_id, code, discount_type, discount_value, min_order_amount, max_uses, used_count, valid_from, valid_until, is_active, created_at)
+
+wishlists (id, customer_id, product_id, created_at)
+
+shipping_rates (id, tenant_id, name, type, rate, min_weight, max_weight, is_active, created_at)
 ```
 
 ### Row-Level Security (RLS) Policy Pattern
@@ -633,20 +855,68 @@ CREATE POLICY "tenant_isolation" ON table_name
 - [ ] Customer analytics
 - [ ] Export to Excel/PDF
 
-### Phase 8: SaaS & Polish (สัปดาห์ 14-15)
-> ระบบ subscription และปรับแต่ง
+### Phase 8: SaaS & Subscription (สัปดาห์ 14-15)
+> ระบบ subscription และจัดการ tenant
 
-- [ ] Landing page / Marketing site
-- [ ] Pricing page
-- [ ] Subscription management
+- [ ] KPServicePro Marketing site (Landing page, Pricing page)
+- [ ] Pricing page แสดง 2 แพลน (Pro vs Premium)
+- [ ] Subscription management (สมัคร, อัปเกรด, ต่ออายุ)
 - [ ] Payment for subscription (QR/Transfer)
-- [ ] Trial period logic
+- [ ] Trial period logic (14 วัน)
 - [ ] Subscription renewal & reminders
+- [ ] Grace period logic
 - [ ] Settings page (shop profile, customization)
 - [ ] User management (invite, roles)
-- [ ] Performance optimization
-- [ ] SEO optimization
-- [ ] Final testing & bug fixes
+
+### Phase 9: Landing Page Builder - Premium (สัปดาห์ 16-17)
+> ระบบสร้าง Landing Page เฉพาะร้าน + Custom Domain
+
+- [ ] Landing Page template system (3-5 templates)
+- [ ] Section editor (Hero, About, Services, Gallery, Reviews, Contact, FAQ, Pricing)
+- [ ] Theme customization (สี, ฟอนต์, โลโก้)
+- [ ] Image/Video upload สำหรับ gallery
+- [ ] Online booking widget (ฝังใน Landing Page)
+- [ ] SEO settings (meta tags, OG, Schema.org, sitemap)
+- [ ] Custom domain management (ตั้งค่า, verify, DNS guide)
+- [ ] Vercel Domains API integration
+- [ ] SSL auto-provisioning
+- [ ] Middleware: hostname → tenant routing
+- [ ] Preview / Publish workflow
+- [ ] Google Analytics / Facebook Pixel integration
+
+### Phase 10: ร้านค้าออนไลน์ - Shop - Premium (สัปดาห์ 18-20)
+> ระบบ e-commerce สำหรับขายสินค้า
+
+- [ ] Shop storefront (หน้าร้านออนไลน์สาธารณะ)
+- [ ] Product listing (grid/list, search, filter, sort)
+- [ ] Product detail page (รูปหลายมุม, specs, รุ่นรถที่ใช้ได้, reviews)
+- [ ] Product management backend (CRUD, variants, images)
+- [ ] เชื่อมต่อ inventory (Module 3) - shared stock
+- [ ] Product categories CRUD
+- [ ] Shopping cart (persistent, coupon, shipping calc)
+- [ ] Checkout flow (ข้อมูลจัดส่ง → ชำระเงิน → ยืนยัน)
+- [ ] Payment: QR PromptPay, โอนธนาคาร, COD
+- [ ] Order management (สถานะ, tracking number)
+- [ ] Order notifications (Email/Line/SMS)
+- [ ] Shipping settings (rates, free shipping threshold)
+- [ ] Coupon system (เปอร์เซ็นต์/จำนวนเงิน, วันหมดอายุ)
+- [ ] Customer reviews & ratings
+- [ ] Wishlist
+- [ ] Shop analytics (ยอดขาย, top sellers, conversion)
+- [ ] รวมยอดขาย shop เข้ากับ Finance (Module 4)
+- [ ] รวมลูกค้า shop เข้ากับ CRM (Module 5)
+
+### Phase 11: Polish & Launch (สัปดาห์ 21-22)
+> ปรับแต่ง ทดสอบ และเปิดตัว
+
+- [ ] Performance optimization (bundle size, lighthouse score)
+- [ ] SEO optimization (ทั้ง marketing site และ tenant sites)
+- [ ] Cross-browser testing
+- [ ] Mobile responsiveness testing
+- [ ] Security audit
+- [ ] Load testing
+- [ ] Final bug fixes
+- [ ] Documentation / User guide
 
 ---
 
@@ -700,20 +970,23 @@ CREATE POLICY "tenant_isolation" ON table_name
 
 ## สรุป Feature Highlights
 
-| # | Feature | รายละเอียด |
-|---|---------|-----------|
-| 1 | 🏪 Reception | รับรถ, ใบเสนอราคา, Job Order, คิวรอ |
-| 2 | 🔧 Repair Planning | Calendar, Scheduling, Checklist, QC, Time Tracking |
-| 3 | 📦 Inventory | คลังอะไหล่, Stock, PO, Supplier, Alerts |
-| 4 | 💰 Finance | Invoice, Receipt, Expense, P&L, Tax Report |
-| 5 | 👥 CRM | Customer, Vehicle, Communication, Loyalty |
-| 6 | 👨‍💼 Employees | Profile, Performance, Commission |
-| 7 | 📊 Dashboard | KPI, Charts, Reports, Export |
-| 8 | ⚙️ Settings | Shop Profile, Customization, Subscription |
-| 9 | 📱 PWA | Offline, Push Notification, Camera, Install |
-| 10 | 🌐 SaaS | Multi-tenant, Subscription, Billing, Plans |
-| 11 | 🔐 Security | RLS, Auth, Audit Log, Validation |
-| 12 | 🎨 UI/UX | Dark Mode, Modal System, Responsive, i18n |
+| # | Feature | แพลน | รายละเอียด |
+|---|---------|------|-----------|
+| 1 | 🏪 Reception | Pro+Premium | รับรถ, ใบเสนอราคา, Job Order, คิวรอ |
+| 2 | 🔧 Repair Planning | Pro+Premium | Calendar, Scheduling, Checklist, QC, Time Tracking |
+| 3 | 📦 Inventory | Pro+Premium | คลังอะไหล่, Stock, PO, Supplier, Alerts |
+| 4 | 💰 Finance | Pro+Premium | Invoice, Receipt, Expense, P&L, Tax Report |
+| 5 | 👥 CRM | Pro+Premium | Customer, Vehicle, Communication, Loyalty |
+| 6 | 👨‍💼 Employees | Pro+Premium | Profile, Performance, Commission |
+| 7 | 📊 Dashboard | Pro+Premium | KPI, Charts, Reports, Export |
+| 8 | ⚙️ Settings | Pro+Premium | Shop Profile, Customization, Subscription |
+| 9 | 📱 PWA | Pro+Premium | Offline, Push Notification, Camera, Install |
+| 10 | 🌐 SaaS | Pro+Premium | Multi-tenant, Subscription, Billing, 2 Plans |
+| 11 | 🔐 Security | Pro+Premium | RLS, Auth, Audit Log, Validation |
+| 12 | 🎨 UI/UX | Pro+Premium | Dark Mode, Modal System, Responsive, i18n |
+| 13 | 🌍 Landing Page | **Premium** | Template Builder, Custom Domain, SEO, Booking Widget |
+| 14 | 🛒 Online Shop | **Premium** | E-Commerce, Products, Cart, Checkout, Orders, Shipping |
+| 15 | 🏷️ White-label | **Premium** | ไม่มี KPServicePro branding, ใช้โลโก้ร้าน |
 
 ---
 
