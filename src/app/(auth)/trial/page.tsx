@@ -73,24 +73,19 @@ const plans = [
   {
     id: "starter",
     name: "Starter",
-    price: "1,490",
-    desc: "สำหรับอู่ขนาดเล็ก",
-    features: ["3 ผู้ใช้", "งานซ่อมไม่จำกัด", "สต็อกอะไหล่", "LINE แจ้งเตือน"],
+    price: "999",
+    period: "/ปี",
+    desc: "สำหรับอู่ขนาดเล็ก เริ่มต้นใช้งานง่าย",
+    features: ["3 ผู้ใช้", "งานซ่อมไม่จำกัด", "สต็อกอะไหล่", "ตรวจสภาพรถ (DVI)", "LINE แจ้งเตือน", "รายงานพื้นฐาน"],
   },
   {
     id: "professional",
     name: "Professional",
-    price: "2,990",
-    desc: "สำหรับอู่ขนาดกลาง",
-    features: ["10 ผู้ใช้", "DVI ตรวจสภาพรถ", "เคลมประกัน", "แพ็กเกจบริการ", "จับเวลาช่าง"],
+    price: "2,999",
+    period: "/ปี",
+    desc: "ครบทุกฟีเจอร์ สำหรับอู่ที่ต้องการเติบโต",
+    features: ["ผู้ใช้ไม่จำกัด", "ทุกอย่างใน Starter", "เคลมประกัน", "แพ็กเกจบริการ", "จับเวลาช่าง", "แจ้งเตือนเช็คระยะ", "หลายสาขา", "API Integration", "ซัพพอร์ตพิเศษ"],
     popular: true,
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "5,990",
-    desc: "สำหรับอู่ขนาดใหญ่",
-    features: ["ผู้ใช้ไม่จำกัด", "หลายสาขา", "API Integration", "Custom Branding"],
   },
 ]
 
@@ -229,7 +224,7 @@ export default function TrialRegistrationPage() {
           <div className="space-y-5">
             {[
               { icon: Wrench, text: "จัดการงานซ่อมครบวงจร" },
-              { icon: Shield, text: "ข้อมูลปลอดภัย ระดับ Enterprise" },
+              { icon: Shield, text: "ข้อมูลปลอดภัย ระดับสากล" },
               { icon: Clock, text: "ตั้งค่าเสร็จใน 5 นาที" },
               { icon: Zap, text: "ใช้งานได้ทันทีหลังสมัคร" },
               { icon: Star, text: "ซัพพอร์ตฟรีตลอดช่วงทดลอง" },
@@ -560,7 +555,7 @@ export default function TrialRegistrationPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-extrabold">฿{plan.price}</p>
-                        <p className="text-xs text-muted-foreground">/เดือน</p>
+                        <p className="text-xs text-muted-foreground">{plan.period || '/ปี'}</p>
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-1.5">

@@ -687,15 +687,16 @@ function PricingSection() {
   const plans = [
     {
       name: "Starter",
-      price: "1,490",
-      period: "/เดือน",
-      desc: "สำหรับอู่ขนาดเล็ก 1-3 ช่าง",
+      price: "999",
+      period: "/ปี",
+      desc: "สำหรับอู่ขนาดเล็ก เริ่มต้นใช้งานง่าย",
       features: [
         "ผู้ใช้งาน 3 คน",
         "งานซ่อมไม่จำกัด",
         "สต็อกอะไหล่",
         "ใบเสนอราคา & ใบเสร็จ",
         "รายงานพื้นฐาน",
+        "ตรวจสภาพรถ (DVI)",
         "LINE แจ้งเตือน",
       ],
       cta: "เริ่มทดลองฟรี",
@@ -703,39 +704,24 @@ function PricingSection() {
     },
     {
       name: "Professional",
-      price: "2,990",
-      period: "/เดือน",
-      desc: "สำหรับอู่ขนาดกลาง 4-10 ช่าง",
+      price: "2,999",
+      period: "/ปี",
+      desc: "ครบทุกฟีเจอร์ สำหรับอู่ที่ต้องการเติบโต",
       features: [
-        "ผู้ใช้งาน 10 คน",
+        "ผู้ใช้งานไม่จำกัด",
         "ทุกอย่างใน Starter",
-        "ตรวจสภาพรถ (DVI)",
         "เคลมประกัน",
         "แพ็กเกจบริการ",
         "จับเวลาช่าง",
         "แจ้งเตือนเช็คระยะ",
-        "รายงานวิเคราะห์",
-      ],
-      cta: "เริ่มทดลองฟรี",
-      popular: true,
-    },
-    {
-      name: "Enterprise",
-      price: "5,990",
-      period: "/เดือน",
-      desc: "สำหรับอู่ขนาดใหญ่หรือหลายสาขา",
-      features: [
-        "ผู้ใช้งานไม่จำกัด",
-        "ทุกอย่างใน Professional",
+        "รายงานวิเคราะห์ขั้นสูง",
         "หลายสาขา",
         "CRM & สมาชิก",
         "API Integration",
-        "รายงานขั้นสูง",
         "ซัพพอร์ตพิเศษ",
-        "Custom Branding",
       ],
-      cta: "ติดต่อเรา",
-      popular: false,
+      cta: "เริ่มทดลองฟรี",
+      popular: true,
     },
   ]
 
@@ -751,7 +737,7 @@ function PricingSection() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 lg:gap-8">
+        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto lg:gap-8">
           {plans.map((plan) => (
             <div
               key={plan.name}
@@ -790,7 +776,7 @@ function PricingSection() {
               </ul>
 
               <Link
-                href={plan.name === "Enterprise" ? "#contact" : "/trial"}
+                href="/trial"
                 className={cn(
                   "mt-8 block w-full rounded-xl py-3 text-center text-sm font-semibold transition-colors",
                   plan.popular
@@ -894,7 +880,7 @@ function FAQSection() {
     },
     {
       q: "รองรับหลายสาขาไหม?",
-      a: "รองรับครับ แพ็กเกจ Enterprise รองรับหลายสาขา สามารถดูรายงานรวมทุกสาขาได้ในที่เดียว แต่ละสาขามี LINE OA แยกกันได้",
+      a: "รองรับครับ แพ็กเกจ Professional รองรับหลายสาขา สามารถดูรายงานรวมทุกสาขาได้ในที่เดียว แต่ละสาขามี LINE OA แยกกันได้",
     },
   ]
 
@@ -1072,10 +1058,10 @@ function StructuredData() {
     description: "ระบบจัดการอู่ซ่อมรถครบวงจร จัดการงานซ่อม อะไหล่ เคลมประกัน การเงิน และเชื่อมต่อ LINE OA",
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: "1490",
-      highPrice: "5990",
+      lowPrice: "999",
+      highPrice: "2999",
       priceCurrency: "THB",
-      offerCount: "3",
+      offerCount: "2",
     },
     aggregateRating: {
       "@type": "AggregateRating",

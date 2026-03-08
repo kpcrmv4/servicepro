@@ -28,9 +28,8 @@ import {
 } from "@/lib/actions/trial"
 
 const planConfig: Record<string, { label: string; color: string; price: number }> = {
-  starter: { label: "Starter", color: "bg-blue-50 text-blue-700", price: 1490 },
-  professional: { label: "Professional", color: "bg-primary/10 text-primary", price: 2990 },
-  enterprise: { label: "Enterprise", color: "bg-purple-50 text-purple-700", price: 5990 },
+  starter: { label: "Starter", color: "bg-blue-50 text-blue-700", price: 999 },
+  professional: { label: "Professional", color: "bg-primary/10 text-primary", price: 2999 },
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
@@ -235,7 +234,7 @@ export default function SubscriptionsPage() {
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">แผน</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">สถานะ</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Trial หมดอายุ</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">ราคา/เดือน</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">ราคา/ปี</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">จัดการ</th>
                   </tr>
                 </thead>
@@ -435,7 +434,7 @@ export default function SubscriptionsPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{config.label}</span>
-                      <span className="text-sm font-bold">{formatCurrency(config.price)}/เดือน</span>
+                      <span className="text-sm font-bold">{formatCurrency(config.price)}/ปี</span>
                     </div>
                   </button>
                 ))}

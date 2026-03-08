@@ -180,7 +180,7 @@ export default function RegisterPage() {
         || `shop-${Date.now()}`;
 
       // Determine plan name
-      const planName = selectedPlan === "premium" ? "premium" : "professional";
+      const planName = selectedPlan === "premium" ? "professional" : "starter";
 
       // First create the tenant
       const { data: tenant, error: tenantError } = await supabase
@@ -609,7 +609,7 @@ export default function RegisterPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap className="h-5 w-5 text-primary" />
-                  <h4 className="text-lg font-bold text-foreground">Pro</h4>
+                  <h4 className="text-lg font-bold text-foreground">Starter</h4>
                 </div>
                 {selectedPlan === "pro" && (
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
@@ -618,9 +618,9 @@ export default function RegisterPage() {
                 )}
               </div>
               <p className="mt-2 text-2xl font-bold text-foreground">
-                ฿1,490
+                ฿999
                 <span className="text-sm font-normal text-muted-foreground">
-                  /เดือน
+                  /ปี
                 </span>
               </p>
               <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
@@ -659,7 +659,7 @@ export default function RegisterPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Crown className="h-5 w-5 text-warning" />
-                  <h4 className="text-lg font-bold text-foreground">Premium</h4>
+                  <h4 className="text-lg font-bold text-foreground">Professional</h4>
                 </div>
                 {selectedPlan === "premium" && (
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
@@ -668,14 +668,14 @@ export default function RegisterPage() {
                 )}
               </div>
               <p className="mt-2 text-2xl font-bold text-foreground">
-                ฿2,990
+                ฿2,999
                 <span className="text-sm font-normal text-muted-foreground">
-                  /เดือน
+                  /ปี
                 </span>
               </p>
               <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-1.5">
-                  <Check className="h-3 w-3 text-success" /> ทุกฟีเจอร์ใน Pro
+                  <Check className="h-3 w-3 text-success" /> ทุกอย่างใน Starter
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Check className="h-3 w-3 text-success" /> รายงานขั้นสูงและ
