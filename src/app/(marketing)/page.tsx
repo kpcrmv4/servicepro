@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import {
   Wrench,
@@ -42,7 +43,34 @@ import {
   LineChart,
   Settings,
   QrCode,
+  ChevronLeft,
+  ChevronRight,
+  Monitor,
+  Play,
 } from "lucide-react"
+
+/* ==========================================================================
+   IMAGE PLACEHOLDER CONFIGURATION
+   ==========================================================================
+   เปลี่ยน URL ด้านล่างเมื่ออัพโหลดรูป screenshot จริงไปที่ Supabase Storage
+   ตัวอย่าง: https://your-project.supabase.co/storage/v1/object/public/screenshots/dashboard.png
+   ========================================================================== */
+const SCREENSHOT_IMAGES = {
+  // Hero section - รูป Dashboard หลัก
+  heroDashboard: "/images/placeholder-dashboard.svg",
+  // Screenshot showcase carousel
+  dashboard: "/images/placeholder-dashboard.svg",
+  jobManagement: "/images/placeholder-jobs.svg",
+  dvi: "/images/placeholder-dvi.svg",
+  lineOA: "/images/placeholder-line.svg",
+  inventory: "/images/placeholder-inventory.svg",
+  finance: "/images/placeholder-finance.svg",
+  mobile: "/images/placeholder-mobile.svg",
+  // Testimonial profile images (ใช้ initials แทนจนกว่าจะมีรูปจริง)
+  testimonial1: "",
+  testimonial2: "",
+  testimonial3: "",
+} as const
 
 /* ========== NAVBAR ========== */
 function Navbar() {
@@ -196,7 +224,8 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* Dashboard preview */}
+          {/* Dashboard preview - Screenshot placeholder
+              TODO: เปลี่ยน SCREENSHOT_IMAGES.heroDashboard เป็น URL จริงจาก Supabase Storage */}
           <div className="hidden lg:block">
             <div className="relative">
               {/* Glow effect */}
@@ -208,39 +237,38 @@ function HeroSection() {
                   <div className="h-3 w-3 rounded-full bg-green-400/80" />
                   <span className="ml-2 text-xs text-white/40">KPServicePro Dashboard</span>
                 </div>
-                <div className="rounded-xl bg-white p-4 text-slate-900 space-y-3">
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { label: "งานวันนี้", value: "12", icon: "wrench", color: "bg-blue-50 text-blue-600" },
-                      { label: "รายรับ", value: "฿42K", icon: "dollar", color: "bg-green-50 text-green-600" },
-                      { label: "รออะไหล่", value: "3", icon: "package", color: "bg-amber-50 text-amber-600" },
-                      { label: "เสร็จแล้ว", value: "8", icon: "check", color: "bg-emerald-50 text-emerald-600" },
-                    ].map((stat) => (
-                      <div key={stat.label} className={cn("rounded-lg p-2.5 text-center", stat.color)}>
-                        <p className="text-lg font-bold">{stat.value}</p>
-                        <p className="text-[10px] opacity-70">{stat.label}</p>
-                      </div>
-                    ))}
+                {/* Screenshot image - เปลี่ยน src เป็น URL รูปจริง */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-white">
+                  <Image
+                    src={SCREENSHOT_IMAGES.heroDashboard}
+                    alt="KPServicePro Dashboard - ระบบจัดการอู่ซ่อมรถ"
+                    fill
+                    className="object-cover object-top"
+                    priority
+                  />
+                </div>
+              </div>
+              {/* Floating badge */}
+              <div className="absolute -bottom-4 -left-4 rounded-xl bg-white px-4 py-2.5 shadow-lg border border-border">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
                   </div>
-                  <div className="space-y-1.5">
-                    {[
-                      { car: "Toyota Camry", job: "เปลี่ยนผ้าเบรค", status: "กำลังซ่อม", color: "bg-blue-500" },
-                      { car: "Honda Civic", job: "เช็คระยะ 50,000", status: "รออะไหล่", color: "bg-amber-500" },
-                      { car: "Isuzu D-Max", job: "ซ่อมแอร์", status: "เสร็จแล้ว", color: "bg-green-500" },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className={cn("h-2 w-2 rounded-full", item.color)} />
-                          <span className="font-medium">{item.car}</span>
-                          <span className="text-slate-400">- {item.job}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-500">{item.status}</span>
-                      </div>
-                    ))}
+                  <div>
+                    <p className="text-xs text-muted-foreground">รายได้เพิ่มขึ้น</p>
+                    <p className="text-sm font-bold text-green-600">+30%</p>
                   </div>
-                  <div className="flex items-center gap-2 rounded-lg bg-green-50 p-2 text-xs text-green-700">
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    LINE: ลูกค้าใหม่เพิ่มเป็นเพื่อน 3 คนวันนี้
+                </div>
+              </div>
+              {/* Floating badge right */}
+              <div className="absolute -top-4 -right-4 rounded-xl bg-white px-4 py-2.5 shadow-lg border border-border">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">อู่ที่ใช้งาน</p>
+                    <p className="text-sm font-bold text-blue-600">500+</p>
                   </div>
                 </div>
               </div>
@@ -411,6 +439,196 @@ function FeaturesSection() {
   )
 }
 
+/* ========== SCREENSHOT SHOWCASE CAROUSEL ========== */
+function ScreenshotShowcase() {
+  const screenshots = [
+    {
+      id: "dashboard",
+      title: "Dashboard สรุปภาพรวม",
+      desc: "ดูยอดรายรับ งานซ่อม สถานะสต็อก และประสิทธิภาพอู่ในหน้าเดียว",
+      // TODO: เปลี่ยนเป็น URL รูปจริงจาก Supabase Storage
+      image: SCREENSHOT_IMAGES.dashboard,
+      icon: Monitor,
+    },
+    {
+      id: "jobs",
+      title: "จัดการงานซ่อม Kanban",
+      desc: "จัดคิวงานแบบ Drag & Drop ติดตามสถานะแบบเรียลไทม์",
+      image: SCREENSHOT_IMAGES.jobManagement,
+      icon: ClipboardCheck,
+    },
+    {
+      id: "dvi",
+      title: "ตรวจสภาพรถ (DVI)",
+      desc: "ระบบ Traffic Light ถ่ายรูปจุดเสียหาย ส่งรายงานให้ลูกค้า",
+      image: SCREENSHOT_IMAGES.dvi,
+      icon: Camera,
+    },
+    {
+      id: "line",
+      title: "LINE OA Integration",
+      desc: "แจ้งสถานะอัตโนมัติ ส่งใบเสนอราคาผ่าน LINE",
+      image: SCREENSHOT_IMAGES.lineOA,
+      icon: MessageCircle,
+    },
+    {
+      id: "inventory",
+      title: "สต็อกอะไหล่",
+      desc: "จัดการสต็อก Barcode/QR ตัดสต็อกอัตโนมัติ",
+      image: SCREENSHOT_IMAGES.inventory,
+      icon: Package,
+    },
+    {
+      id: "finance",
+      title: "การเงิน & บัญชี",
+      desc: "ใบเสนอราคา ใบแจ้งหนี้ ใบเสร็จ รายงานภาษี",
+      image: SCREENSHOT_IMAGES.finance,
+      icon: DollarSign,
+    },
+  ]
+
+  const [current, setCurrent] = useState(0)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+
+  const next = useCallback(() => {
+    setCurrent((prev) => (prev + 1) % screenshots.length)
+  }, [screenshots.length])
+
+  const prev = useCallback(() => {
+    setCurrent((prev) => (prev - 1 + screenshots.length) % screenshots.length)
+  }, [screenshots.length])
+
+  useEffect(() => {
+    if (!isAutoPlaying) return
+    const timer = setInterval(next, 4000)
+    return () => clearInterval(timer)
+  }, [isAutoPlaying, next])
+
+  return (
+    <section id="screenshots" className="py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+            <Monitor className="h-4 w-4" />
+            ดูหน้าจอจริง
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            สำรวจระบบจริง
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            ดูหน้าจอการใช้งานจริงของแต่ละฟีเจอร์ ออกแบบให้ใช้งานง่าย สวยงาม และมีประสิทธิภาพ
+          </p>
+        </div>
+
+        {/* Main screenshot display */}
+        <div className="relative">
+          {/* Browser frame */}
+          <div className="rounded-2xl border border-border bg-muted/30 p-2 shadow-2xl">
+            <div className="flex items-center gap-2 mb-2 px-2">
+              <div className="h-3 w-3 rounded-full bg-red-400" />
+              <div className="h-3 w-3 rounded-full bg-yellow-400" />
+              <div className="h-3 w-3 rounded-full bg-green-400" />
+              <div className="ml-3 flex-1 rounded-md bg-muted px-3 py-1">
+                <span className="text-xs text-muted-foreground">app.kpservicepro.com/{screenshots[current].id}</span>
+              </div>
+            </div>
+            {/* Screenshot image container - TODO: เปลี่ยนรูปจริงใน SCREENSHOT_IMAGES */}
+            <div
+              className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-background"
+              onMouseEnter={() => setIsAutoPlaying(false)}
+              onMouseLeave={() => setIsAutoPlaying(true)}
+            >
+              <Image
+                src={screenshots[current].image}
+                alt={screenshots[current].title}
+                fill
+                className="object-cover object-top transition-opacity duration-500"
+              />
+              {/* Navigation arrows */}
+              <button
+                onClick={prev}
+                className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 transition-colors"
+                aria-label="รูปก่อนหน้า"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 transition-colors"
+                aria-label="รูปถัดไป"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+              {/* Current slide info overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+                <h3 className="text-lg font-bold text-white">{screenshots[current].title}</h3>
+                <p className="text-sm text-white/80">{screenshots[current].desc}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Auto-play indicator */}
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Play className={cn("h-3 w-3", isAutoPlaying && "text-primary")} />
+              {isAutoPlaying ? "ออโต้เล่น" : "หยุดชั่วคราว"}
+            </button>
+          </div>
+        </div>
+
+        {/* Thumbnail navigation */}
+        <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {screenshots.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => { setCurrent(i); setIsAutoPlaying(false) }}
+              className={cn(
+                "group flex flex-col items-center gap-2 rounded-xl border p-3 transition-all",
+                i === current
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border hover:border-primary/30 hover:bg-muted/50"
+              )}
+            >
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                i === current ? "bg-primary/10" : "bg-muted"
+              )}>
+                <s.icon className={cn(
+                  "h-4 w-4",
+                  i === current ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                )} />
+              </div>
+              <span className={cn(
+                "text-[11px] font-medium text-center leading-tight",
+                i === current ? "text-primary" : "text-muted-foreground"
+              )}>
+                {s.title}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Dot indicators for mobile */}
+        <div className="mt-4 flex justify-center gap-2 sm:hidden">
+          {screenshots.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { setCurrent(i); setIsAutoPlaying(false) }}
+              className={cn(
+                "h-2 rounded-full transition-all",
+                i === current ? "w-6 bg-primary" : "w-2 bg-border"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ========== LINE OA HIGHLIGHT ========== */
 function LineOASection() {
   const features = [
@@ -566,9 +784,12 @@ function DVISection() {
                   </div>
                 ))}
               </div>
+              {/* DVI photo grid - TODO: เปลี่ยนเป็นรูปจริงจาก Supabase Storage */}
               <div className="mt-4 grid grid-cols-3 gap-2">
                 {["ยางสึก", "ผ้าเบรค", "ไฟหน้า"].map((label) => (
-                  <div key={label} className="aspect-square rounded-lg bg-muted flex items-center justify-center">
+                  <div key={label} className="aspect-square rounded-lg bg-muted flex items-center justify-center relative overflow-hidden">
+                    {/* TODO: เปลี่ยนเป็น Image component เมื่อมีรูปจริง
+                    <Image src="URL_รูปจริง" alt={label} fill className="object-cover" /> */}
                     <div className="text-center">
                       <Camera className="h-5 w-5 mx-auto text-muted-foreground" />
                       <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -802,18 +1023,22 @@ function TestimonialsSection() {
       role: "เจ้าของอู่ช่างเก่ง Auto Service",
       text: "ก่อนใช้ KPServicePro จดทุกอย่างในสมุด หาข้อมูลลำบากมาก ตอนนี้ทุกอย่างอยู่ในระบบ ลูกค้าก็ชอบที่ได้รับแจ้งเตือนผ่าน LINE",
       rating: 5,
+      // TODO: เปลี่ยนเป็น URL รูปโปรไฟล์จริงจาก Supabase Storage
+      image: SCREENSHOT_IMAGES.testimonial1,
     },
     {
       name: "วิภา แสงทอง",
       role: "ผู้จัดการอู่ Top Speed Garage",
       text: "ระบบ DVI ช่วยได้มาก ลูกค้าเห็นรูปจุดเสียหายจริง ตัดสินใจซ่อมเร็วขึ้น รายได้จาก Upsell เพิ่มขึ้น 35% ภายใน 3 เดือน",
       rating: 5,
+      image: SCREENSHOT_IMAGES.testimonial2,
     },
     {
       name: "ธนกร เจริญสุข",
       role: "เจ้าของอู่ธนกรยนต์ 3 สาขา",
       text: "ใช้มา 1 ปี ระบบเสถียรมาก ดูรายงานรวมทุกสาขาได้ในที่เดียว ช่วยตัดสินใจเรื่องสต็อกและพนักงานได้ดีขึ้นมาก",
       rating: 5,
+      image: SCREENSHOT_IMAGES.testimonial3,
     },
   ]
 
@@ -839,9 +1064,21 @@ function TestimonialsSection() {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{t.text}&rdquo;</p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary">{t.name[0]}</span>
-                </div>
+                {/* Profile image - TODO: เปลี่ยน SCREENSHOT_IMAGES.testimonialN เป็น URL รูปจริง */}
+                {t.image ? (
+                  <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                    <Image
+                      src={t.image}
+                      alt={t.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-bold text-primary">{t.name[0]}</span>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-semibold">{t.name}</p>
                   <p className="text-xs text-muted-foreground">{t.role}</p>
@@ -1089,6 +1326,7 @@ export default function LandingPage() {
         <HeroSection />
         <StatsSection />
         <FeaturesSection />
+        <ScreenshotShowcase />
         <LineOASection />
         <DVISection />
         <HowItWorksSection />
