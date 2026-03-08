@@ -11,13 +11,14 @@ import {
   Search,
   Sun,
   Moon,
-  Bell,
   ChevronDown,
   User,
   LogOut,
   Settings,
+  Bell as BellIcon,
   Loader2,
 } from "lucide-react"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -133,9 +134,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         )}
 
         {/* Notifications */}
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-          <Bell className="h-5 w-5" />
-        </button>
+        <NotificationBell />
 
         {/* User menu */}
         <div ref={userMenuRef} className="relative">

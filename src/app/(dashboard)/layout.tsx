@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { BottomNav } from "@/components/layout/bottom-nav"
+import { PWARegister } from "@/components/pwa/pwa-register"
 import { cn } from "@/lib/utils"
 
 export default function DashboardLayout({
@@ -38,6 +39,9 @@ export default function DashboardLayout({
 
       {/* Mobile Bottom Navigation */}
       <BottomNav />
+
+      {/* PWA Registration & Install/Update Prompts */}
+      <PWARegister />
     </div>
   )
 }

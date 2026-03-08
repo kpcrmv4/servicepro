@@ -2,6 +2,8 @@ import {
   Building2,
   Users,
   Save,
+  Bell,
+  MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -32,6 +34,8 @@ export default async function SettingsPage({
   const sections = [
     { key: "shop", label: "ข้อมูลร้าน", icon: Building2 },
     { key: "team", label: "สมาชิกทีม", icon: Users },
+    { key: "notifications", label: "การแจ้งเตือน", icon: Bell, href: "/dashboard/settings/notifications" },
+    { key: "line", label: "LINE OA", icon: MessageSquare, href: "/dashboard/settings/line" },
   ]
 
   return (
@@ -43,10 +47,11 @@ export default async function SettingsPage({
         <div className="flex gap-2 overflow-x-auto sm:w-56 sm:shrink-0 sm:flex-col sm:space-y-1 sm:gap-0">
           {sections.map((section) => {
             const Icon = section.icon
+            const sectionHref = (section as { href?: string }).href
             return (
               <Link
                 key={section.key}
-                href={`/dashboard/settings?section=${section.key}`}
+                href={sectionHref || `/dashboard/settings?section=${section.key}`}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   activeSection === section.key
