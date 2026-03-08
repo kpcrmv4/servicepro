@@ -1,237 +1,131 @@
-"use client"
-
-import { useState } from "react"
-import {
-  Plus,
-  Search,
-  Calendar,
-  User,
-  Car,
-  Shield,
-  DollarSign,
-  FileCheck,
-  Clock,
-  CheckCircle2,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { formatCurrency, formatDateShort } from "@/lib/utils"
+import { Plus, Search, Shield, AlertTriangle, Car } from "lucide-react"
+import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table"
-import type { InsuranceClaimStatus } from "@/lib/types/database"
+import { createServerClient } from "@/lib/supabase/server"
 
-interface ClaimItem {
-  id: string
-  claimNumber: string
-  jobNumber: string
-  customerName: string
-  vehicle: string
-  licensePlate: string
-  insuranceCompany: string
-  estimatedAmount: number
-  approvedAmount: number | null
-  status: InsuranceClaimStatus
-  createdAt: string
+const statusConfig: Record<string, { label: string; color: string }> = {
+  active: { label: "ใช้งาน", color: "bg-success/10 text-success" },
+  expired: { label: "หมดอายุ", color: "bg-error/10 text-error" },
+  pending: { label: "รอดำเนินการ", color: "bg-warning/10 text-warning" },
 }
 
-const mockClaims: ClaimItem[] = [
-  { id: "1", claimNumber: "CLM-2026-0001", jobNumber: "JOB-2026-0003", customerName: "วิชัย ศรีสุข", vehicle: "Isuzu D-Max", licensePlate: "จฉ 9012", insuranceCompany: "วิริยะประกันภัย", estimatedAmount: 42000, approvedAmount: 38500, status: "paid", createdAt: "2026-03-04" },
-  { id: "2", claimNumber: "CLM-2026-0002", jobNumber: "JOB-2026-0009", customerName: "กัลยา ทองดี", vehicle: "MG ZS", licensePlate: "ฆง 5791", insuranceCompany: "กรุงเทพประกันภัย", estimatedAmount: 55000, approvedAmount: 52000, status: "approved", createdAt: "2026-03-01" },
-  { id: "3", claimNumber: "CLM-2026-0003", jobNumber: "JOB-2026-0014", customerName: "อภิชาติ พงศ์พัฒน์", vehicle: "Honda Accord", licensePlate: "อพ 3344", insuranceCompany: "ทิพยประกันภัย", estimatedAmount: 28000, approvedAmount: null, status: "pending_approval", createdAt: "2026-03-03" },
-  { id: "4", claimNumber: "CLM-2026-0004", jobNumber: "JOB-2026-0015", customerName: "มณีรัตน์ ศรีวิลัย", vehicle: "Toyota Yaris", licensePlate: "มศ 5566", insuranceCompany: "เมืองไทยประกันภัย", estimatedAmount: 15000, approvedAmount: null, status: "submitted", createdAt: "2026-03-05" },
-  { id: "5", claimNumber: "CLM-2026-0005", jobNumber: "JOB-2026-0016", customerName: "สุรชัย พิพัฒน์กุล", vehicle: "Nissan Navara", licensePlate: "สพ 7788", insuranceCompany: "วิริยะประกันภัย", estimatedAmount: 85000, approvedAmount: null, status: "rejected", createdAt: "2026-02-28" },
-  { id: "6", claimNumber: "CLM-2026-0006", jobNumber: "JOB-2026-0017", customerName: "ปิยะ ชัยรัตน์", vehicle: "Mitsubishi Triton", licensePlate: "ปช 9900", insuranceCompany: "กรุงเทพประกันภัย", estimatedAmount: 32000, approvedAmount: 30000, status: "paid", createdAt: "2026-02-25" },
-  { id: "7", claimNumber: "CLM-2026-0007", jobNumber: "JOB-2026-0018", customerName: "จิราภา สมบูรณ์", vehicle: "Mazda 2", licensePlate: "จส 1234", insuranceCompany: "ทิพยประกันภัย", estimatedAmount: 18500, approvedAmount: 17000, status: "approved", createdAt: "2026-03-02" },
-  { id: "8", claimNumber: "CLM-2026-0008", jobNumber: "JOB-2026-0019", customerName: "ณัฐพงษ์ เรืองศรี", vehicle: "Ford Everest", licensePlate: "ณร 5678", insuranceCompany: "เมืองไทยประกันภัย", estimatedAmount: 67000, approvedAmount: null, status: "pending_approval", createdAt: "2026-03-04" },
-]
+export default async function InsurancePage() {
+  const supabase = await createServerClient()
 
-const statusConfig: Record<InsuranceClaimStatus, { label: string; className: string }> = {
-  submitted: { label: "ยื่นแล้ว", className: "bg-warning/10 text-warning border-warning/20" },
-  pending_approval: { label: "รออนุมัติ", className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
-  approved: { label: "อนุมัติแล้ว", className: "bg-info/10 text-info border-info/20" },
-  paid: { label: "เบิกเงินแล้ว", className: "bg-success/10 text-success border-success/20" },
-  rejected: { label: "ปฏิเสธ", className: "bg-error/10 text-error border-error/20" },
-}
+  const { data: user } = await supabase.auth.getUser()
+  if (!user.user) return null
 
-const summaryCards = [
-  {
-    label: "เคลมทั้งหมด",
-    value: mockClaims.length,
-    amount: mockClaims.reduce((s, c) => s + c.estimatedAmount, 0),
-    icon: Shield,
-    color: "text-primary",
-  },
-  {
-    label: "รออนุมัติ",
-    value: mockClaims.filter((c) => c.status === "pending_approval" || c.status === "submitted").length,
-    amount: mockClaims.filter((c) => c.status === "pending_approval" || c.status === "submitted").reduce((s, c) => s + c.estimatedAmount, 0),
-    icon: Clock,
-    color: "text-warning",
-  },
-  {
-    label: "อนุมัติแล้ว",
-    value: mockClaims.filter((c) => c.status === "approved").length,
-    amount: mockClaims.filter((c) => c.status === "approved").reduce((s, c) => s + (c.approvedAmount || 0), 0),
-    icon: FileCheck,
-    color: "text-info",
-  },
-  {
-    label: "เบิกเงินแล้ว",
-    value: mockClaims.filter((c) => c.status === "paid").length,
-    amount: mockClaims.filter((c) => c.status === "paid").reduce((s, c) => s + (c.approvedAmount || 0), 0),
-    icon: CheckCircle2,
-    color: "text-success",
-  },
-]
+  const { data: profile } = await supabase
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user.user.id)
+    .single()
 
-export default function InsurancePage() {
-  const [searchQuery, setSearchQuery] = useState("")
+  if (!profile?.tenant_id) return null
 
-  const filteredClaims = mockClaims.filter(
-    (c) =>
-      !searchQuery ||
-      c.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.licensePlate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const { data: claims } = await supabase
+    .from("insurance_claims")
+    .select("*, jobs(job_number), vehicles(license_plate, brand, model)")
+    .eq("tenant_id", profile.tenant_id)
+    .order("created_at", { ascending: false })
+
+  const items = claims || []
+
+  const claimStatusConfig: Record<string, { label: string; color: string }> = {
+    pending: { label: "รอดำเนินการ", color: "bg-warning/10 text-warning" },
+    submitted: { label: "ยื่นแล้ว", color: "bg-blue-100 text-blue-700" },
+    approved: { label: "อนุมัติ", color: "bg-success/10 text-success" },
+    rejected: { label: "ปฏิเสธ", color: "bg-error/10 text-error" },
+    paid: { label: "จ่ายแล้ว", color: "bg-primary/10 text-primary" },
+  }
 
   return (
-    <div className="flex flex-col">
+    <div className="space-y-6">
       <PageHeader
-        title="เคลมประกัน"
+        title="ประกันภัย"
         action={
-          <Button>
-            <Plus className="h-4 w-4" />
-            สร้างเคลมใหม่
-          </Button>
+          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4" /> เพิ่มเคลมประกัน
+          </button>
         }
       />
 
-      <div className="p-6 space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {summaryCards.map((card) => (
-            <Card key={card.label} className="rounded-xl border border-border bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{card.label}</p>
-                    <p className="mt-1 text-2xl font-bold">{card.value}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatCurrency(card.amount)}
-                    </p>
-                  </div>
-                  <div className={cn("rounded-lg bg-muted p-2.5", card.color)}>
-                    <card.icon className="h-5 w-5" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Summary */}
+      <div className="grid grid-cols-2 gap-4 px-6 max-w-lg">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <Shield className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xs text-muted-foreground">เคลมทั้งหมด</p>
+              <p className="text-2xl font-bold">{items.length}</p>
+            </div>
+          </div>
         </div>
-
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="ค้นหาเลขเคลม, ลูกค้า, ทะเบียน, บริษัทประกัน..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <div>
+              <p className="text-xs text-muted-foreground">รอดำเนินการ</p>
+              <p className="text-2xl font-bold">{items.filter((c: Record<string, unknown>) => c.status === "pending").length}</p>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Table */}
+      {/* Table */}
+      <div className="px-6">
         <div className="rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>เลขที่เคลม</TableHead>
-                <TableHead>Job#</TableHead>
-                <TableHead>ลูกค้า</TableHead>
-                <TableHead>รถ</TableHead>
-                <TableHead>บริษัทประกัน</TableHead>
-                <TableHead className="text-right">ยอดประเมิน</TableHead>
-                <TableHead className="text-right">ยอดอนุมัติ</TableHead>
-                <TableHead>สถานะ</TableHead>
-                <TableHead>วันที่</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredClaims.map((claim) => (
-                <TableRow key={claim.id} className="cursor-pointer">
-                  <TableCell className="font-medium text-primary">
-                    <div className="flex items-center gap-1.5">
-                      <Shield className="h-4 w-4" />
-                      {claim.claimNumber}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {claim.jobNumber}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="max-w-[120px] truncate">{claim.customerName}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="text-xs text-muted-foreground">{claim.licensePlate}</div>
-                      <div className="text-sm">{claim.vehicle}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{claim.insuranceCompany}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(claim.estimatedAmount)}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {claim.approvedAmount
-                      ? formatCurrency(claim.approvedAmount)
-                      : <span className="text-muted-foreground">-</span>
-                    }
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                        statusConfig[claim.status].className
-                      )}
-                    >
-                      {statusConfig[claim.status].label}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {formatDateShort(claim.createdAt)}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredClaims.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    ไม่พบข้อมูล
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขเคลม</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">บริษัทประกัน</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขกรมธรรม์</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">รถ</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Job</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">จำนวนเงิน</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">สถานะ</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">วันที่</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((claim: Record<string, unknown>) => {
+                  const vehicle = claim.vehicles as Record<string, unknown> | null
+                  const job = claim.jobs as Record<string, unknown> | null
+                  const status = claim.status as string
+                  return (
+                    <tr key={claim.id as string} className="border-b border-border last:border-0 hover:bg-muted/30">
+                      <td className="px-4 py-3 text-sm font-medium text-primary">{claim.claim_number as string}</td>
+                      <td className="px-4 py-3 text-sm">{claim.insurance_company as string || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{claim.policy_number as string || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {vehicle ? `${vehicle.license_plate} ${vehicle.brand}` : "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{job?.job_number as string || "-"}</td>
+                      <td className="px-4 py-3 text-right text-sm font-medium">{formatCurrency(Number(claim.claim_amount) || 0)}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={cn(
+                          "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                          claimStatusConfig[status]?.color || "bg-muted text-muted-foreground"
+                        )}>
+                          {claimStatusConfig[status]?.label || status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(claim.created_at as string)}</td>
+                    </tr>
+                  )
+                })}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      ยังไม่มีข้อมูลเคลมประกัน
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

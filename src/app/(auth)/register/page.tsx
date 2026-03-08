@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   User,
   Mail,
@@ -20,6 +21,7 @@ import {
   Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const provinces = [
   "กรุงเทพมหานคร",
@@ -121,11 +123,13 @@ const steps = [
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"pro" | "premium">("pro");
+  const [error, setError] = useState("");
 
   // Step 1: User info
   const [fullName, setFullName] = useState("");
@@ -149,20 +153,97 @@ export default function RegisterPage() {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    console.log("Register submitted:", {
-      fullName,
-      email,
-      phone,
-      password,
-      garageName,
-      province,
-      bayCount,
-      technicianCount,
-      selectedJobs,
-      selectedPlan,
-    });
-    await new Promise((r) => setTimeout(r, 2000));
-    setIsLoading(false);
+    setError("");
+
+    if (password !== confirmPassword) {
+      setError("รหัสผ่านไม่ตรงกัน");
+      setIsLoading(false);
+      setStep(1);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+      setIsLoading(false);
+      setStep(1);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+
+      // Create slug from garage name
+      const slug = garageName
+        .toLowerCase()
+        .replace(/[^a-z0-9ก-๙]+/g, "-")
+        .replace(/^-|-$/g, "")
+        || `shop-${Date.now()}`;
+
+      // Determine plan name
+      const planName = selectedPlan === "premium" ? "premium" : "professional";
+
+      // First create the tenant
+      const { data: tenant, error: tenantError } = await supabase
+        .from("tenants")
+        .insert({
+          name: garageName,
+          slug,
+          phone,
+          address: province,
+          plan: planName,
+          subscription_status: "trial" as const,
+          trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          settings: {
+            bay_count: bayCount ? parseInt(bayCount) : null,
+            technician_count: technicianCount ? parseInt(technicianCount) : null,
+            job_types: selectedJobs,
+          },
+        })
+        .select()
+        .single();
+
+      if (tenantError) {
+        if (tenantError.message.includes("duplicate")) {
+          setError("ชื่ออู่นี้ถูกใช้งานแล้ว กรุณาเปลี่ยนชื่อ");
+        } else {
+          setError("ไม่สามารถสร้างร้านได้: " + tenantError.message);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Sign up the user
+      const { error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            tenant_id: tenant.id,
+            role: "owner",
+          },
+        },
+      });
+
+      if (authError) {
+        // Rollback: delete tenant
+        await supabase.from("tenants").delete().eq("id", tenant.id);
+        if (authError.message.includes("already registered")) {
+          setError("อีเมลนี้ถูกใช้งานแล้ว");
+        } else {
+          setError(authError.message);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -171,6 +252,12 @@ export default function RegisterPage() {
       <p className="mb-6 text-sm text-muted-foreground">
         เริ่มต้นใช้งาน KPServicePro ฟรี 30 วัน
       </p>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Step Indicator */}
       <div className="mb-8 flex items-center justify-center gap-2">

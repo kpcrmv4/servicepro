@@ -1,176 +1,173 @@
-"use client"
-
-import {
-  DollarSign,
-  Wrench,
-  Package,
-  Users,
-  BarChart3,
-  FileText,
-  TrendingUp,
-  Car,
-  Clock,
-  Star,
-} from "lucide-react"
+import { DollarSign, Wrench, Users, Car, TrendingUp, TrendingDown } from "lucide-react"
 import { cn, formatCurrency } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
+import { getDashboardStats } from "@/lib/actions/dashboard"
+import { getInvoices, getExpenses } from "@/lib/actions/finance"
 
-const reportCategories = [
-  {
-    title: "รายรับ-รายจ่าย",
-    description: "สรุปรายรับรายจ่ายประจำเดือน/ไตรมาส/ปี พร้อมกราฟเปรียบเทียบ",
-    icon: DollarSign,
-    color: "text-success",
-    bg: "bg-success/10",
-  },
-  {
-    title: "ประสิทธิภาพช่าง",
-    description: "วิเคราะห์ผลงานช่างแต่ละคน ชั่วโมงทำงาน และคะแนน QC",
-    icon: Wrench,
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
-  {
-    title: "ยอดขายอะไหล่",
-    description: "สรุปยอดขายอะไหล่ สินค้าขายดี และสต็อกที่ต้องสั่งเพิ่ม",
-    icon: Package,
-    color: "text-info",
-    bg: "bg-info/10",
-  },
-  {
-    title: "ลูกค้า & CRM",
-    description: "วิเคราะห์ฐานลูกค้า อัตราการกลับมาใช้บริการ และความพึงพอใจ",
-    icon: Users,
-    color: "text-warning",
-    bg: "bg-warning/10",
-  },
-  {
-    title: "สถิติงานซ่อม",
-    description: "จำนวนงาน ประเภทงาน เวลาเฉลี่ย และอัตราการแก้ไขงาน",
-    icon: BarChart3,
-    color: "text-purple-500",
-    bg: "bg-purple-100",
-  },
-  {
-    title: "รายงานภาษี",
-    description: "รายงานภาษีซื้อ-ขาย สรุป VAT และเตรียมข้อมูลยื่นภาษี",
-    icon: FileText,
-    color: "text-error",
-    bg: "bg-error/10",
-  },
-]
+export default async function ReportsPage() {
+  const [statsResult, invoices, expenses] = await Promise.all([
+    getDashboardStats(),
+    getInvoices(),
+    getExpenses(),
+  ])
+  const stats = statsResult || { activeJobs: 0, completedToday: 0, totalJobs: 0, monthlyRevenue: 0, customersCount: 0, lowStockCount: 0, pendingInvoicesCount: 0, pendingAmount: 0, jobsByStatus: {} }
 
-const quickStats = [
-  {
-    label: "รายรับสัปดาห์นี้",
-    value: 128500,
-    change: "+15.2%",
-    isPositive: true,
-    icon: TrendingUp,
-    bars: [40, 65, 55, 80, 72, 90, 85],
-  },
-  {
-    label: "งานซ่อมเสร็จ",
-    value: 18,
-    unit: "งาน",
-    change: "+3 จากสัปดาห์ก่อน",
-    isPositive: true,
-    icon: Car,
-    bars: [50, 70, 60, 45, 80, 65, 75],
-  },
-  {
-    label: "เวลาซ่อมเฉลี่ย",
-    value: 3.2,
-    unit: "ชม.",
-    change: "-0.5 ชม.",
-    isPositive: true,
-    icon: Clock,
-    bars: [80, 70, 65, 60, 55, 50, 45],
-  },
-  {
-    label: "คะแนนรีวิวเฉลี่ย",
-    value: 4.7,
-    unit: "/5",
-    change: "+0.2",
-    isPositive: true,
-    icon: Star,
-    bars: [75, 80, 78, 85, 88, 90, 92],
-  },
-]
+  const totalRevenue = invoices
+    .filter((inv: Record<string, unknown>) => inv.status === "paid")
+    .reduce((sum: number, inv: Record<string, unknown>) => sum + Number(inv.total_amount || 0), 0)
 
-export default function ReportsPage() {
+  const totalExpenses = expenses
+    .reduce((sum: number, exp: Record<string, unknown>) => sum + Number(exp.amount || 0), 0)
+
+  const profit = totalRevenue - totalExpenses
+
+  // Job status breakdown
+  const jobStatusCounts: Record<string, number> = {}
+  const statusLabels: Record<string, string> = {
+    pending: "รอรับรถ",
+    checked_in: "รับรถแล้ว",
+    diagnosing: "ตรวจสอบ",
+    in_progress: "กำลังซ่อม",
+    waiting_parts: "รออะไหล่",
+    completed: "เสร็จแล้ว",
+    delivered: "ส่งมอบแล้ว",
+    cancelled: "ยกเลิก",
+  }
+
+  // Invoice status breakdown
+  const invoiceStatusCounts: Record<string, number> = {}
+  const invoiceStatusLabels: Record<string, string> = {
+    paid: "ชำระแล้ว",
+    pending: "รอชำระ",
+    overdue: "เกินกำหนด",
+    cancelled: "ยกเลิก",
+  }
+
+  for (const inv of invoices) {
+    const s = inv.status as string
+    invoiceStatusCounts[s] = (invoiceStatusCounts[s] || 0) + 1
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="รายงาน" />
 
-      {/* Report Categories Grid */}
-      <div className="grid gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3">
-        {reportCategories.map((report) => {
-          const Icon = report.icon
-          return (
-            <div
-              key={report.title}
-              className="group rounded-xl border border-border bg-card p-6 transition-shadow hover:shadow-md"
-            >
-              <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", report.bg)}>
-                <Icon className={cn("h-6 w-6", report.color)} />
-              </div>
-              <h3 className="mt-4 text-base font-semibold text-card-foreground">{report.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{report.description}</p>
-              <button className="mt-4 rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 group-hover:bg-primary group-hover:text-primary-foreground">
-                ดูรายงาน
-              </button>
+      {/* Financial Summary */}
+      <div className="grid grid-cols-1 gap-4 px-6 md:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">รายรับรวม</p>
+              <p className="mt-1 text-2xl font-bold text-success">{formatCurrency(totalRevenue)}</p>
             </div>
-          )
-        })}
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10">
+              <TrendingUp className="h-6 w-6 text-success" />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">รายจ่ายรวม</p>
+              <p className="mt-1 text-2xl font-bold text-error">{formatCurrency(totalExpenses)}</p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-error/10">
+              <TrendingDown className="h-6 w-6 text-error" />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">กำไร</p>
+              <p className={cn("mt-1 text-2xl font-bold", profit >= 0 ? "text-primary" : "text-error")}>
+                {formatCurrency(profit)}
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <DollarSign className="h-6 w-6 text-primary" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="px-6">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">สถิติด่วน</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {quickStats.map((stat) => {
-            const Icon = stat.icon
-            return (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-border bg-card p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-card-foreground">
-                    {typeof stat.value === "number" && stat.value > 1000
-                      ? formatCurrency(stat.value)
-                      : stat.value}
-                  </span>
-                  {stat.unit && <span className="text-sm text-muted-foreground">{stat.unit}</span>}
-                </div>
-                <p className={cn(
-                  "mt-1 text-xs",
-                  stat.isPositive ? "text-success" : "text-error"
-                )}>
-                  {stat.change}
-                </p>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <Wrench className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xs text-muted-foreground">งานทั้งหมด</p>
+              <p className="text-xl font-bold">{stats.totalJobs}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <Wrench className="h-5 w-5 text-warning" />
+            <div>
+              <p className="text-xs text-muted-foreground">งานที่เปิดอยู่</p>
+              <p className="text-xl font-bold">{stats.activeJobs}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-success" />
+            <div>
+              <p className="text-xs text-muted-foreground">ลูกค้า</p>
+              <p className="text-xl font-bold">{stats.customersCount}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <Car className="h-5 w-5 text-blue-500" />
+            <div>
+              <p className="text-xs text-muted-foreground">รถ</p>
+              <p className="text-xl font-bold">{stats.totalJobs}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                {/* Mini bar chart */}
-                <div className="mt-3 flex items-end gap-1">
-                  {stat.bars.map((height, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "flex-1 rounded-t-sm",
-                        i === stat.bars.length - 1 ? "bg-primary" : "bg-primary/30"
-                      )}
-                      style={{ height: `${height * 0.35}px` }}
-                    />
-                  ))}
-                </div>
+      {/* Invoice Status Breakdown */}
+      <div className="px-6">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-lg font-semibold mb-4">สถานะใบแจ้งหนี้</h3>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {Object.entries(invoiceStatusLabels).map(([key, label]) => (
+              <div key={key} className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="mt-1 text-xl font-bold">{invoiceStatusCounts[key] || 0}</p>
               </div>
-            )
-          })}
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Expense Breakdown */}
+      <div className="px-6">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-lg font-semibold mb-4">ค่าใช้จ่ายตามหมวดหมู่</h3>
+          {expenses.length > 0 ? (
+            <div className="space-y-2">
+              {Object.entries(
+                expenses.reduce((acc: Record<string, number>, exp: Record<string, unknown>) => {
+                  const cat = (exp.category as string) || "อื่นๆ"
+                  acc[cat] = (acc[cat] || 0) + Number(exp.amount || 0)
+                  return acc
+                }, {} as Record<string, number>)
+              ).map(([category, amount]) => (
+                <div key={category} className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
+                  <span className="text-sm font-medium">{category}</span>
+                  <span className="text-sm font-bold text-error">{formatCurrency(amount as number)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">ยังไม่มีข้อมูลค่าใช้จ่าย</p>
+          )}
         </div>
       </div>
     </div>

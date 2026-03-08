@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ENUMS
 -- ============================================================
 
-CREATE TYPE user_role AS ENUM ('owner', 'admin', 'manager', 'technician', 'receptionist', 'viewer');
+CREATE TYPE user_role AS ENUM ('super_admin', 'owner', 'admin', 'manager', 'technician', 'receptionist', 'viewer');
 CREATE TYPE job_status AS ENUM ('pending', 'in_progress', 'quality_check', 'waiting_pickup', 'completed', 'cancelled');
 CREATE TYPE job_priority AS ENUM ('urgent', 'normal', 'low');
 CREATE TYPE job_type AS ENUM ('repair', 'maintenance', 'inspection', 'insurance', 'warranty', 'other');
@@ -46,13 +46,14 @@ CREATE TABLE tenants (
   settings JSONB DEFAULT '{}',
   plan TEXT NOT NULL DEFAULT 'free',
   subscription_status subscription_status NOT NULL DEFAULT 'trial',
+  trial_ends_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT NOT NULL,
   phone TEXT,
@@ -65,6 +66,7 @@ CREATE TABLE users (
 
 CREATE INDEX idx_users_tenant_id ON users(tenant_id);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
 
 -- ============================================================
 -- CUSTOMER & VEHICLE TABLES
@@ -215,7 +217,6 @@ CREATE UNIQUE INDEX idx_quotations_number ON quotations(tenant_id, quotation_num
 CREATE INDEX idx_quotations_tenant_id ON quotations(tenant_id);
 CREATE INDEX idx_quotations_customer_id ON quotations(customer_id);
 
--- Add foreign key from jobs to quotations now that both tables exist
 ALTER TABLE jobs ADD CONSTRAINT fk_jobs_quotation_id FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE SET NULL;
 
 CREATE TABLE invoices (
@@ -317,7 +318,6 @@ CREATE INDEX idx_parts_category_id ON parts(category_id);
 CREATE INDEX idx_parts_name ON parts(tenant_id, name);
 CREATE INDEX idx_parts_barcode ON parts(tenant_id, barcode);
 
--- Add foreign key from job_items to parts now that parts table exists
 ALTER TABLE job_items ADD CONSTRAINT fk_job_items_part_id FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE SET NULL;
 
 CREATE TABLE suppliers (
@@ -931,7 +931,6 @@ CREATE TABLE coupons (
 CREATE UNIQUE INDEX idx_coupons_code ON coupons(tenant_id, code);
 CREATE INDEX idx_coupons_tenant_id ON coupons(tenant_id);
 
--- Add foreign key from orders to coupons
 ALTER TABLE orders ADD CONSTRAINT fk_orders_coupon_id FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL;
 
 CREATE TABLE wishlists (
@@ -966,7 +965,7 @@ CREATE INDEX idx_shipping_rates_tenant_id ON shipping_rates(tenant_id);
 
 CREATE TABLE audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   action TEXT NOT NULL,
   table_name TEXT NOT NULL,
@@ -1069,8 +1068,14 @@ ALTER TABLE notification_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscription_history ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- RLS POLICIES - Tenant Isolation
+-- RLS POLICIES - Tenant Isolation + Super Admin Bypass
 -- ============================================================
+
+-- Helper function to check if current user is super_admin
+CREATE OR REPLACE FUNCTION is_super_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'super_admin')
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- Helper function to get current user's tenant_id
 CREATE OR REPLACE FUNCTION get_user_tenant_id()
@@ -1078,29 +1083,43 @@ RETURNS UUID AS $$
   SELECT tenant_id FROM users WHERE id = auth.uid()
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
--- Tenants: users can only see their own tenant
+-- Tenants: users can see their own tenant, super_admin can see all
 CREATE POLICY "Users can view own tenant"
   ON tenants FOR SELECT
-  USING (id = get_user_tenant_id());
+  USING (id = get_user_tenant_id() OR is_super_admin());
 
 CREATE POLICY "Owners can update own tenant"
   ON tenants FOR UPDATE
-  USING (id = get_user_tenant_id())
-  WITH CHECK (id = get_user_tenant_id());
+  USING (id = get_user_tenant_id() OR is_super_admin())
+  WITH CHECK (id = get_user_tenant_id() OR is_super_admin());
 
--- Users: tenant isolation
+CREATE POLICY "Super admin can insert tenants"
+  ON tenants FOR INSERT
+  WITH CHECK (is_super_admin());
+
+CREATE POLICY "Super admin can delete tenants"
+  ON tenants FOR DELETE
+  USING (is_super_admin());
+
+-- Users: tenant isolation + super_admin bypass
 CREATE POLICY "Users can view tenant members"
   ON users FOR SELECT
-  USING (tenant_id = get_user_tenant_id());
+  USING (tenant_id = get_user_tenant_id() OR is_super_admin() OR id = auth.uid());
 
 CREATE POLICY "Users can update own profile"
   ON users FOR UPDATE
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
+  USING (id = auth.uid() OR is_super_admin())
+  WITH CHECK (id = auth.uid() OR is_super_admin());
 
--- Generic tenant isolation policies for all tenant-scoped tables
--- Using a DO block to create policies for tables with tenant_id column
+CREATE POLICY "Super admin or owner can insert users"
+  ON users FOR INSERT
+  WITH CHECK (is_super_admin() OR tenant_id = get_user_tenant_id());
 
+CREATE POLICY "Super admin can delete users"
+  ON users FOR DELETE
+  USING (is_super_admin());
+
+-- Generic tenant isolation policies with super_admin bypass
 DO $$
 DECLARE
   tbl TEXT;
@@ -1119,120 +1138,129 @@ BEGIN
       'commission_records', 'tenant_domains', 'landing_pages',
       'shop_settings', 'product_categories', 'products', 'product_reviews',
       'orders', 'coupons', 'wishlists', 'shipping_rates',
-      'audit_logs', 'notification_settings', 'subscription_history'
+      'notification_settings', 'subscription_history'
     ])
   LOOP
     EXECUTE format(
-      'CREATE POLICY "Tenant isolation select on %I" ON %I FOR SELECT USING (tenant_id = get_user_tenant_id())',
+      'CREATE POLICY "Tenant isolation select on %I" ON %I FOR SELECT USING (tenant_id = get_user_tenant_id() OR is_super_admin())',
       tbl, tbl
     );
     EXECUTE format(
-      'CREATE POLICY "Tenant isolation insert on %I" ON %I FOR INSERT WITH CHECK (tenant_id = get_user_tenant_id())',
+      'CREATE POLICY "Tenant isolation insert on %I" ON %I FOR INSERT WITH CHECK (tenant_id = get_user_tenant_id() OR is_super_admin())',
       tbl, tbl
     );
     EXECUTE format(
-      'CREATE POLICY "Tenant isolation update on %I" ON %I FOR UPDATE USING (tenant_id = get_user_tenant_id()) WITH CHECK (tenant_id = get_user_tenant_id())',
+      'CREATE POLICY "Tenant isolation update on %I" ON %I FOR UPDATE USING (tenant_id = get_user_tenant_id() OR is_super_admin()) WITH CHECK (tenant_id = get_user_tenant_id() OR is_super_admin())',
       tbl, tbl
     );
     EXECUTE format(
-      'CREATE POLICY "Tenant isolation delete on %I" ON %I FOR DELETE USING (tenant_id = get_user_tenant_id())',
+      'CREATE POLICY "Tenant isolation delete on %I" ON %I FOR DELETE USING (tenant_id = get_user_tenant_id() OR is_super_admin())',
       tbl, tbl
     );
   END LOOP;
 END $$;
 
+-- Audit logs: super_admin can see all, tenant users see own
+CREATE POLICY "Tenant isolation select on audit_logs"
+  ON audit_logs FOR SELECT
+  USING (tenant_id = get_user_tenant_id() OR is_super_admin());
+
+CREATE POLICY "Tenant isolation insert on audit_logs"
+  ON audit_logs FOR INSERT
+  WITH CHECK (tenant_id = get_user_tenant_id() OR is_super_admin());
+
 -- Policies for tables without tenant_id (joined through parent)
 CREATE POLICY "Tenant isolation select on job_items"
   ON job_items FOR SELECT
-  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND jobs.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND (jobs.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on job_items"
   ON job_items FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND jobs.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND (jobs.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation update on job_items"
   ON job_items FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND jobs.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND (jobs.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation delete on job_items"
   ON job_items FOR DELETE
-  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND jobs.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_items.job_id AND (jobs.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation select on job_timeline"
   ON job_timeline FOR SELECT
-  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_timeline.job_id AND jobs.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_timeline.job_id AND (jobs.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on job_timeline"
   ON job_timeline FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_timeline.job_id AND jobs.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM jobs WHERE jobs.id = job_timeline.job_id AND (jobs.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation select on inspection_items"
   ON inspection_items FOR SELECT
-  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND vehicle_inspections.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND (vehicle_inspections.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on inspection_items"
   ON inspection_items FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND vehicle_inspections.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND (vehicle_inspections.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation update on inspection_items"
   ON inspection_items FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND vehicle_inspections.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND (vehicle_inspections.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation delete on inspection_items"
   ON inspection_items FOR DELETE
-  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND vehicle_inspections.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND (vehicle_inspections.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation select on landing_sections"
   ON landing_sections FOR SELECT
-  USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND landing_pages.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND (landing_pages.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on landing_sections"
   ON landing_sections FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND landing_pages.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND (landing_pages.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation update on landing_sections"
   ON landing_sections FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND landing_pages.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND (landing_pages.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation delete on landing_sections"
   ON landing_sections FOR DELETE
-  USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND landing_pages.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND (landing_pages.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation select on product_variants"
   ON product_variants FOR SELECT
-  USING (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND products.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND (products.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on product_variants"
   ON product_variants FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND products.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND (products.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation update on product_variants"
   ON product_variants FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND products.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND (products.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation delete on product_variants"
   ON product_variants FOR DELETE
-  USING (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND products.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM products WHERE products.id = product_variants.product_id AND (products.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation select on order_items"
   ON order_items FOR SELECT
-  USING (EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND (orders.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on order_items"
   ON order_items FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND (orders.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation select on customer_sessions"
   ON customer_sessions FOR SELECT
-  USING (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND customer_accounts.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND (customer_accounts.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation insert on customer_sessions"
   ON customer_sessions FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND customer_accounts.tenant_id = get_user_tenant_id()));
+  WITH CHECK (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND (customer_accounts.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 CREATE POLICY "Tenant isolation delete on customer_sessions"
   ON customer_sessions FOR DELETE
-  USING (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND customer_accounts.tenant_id = get_user_tenant_id()));
+  USING (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND (customer_accounts.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
 -- ============================================================
 -- UPDATED_AT TRIGGER FUNCTION
@@ -1246,7 +1274,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply updated_at triggers to tables with updated_at column
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -1255,3 +1282,26 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON landing_pages FOR EACH ROW EXECUT
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON shop_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================
+-- FUNCTION: Auto-create user profile after signup
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, full_name, role, tenant_id)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'viewer'),
+    (NEW.raw_user_meta_data->>'tenant_id')::UUID
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();

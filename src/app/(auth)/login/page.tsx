@@ -2,23 +2,69 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
-    console.log("Login attempt:", { email, password, rememberMe });
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
+
+    try {
+      const supabase = createClient();
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        if (authError.message.includes("Invalid login credentials")) {
+          setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        } else if (authError.message.includes("Email not confirmed")) {
+          setError("กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ");
+        } else {
+          setError(authError.message);
+        }
+        return;
+      }
+
+      // Get user profile to determine redirect
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role, tenant_id, is_active")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile && !profile.is_active) {
+        await supabase.auth.signOut();
+        setError("บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+        return;
+      }
+
+      if (profile?.role === "super_admin") {
+        router.push("/super-admin");
+      } else {
+        router.push("/dashboard");
+      }
+
+      router.refresh();
+    } catch {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,6 +73,12 @@ export default function LoginPage() {
       <p className="mb-6 text-sm text-muted-foreground">
         เข้าสู่ระบบเพื่อจัดการอู่ซ่อมรถของคุณ
       </p>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email */}
