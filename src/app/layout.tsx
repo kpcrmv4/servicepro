@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
+import { Noto_Sans_Thai } from "next/font/google"
 import { Providers } from "@/components/providers"
 import "./globals.css"
 
@@ -16,6 +17,13 @@ const sans = localFont({
   preload: true,
 })
 
+const notoSansThai = Noto_Sans_Thai({
+  subsets: ["thai"],
+  variable: "--font-thai",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
+})
+
 export const metadata: Metadata = {
   title: "KPServicePro - ระบบจัดการอู่ซ่อมรถออนไลน์",
   description:
@@ -29,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${sans.variable} antialiased`}>
+      <body className={`${sans.variable} ${notoSansThai.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

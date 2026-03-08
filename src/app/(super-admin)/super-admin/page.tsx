@@ -45,11 +45,11 @@ export default async function SuperAdminDashboard() {
 
       {/* Recent Tenants */}
       <div className="rounded-xl border border-border bg-card">
-        <div className="border-b border-border px-6 py-4">
+        <div className="border-b border-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold">ร้านค้าล่าสุด</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[640px]">
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ชื่อร้าน</th>

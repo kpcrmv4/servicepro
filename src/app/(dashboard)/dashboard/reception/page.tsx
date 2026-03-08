@@ -48,7 +48,7 @@ export default async function ReceptionPage({
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-4 px-6 max-w-lg">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 max-w-lg">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">งานวันนี้</p>
           <p className="mt-1 text-2xl font-bold text-primary">{todayJobs.length}</p>
@@ -60,7 +60,7 @@ export default async function ReceptionPage({
       </div>
 
       {/* Search */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <form className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input type="text" name="search" placeholder="ค้นหาเลข Job, ทะเบียน, ชื่อลูกค้า..."
@@ -70,7 +70,7 @@ export default async function ReceptionPage({
       </div>
 
       {/* Active Jobs */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {activeJobs.map((job: Record<string, unknown>) => {
             const customer = job.customers as Record<string, unknown> | null

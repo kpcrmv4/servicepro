@@ -51,7 +51,7 @@ export default async function InsurancePage() {
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-4 px-6 max-w-lg">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 max-w-lg">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-primary" />
@@ -73,10 +73,10 @@ export default async function InsurancePage() {
       </div>
 
       {/* Table */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="rounded-xl border border-border bg-card">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขเคลม</th>

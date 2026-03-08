@@ -42,14 +42,14 @@ export default async function QueuePage() {
     <div className="space-y-6">
       <PageHeader title="คิวงานซ่อม" />
 
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <p className="text-sm text-muted-foreground">
           งานที่เปิดอยู่ทั้งหมด: <span className="font-bold text-foreground">{activeJobs.length}</span> งาน
         </p>
       </div>
 
       {/* Kanban Board */}
-      <div className="px-6 overflow-x-auto">
+      <div className="px-4 sm:px-6 overflow-x-auto">
         <div className="flex gap-4 min-w-[900px]">
           {columns.map((col) => {
             const colJobs = grouped[col.key] || []

@@ -36,7 +36,7 @@ export default async function JobDetailPage({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 pt-2">
+      <div className="flex items-center gap-4 px-4 pt-2 sm:px-6">
         <Link href="/dashboard/jobs" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted">
           <ArrowLeft className="h-4 w-4" />
         </Link>
@@ -56,7 +56,7 @@ export default async function JobDetailPage({
         </div>
       </div>
 
-      <div className="grid gap-6 px-6 lg:grid-cols-3">
+      <div className="grid gap-4 px-4 sm:gap-6 sm:px-6 lg:grid-cols-3">
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
           {/* Description */}
@@ -75,7 +75,7 @@ export default async function JobDetailPage({
               <Package className="h-4 w-4 text-primary" /> อะไหล่ที่ใช้
             </h2>
             {jobParts.length > 0 ? (
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-border">
                     <th className="pb-2 text-left text-xs font-medium text-muted-foreground">รายการ</th>

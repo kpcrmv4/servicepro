@@ -42,9 +42,9 @@ export default async function SuperAdminLayout({
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="flex w-64 flex-col border-r border-border bg-card">
-        <div className="flex items-center gap-3 border-b border-border px-6 py-4">
+      {/* Sidebar - hidden on mobile, shown on lg */}
+      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card">
+        <div className="flex items-center gap-3 border-b border-border px-4 py-4 sm:px-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 text-white">
             <Shield className="h-5 w-5" />
           </div>
@@ -91,7 +91,29 @@ export default async function SuperAdminLayout({
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
+        {/* Mobile Nav */}
+        <div className="flex items-center gap-3 border-b border-border px-4 py-3 lg:hidden">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white">
+            <Shield className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-bold">Super Admin</span>
+        </div>
+        <div className="flex gap-2 overflow-x-auto border-b border-border px-4 py-2 lg:hidden">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+        <div className="p-4 sm:p-6">
           {children}
         </div>
       </main>

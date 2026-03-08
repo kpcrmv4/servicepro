@@ -110,7 +110,7 @@ export default async function JobsPage({
         }
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 space-y-4 sm:p-6">
         {/* Search */}
         <form className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -125,7 +125,7 @@ export default async function JobsPage({
         </form>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1">
           {tabFilters.map((tab) => (
             <Link
               key={tab.value}

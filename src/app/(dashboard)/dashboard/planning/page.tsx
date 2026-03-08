@@ -37,7 +37,7 @@ export default async function PlanningPage() {
     <div className="space-y-6">
       <PageHeader title="วางแผนงาน" />
 
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="inline-flex items-center gap-3 rounded-xl border border-border bg-card p-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
             <Calendar className="h-5 w-5 text-primary" />
@@ -50,7 +50,7 @@ export default async function PlanningPage() {
       </div>
 
       {/* Timeline */}
-      <div className="px-6 space-y-6">
+      <div className="px-4 sm:px-6 space-y-6">
         {sortedDates.map((date) => {
           const dateJobs = grouped[date]
           const isToday = date === new Date().toISOString().split("T")[0]

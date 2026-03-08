@@ -38,9 +38,9 @@ export default async function SettingsPage({
     <div className="space-y-6">
       <PageHeader title="ตั้งค่า" />
 
-      <div className="flex gap-6 px-6">
+      <div className="flex flex-col gap-4 px-4 sm:flex-row sm:gap-6 sm:px-6">
         {/* Sidebar */}
-        <div className="w-56 shrink-0 space-y-1">
+        <div className="flex gap-2 overflow-x-auto sm:w-56 sm:shrink-0 sm:flex-col sm:space-y-1 sm:gap-0">
           {sections.map((section) => {
             const Icon = section.icon
             return (
@@ -137,12 +137,12 @@ export default async function SettingsPage({
 
           {activeSection === "team" && (
             <div className="rounded-xl border border-border bg-card">
-              <div className="border-b border-border px-6 py-4">
+              <div className="border-b border-border px-4 py-4 sm:px-6">
                 <h2 className="text-lg font-semibold">สมาชิกทีม</h2>
                 <p className="text-sm text-muted-foreground">จัดการสมาชิกในร้านของคุณ</p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[640px]">
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ชื่อ</th>

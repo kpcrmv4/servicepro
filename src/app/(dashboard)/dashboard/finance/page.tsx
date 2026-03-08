@@ -76,7 +76,7 @@ export default async function FinancePage({
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 px-6 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 lg:grid-cols-4">
         {summaryCards.map((card) => {
           const Icon = card.icon
           return (
@@ -96,7 +96,7 @@ export default async function FinancePage({
       </div>
 
       {/* Tabs */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="flex gap-1 rounded-lg bg-muted p-1">
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -120,11 +120,11 @@ export default async function FinancePage({
       </div>
 
       {/* Content */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         {activeTab === "invoices" && (
           <div className="rounded-xl border border-border bg-card">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขที่</th>
@@ -177,7 +177,7 @@ export default async function FinancePage({
         {activeTab === "receipts" && (
           <div className="rounded-xl border border-border bg-card">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขที่</th>
@@ -221,7 +221,7 @@ export default async function FinancePage({
         {activeTab === "expenses" && (
           <div className="rounded-xl border border-border bg-card">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">หมวดหมู่</th>

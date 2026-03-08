@@ -50,7 +50,7 @@ export default async function CustomersPage({
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 px-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 lg:grid-cols-3">
         {summaryCards.map((card) => {
           const Icon = card.icon
           return (
@@ -70,7 +70,7 @@ export default async function CustomersPage({
       </div>
 
       {/* Search */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <form className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -84,10 +84,10 @@ export default async function CustomersPage({
       </div>
 
       {/* Table */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="rounded-xl border border-border bg-card">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ชื่อ</th>

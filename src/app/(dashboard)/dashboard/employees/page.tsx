@@ -43,7 +43,7 @@ export default async function EmployeesPage() {
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-4 px-6 max-w-lg">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 max-w-lg">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">พนักงานทั้งหมด</p>
           <p className="mt-1 text-2xl font-bold">{totalMembers}</p>
@@ -55,7 +55,7 @@ export default async function EmployeesPage() {
       </div>
 
       {/* Employee Grid */}
-      <div className="grid gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-3 px-4 sm:gap-4 sm:px-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {members.map((emp: Record<string, unknown>) => (
           <div
             key={emp.id as string}

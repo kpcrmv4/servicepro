@@ -45,7 +45,7 @@ export default async function QuotationsPage() {
         }
       />
 
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="inline-flex items-center gap-3 rounded-xl border border-border bg-card p-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
             <FileText className="h-5 w-5 text-primary" />
@@ -57,10 +57,10 @@ export default async function QuotationsPage() {
         </div>
       </div>
 
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="rounded-xl border border-border bg-card">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขที่</th>

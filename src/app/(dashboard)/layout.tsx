@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { BottomNav } from "@/components/layout/bottom-nav"
 import { cn } from "@/lib/utils"
 
 export default function DashboardLayout({
@@ -30,10 +31,13 @@ export default function DashboardLayout({
       >
         <Header onMenuClick={() => setMobileOpen(true)} />
 
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-4 pb-24 lg:p-6 lg:pb-6">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav />
     </div>
   )
 }

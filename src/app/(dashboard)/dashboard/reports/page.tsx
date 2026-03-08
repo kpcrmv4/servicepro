@@ -53,7 +53,7 @@ export default async function ReportsPage() {
       <PageHeader title="รายงาน" />
 
       {/* Financial Summary */}
-      <div className="grid grid-cols-1 gap-4 px-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:gap-4 sm:px-6 md:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -92,7 +92,7 @@ export default async function ReportsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 md:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <Wrench className="h-5 w-5 text-primary" />
@@ -132,7 +132,7 @@ export default async function ReportsPage() {
       </div>
 
       {/* Invoice Status Breakdown */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="text-lg font-semibold mb-4">สถานะใบแจ้งหนี้</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -147,7 +147,7 @@ export default async function ReportsPage() {
       </div>
 
       {/* Expense Breakdown */}
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="text-lg font-semibold mb-4">ค่าใช้จ่ายตามหมวดหมู่</h3>
           {expenses.length > 0 ? (
