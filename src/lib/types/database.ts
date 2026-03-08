@@ -832,3 +832,110 @@ export interface SubscriptionHistory {
   payment_reference: string | null
   created_at: string
 }
+
+// ============================================================
+// LINE OA Integration Tables
+// ============================================================
+
+export type ClockType = 'clock_in' | 'clock_out' | 'break_start' | 'break_end'
+
+export interface LineOAConfig {
+  id: string
+  tenant_id: string
+  channel_id: string
+  channel_secret: string
+  channel_access_token: string
+  welcome_message: string | null
+  auto_reply_enabled: boolean
+  notify_job_status: boolean
+  notify_job_complete: boolean
+  notify_quotation: boolean
+  notify_inspection: boolean
+  notify_reminder: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface LineFollower {
+  id: string
+  tenant_id: string
+  line_user_id: string
+  display_name: string | null
+  picture_url: string | null
+  customer_id: string | null
+  is_following: boolean
+  followed_at: string
+  unfollowed_at: string | null
+  created_at: string
+}
+
+export interface LineMessageLog {
+  id: string
+  tenant_id: string
+  line_user_id: string
+  direction: 'incoming' | 'outgoing'
+  message_type: string
+  content: Record<string, unknown> | null
+  reference_type: string | null
+  reference_id: string | null
+  created_at: string
+}
+
+// ============================================================
+// Service Packages Tables
+// ============================================================
+
+export interface ServicePackage {
+  id: string
+  tenant_id: string
+  name: string
+  description: string | null
+  category: string | null
+  base_price: number
+  estimated_duration_minutes: number | null
+  is_popular: boolean
+  is_active: boolean
+  compatible_brands: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ServicePackageItem {
+  id: string
+  package_id: string
+  type: JobItemType
+  part_id: string | null
+  description: string
+  quantity: number
+  unit_price: number
+  created_at: string
+}
+
+// ============================================================
+// Technician Time Clock Tables
+// ============================================================
+
+export interface TimeClockEntry {
+  id: string
+  tenant_id: string
+  user_id: string
+  clock_type: ClockType
+  timestamp: string
+  notes: string | null
+  created_at: string
+}
+
+export interface TimeClockSummary {
+  id: string
+  tenant_id: string
+  user_id: string
+  date: string
+  total_hours: number
+  productive_hours: number
+  break_hours: number
+  overtime_hours: number
+  jobs_completed: number
+  created_at: string
+}

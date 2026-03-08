@@ -30,6 +30,9 @@ CREATE TYPE reminder_status AS ENUM ('pending', 'sent', 'cancelled');
 CREATE TYPE additional_work_status AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded');
 CREATE TYPE discount_type AS ENUM ('percentage', 'fixed');
+CREATE TYPE time_clock_type AS ENUM ('clock_in', 'clock_out', 'break_start', 'break_end');
+CREATE TYPE line_message_type AS ENUM ('job_status', 'quotation', 'invoice', 'reminder', 'dvi_report', 'booking_confirm', 'welcome', 'custom');
+CREATE TYPE line_message_status AS ENUM ('pending', 'sent', 'failed', 'delivered', 'read');
 
 -- ============================================================
 -- TENANT & USER TABLES
@@ -411,7 +414,7 @@ CREATE INDEX idx_insurance_claims_tenant_id ON insurance_claims(tenant_id);
 CREATE INDEX idx_insurance_claims_job_id ON insurance_claims(job_id);
 
 -- ============================================================
--- INSPECTION TABLES
+-- INSPECTION / DVI TABLES
 -- ============================================================
 
 CREATE TABLE vehicle_inspections (
@@ -420,14 +423,19 @@ CREATE TABLE vehicle_inspections (
   vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE RESTRICT,
   job_id UUID REFERENCES jobs(id) ON DELETE SET NULL,
   inspected_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  mileage_at_inspection INTEGER,
   overall_score NUMERIC(3,1),
   status TEXT NOT NULL DEFAULT 'draft',
+  customer_viewed_at TIMESTAMPTZ,
   sent_to_customer_at TIMESTAMPTZ,
+  share_token TEXT UNIQUE,
+  notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_vehicle_inspections_tenant_id ON vehicle_inspections(tenant_id);
 CREATE INDEX idx_vehicle_inspections_vehicle_id ON vehicle_inspections(vehicle_id);
+CREATE INDEX idx_vehicle_inspections_share_token ON vehicle_inspections(share_token);
 
 CREATE TABLE inspection_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -526,14 +534,18 @@ CREATE TABLE service_reminders (
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   reminder_type TEXT NOT NULL,
   trigger_date DATE NOT NULL,
+  trigger_mileage INTEGER,
   message_template TEXT,
   status reminder_status NOT NULL DEFAULT 'pending',
   sent_at TIMESTAMPTZ,
+  sent_via TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_service_reminders_tenant_id ON service_reminders(tenant_id);
 CREATE INDEX idx_service_reminders_trigger_date ON service_reminders(tenant_id, trigger_date);
+CREATE INDEX idx_service_reminders_status ON service_reminders(tenant_id, status);
 
 CREATE TABLE declined_services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -655,6 +667,7 @@ CREATE TABLE customer_accounts (
 
 CREATE INDEX idx_customer_accounts_tenant_id ON customer_accounts(tenant_id);
 CREATE INDEX idx_customer_accounts_customer_id ON customer_accounts(customer_id);
+CREATE INDEX idx_customer_accounts_line_user_id ON customer_accounts(tenant_id, line_user_id);
 
 CREATE TABLE customer_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -700,7 +713,7 @@ CREATE TABLE knowledge_articles (
 CREATE INDEX idx_knowledge_articles_tenant_id ON knowledge_articles(tenant_id);
 
 -- ============================================================
--- EMPLOYEE & COMMISSION TABLES
+-- EMPLOYEE, COMMISSION & TIME CLOCK TABLES
 -- ============================================================
 
 CREATE TABLE employee_skills (
@@ -746,6 +759,164 @@ CREATE TABLE commission_records (
 
 CREATE INDEX idx_commission_records_tenant_id ON commission_records(tenant_id);
 CREATE INDEX idx_commission_records_user_id ON commission_records(user_id);
+
+-- Technician Time Clock
+CREATE TABLE time_clock_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  clock_type time_clock_type NOT NULL,
+  job_id UUID REFERENCES jobs(id) ON DELETE SET NULL,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
+  notes TEXT,
+  location JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_time_clock_entries_tenant_id ON time_clock_entries(tenant_id);
+CREATE INDEX idx_time_clock_entries_user_id ON time_clock_entries(user_id);
+CREATE INDEX idx_time_clock_entries_timestamp ON time_clock_entries(tenant_id, timestamp DESC);
+CREATE INDEX idx_time_clock_entries_job_id ON time_clock_entries(job_id);
+
+-- Daily summary for time clock
+CREATE TABLE time_clock_summaries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  total_hours NUMERIC(5,2) NOT NULL DEFAULT 0,
+  break_hours NUMERIC(5,2) NOT NULL DEFAULT 0,
+  productive_hours NUMERIC(5,2) NOT NULL DEFAULT 0,
+  jobs_completed INTEGER NOT NULL DEFAULT 0,
+  overtime_hours NUMERIC(5,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX idx_time_clock_summaries_unique ON time_clock_summaries(tenant_id, user_id, date);
+CREATE INDEX idx_time_clock_summaries_tenant_id ON time_clock_summaries(tenant_id);
+CREATE INDEX idx_time_clock_summaries_user_id ON time_clock_summaries(user_id);
+
+-- ============================================================
+-- SERVICE PACKAGES
+-- ============================================================
+
+CREATE TABLE service_packages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  compatible_brands TEXT[],
+  compatible_models TEXT[],
+  estimated_duration_minutes INTEGER,
+  base_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+  is_popular BOOLEAN NOT NULL DEFAULT false,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_service_packages_tenant_id ON service_packages(tenant_id);
+CREATE INDEX idx_service_packages_category ON service_packages(tenant_id, category);
+
+CREATE TABLE service_package_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  package_id UUID NOT NULL REFERENCES service_packages(id) ON DELETE CASCADE,
+  type job_item_type NOT NULL,
+  part_id UUID REFERENCES parts(id) ON DELETE SET NULL,
+  description TEXT NOT NULL,
+  quantity NUMERIC(10,2) NOT NULL DEFAULT 1,
+  unit_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+  is_optional BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_service_package_items_package_id ON service_package_items(package_id);
+
+-- ============================================================
+-- LINE OA INTEGRATION TABLES (Multi-Tenant)
+-- ============================================================
+
+CREATE TABLE line_oa_configs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE UNIQUE,
+  channel_id TEXT NOT NULL,
+  channel_secret TEXT NOT NULL,
+  channel_access_token TEXT NOT NULL,
+  liff_id TEXT,
+  rich_menu_id TEXT,
+  webhook_verified BOOLEAN NOT NULL DEFAULT false,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  welcome_message TEXT,
+  auto_reply_enabled BOOLEAN NOT NULL DEFAULT true,
+  notification_settings JSONB DEFAULT '{"job_status": true, "quotation": true, "invoice": true, "reminder": true, "dvi_report": true}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_line_oa_configs_tenant_id ON line_oa_configs(tenant_id);
+CREATE INDEX idx_line_oa_configs_channel_id ON line_oa_configs(channel_id);
+
+-- LINE followers linked to customers
+CREATE TABLE line_followers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  line_user_id TEXT NOT NULL,
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  display_name TEXT,
+  picture_url TEXT,
+  status_message TEXT,
+  is_following BOOLEAN NOT NULL DEFAULT true,
+  followed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  unfollowed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX idx_line_followers_unique ON line_followers(tenant_id, line_user_id);
+CREATE INDEX idx_line_followers_tenant_id ON line_followers(tenant_id);
+CREATE INDEX idx_line_followers_customer_id ON line_followers(customer_id);
+CREATE INDEX idx_line_followers_line_user_id ON line_followers(line_user_id);
+
+-- LINE message log
+CREATE TABLE line_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  line_user_id TEXT NOT NULL,
+  direction TEXT NOT NULL DEFAULT 'outgoing',
+  message_type line_message_type NOT NULL,
+  content JSONB NOT NULL DEFAULT '{}',
+  reference_type TEXT,
+  reference_id UUID,
+  status line_message_status NOT NULL DEFAULT 'pending',
+  error_message TEXT,
+  sent_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_line_messages_tenant_id ON line_messages(tenant_id);
+CREATE INDEX idx_line_messages_line_user_id ON line_messages(tenant_id, line_user_id);
+CREATE INDEX idx_line_messages_status ON line_messages(tenant_id, status);
+CREATE INDEX idx_line_messages_created_at ON line_messages(tenant_id, created_at DESC);
+
+-- LINE message templates per tenant
+CREATE TABLE line_message_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type line_message_type NOT NULL,
+  template JSONB NOT NULL DEFAULT '{}',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_line_message_templates_tenant_id ON line_message_templates(tenant_id);
+CREATE UNIQUE INDEX idx_line_message_templates_unique ON line_message_templates(tenant_id, name);
 
 -- ============================================================
 -- MULTI-TENANT DOMAIN & LANDING PAGES
@@ -1050,6 +1221,14 @@ ALTER TABLE knowledge_articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE employee_skills ENABLE ROW LEVEL SECURITY;
 ALTER TABLE commission_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE commission_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE time_clock_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE time_clock_summaries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_package_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE line_oa_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE line_followers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE line_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE line_message_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_domains ENABLE ROW LEVEL SECURITY;
 ALTER TABLE landing_pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE landing_sections ENABLE ROW LEVEL SECURITY;
@@ -1138,7 +1317,10 @@ BEGIN
       'commission_records', 'tenant_domains', 'landing_pages',
       'shop_settings', 'product_categories', 'products', 'product_reviews',
       'orders', 'coupons', 'wishlists', 'shipping_rates',
-      'notification_settings', 'subscription_history'
+      'notification_settings', 'subscription_history',
+      'time_clock_entries', 'time_clock_summaries',
+      'service_packages', 'line_oa_configs', 'line_followers',
+      'line_messages', 'line_message_templates'
     ])
   LOOP
     EXECUTE format(
@@ -1210,6 +1392,22 @@ CREATE POLICY "Tenant isolation delete on inspection_items"
   ON inspection_items FOR DELETE
   USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND (vehicle_inspections.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
+CREATE POLICY "Tenant isolation select on service_package_items"
+  ON service_package_items FOR SELECT
+  USING (EXISTS (SELECT 1 FROM service_packages WHERE service_packages.id = service_package_items.package_id AND (service_packages.tenant_id = get_user_tenant_id() OR is_super_admin())));
+
+CREATE POLICY "Tenant isolation insert on service_package_items"
+  ON service_package_items FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM service_packages WHERE service_packages.id = service_package_items.package_id AND (service_packages.tenant_id = get_user_tenant_id() OR is_super_admin())));
+
+CREATE POLICY "Tenant isolation update on service_package_items"
+  ON service_package_items FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM service_packages WHERE service_packages.id = service_package_items.package_id AND (service_packages.tenant_id = get_user_tenant_id() OR is_super_admin())));
+
+CREATE POLICY "Tenant isolation delete on service_package_items"
+  ON service_package_items FOR DELETE
+  USING (EXISTS (SELECT 1 FROM service_packages WHERE service_packages.id = service_package_items.package_id AND (service_packages.tenant_id = get_user_tenant_id() OR is_super_admin())));
+
 CREATE POLICY "Tenant isolation select on landing_sections"
   ON landing_sections FOR SELECT
   USING (EXISTS (SELECT 1 FROM landing_pages WHERE landing_pages.id = landing_sections.landing_page_id AND (landing_pages.tenant_id = get_user_tenant_id() OR is_super_admin())));
@@ -1262,6 +1460,15 @@ CREATE POLICY "Tenant isolation delete on customer_sessions"
   ON customer_sessions FOR DELETE
   USING (EXISTS (SELECT 1 FROM customer_accounts WHERE customer_accounts.id = customer_sessions.customer_account_id AND (customer_accounts.tenant_id = get_user_tenant_id() OR is_super_admin())));
 
+-- Public access for DVI share links (no auth required)
+CREATE POLICY "Public can view shared inspections"
+  ON vehicle_inspections FOR SELECT
+  USING (share_token IS NOT NULL AND status = 'sent');
+
+CREATE POLICY "Public can view shared inspection items"
+  ON inspection_items FOR SELECT
+  USING (EXISTS (SELECT 1 FROM vehicle_inspections WHERE vehicle_inspections.id = inspection_items.inspection_id AND vehicle_inspections.share_token IS NOT NULL AND vehicle_inspections.status = 'sent'));
+
 -- ============================================================
 -- UPDATED_AT TRIGGER FUNCTION
 -- ============================================================
@@ -1282,6 +1489,9 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON landing_pages FOR EACH ROW EXECUT
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON shop_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON line_oa_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON service_packages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON line_message_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================
 -- FUNCTION: Auto-create user profile after signup
@@ -1305,3 +1515,55 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ============================================================
+-- FUNCTION: Auto-generate share token for DVI
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION generate_inspection_share_token()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.share_token IS NULL THEN
+    NEW.share_token = encode(gen_random_bytes(16), 'hex');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_inspection_share_token
+  BEFORE INSERT ON vehicle_inspections
+  FOR EACH ROW EXECUTE FUNCTION generate_inspection_share_token();
+
+-- ============================================================
+-- FUNCTION: Auto-calculate inspection overall score
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION calculate_inspection_score()
+RETURNS TRIGGER AS $$
+DECLARE
+  total_items INTEGER;
+  good_items INTEGER;
+  fair_items INTEGER;
+  score NUMERIC(3,1);
+BEGIN
+  SELECT COUNT(*), 
+         COUNT(*) FILTER (WHERE condition = 'good'),
+         COUNT(*) FILTER (WHERE condition = 'fair')
+  INTO total_items, good_items, fair_items
+  FROM inspection_items
+  WHERE inspection_id = COALESCE(NEW.inspection_id, OLD.inspection_id);
+
+  IF total_items > 0 THEN
+    score = ((good_items * 10.0 + fair_items * 5.0) / (total_items * 10.0)) * 10;
+    UPDATE vehicle_inspections 
+    SET overall_score = score 
+    WHERE id = COALESCE(NEW.inspection_id, OLD.inspection_id);
+  END IF;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_inspection_score
+  AFTER INSERT OR UPDATE OR DELETE ON inspection_items
+  FOR EACH ROW EXECUTE FUNCTION calculate_inspection_score();

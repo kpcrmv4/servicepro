@@ -27,6 +27,10 @@ import {
   Bell,
   LogOut,
   User,
+  ClipboardCheck,
+  PackageCheck,
+  Clock,
+  MessageCircle,
 } from "lucide-react"
 
 // ============================================================
@@ -55,15 +59,20 @@ const allMenuItems: NavItem[] = [
   { title: "รับรถ", href: "/dashboard/reception", icon: ClipboardList },
   { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
   { title: "คิวงาน", href: "/dashboard/queue", icon: CheckSquare },
+  { title: "ตรวจสภาพรถ", href: "/dashboard/inspections", icon: ClipboardCheck },
   { title: "ตารางงาน", href: "/dashboard/planning", icon: Calendar },
   { title: "ใบเสนอราคา", href: "/dashboard/quotations", icon: FileText },
+  { title: "แพ็กเกจ", href: "/dashboard/service-packages", icon: PackageCheck },
   { title: "อะไหล่", href: "/dashboard/inventory", icon: Package },
   { title: "การเงิน", href: "/dashboard/finance", icon: DollarSign },
   { title: "ลูกค้า", href: "/dashboard/customers", icon: Users },
   { title: "รถ", href: "/dashboard/vehicles", icon: Car },
   { title: "ประกัน", href: "/dashboard/insurance", icon: Shield },
   { title: "พนักงาน", href: "/dashboard/employees", icon: UserCog },
+  { title: "บันทึกเวลา", href: "/dashboard/time-clock", icon: Clock },
+  { title: "แจ้งเตือน", href: "/dashboard/reminders", icon: Bell },
   { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3 },
+  { title: "LINE OA", href: "/dashboard/settings/line", icon: MessageCircle },
   { title: "ตั้งค่า", href: "/dashboard/settings", icon: Settings },
 ]
 
