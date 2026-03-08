@@ -108,7 +108,7 @@ export default function PublicInspectionPage() {
                 <p className="font-medium">{new Date(String(inspection.created_at)).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
             </div>
-            {Boolean(inspection.mileage_at_inspection) && (
+            {inspection.mileage_at_inspection ? (
               <div className="flex items-center gap-2">
                 <Gauge className="h-5 w-5 text-blue-300" />
                 <div>
@@ -116,7 +116,7 @@ export default function PublicInspectionPage() {
                   <p className="font-medium">{Number(inspection.mileage_at_inspection).toLocaleString()} กม.</p>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -125,12 +125,12 @@ export default function PublicInspectionPage() {
         {/* Score Card */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="text-center mb-4">
-            {inspection.overall_score !== null && (
+            {inspection.overall_score !== null ? (
               <div className={`text-5xl font-bold ${scoreColor}`}>
                 {Number(inspection.overall_score).toFixed(1)}
                 <span className="text-lg text-gray-400">/10</span>
               </div>
-            )}
+            ) : null}
             <p className="text-gray-500 text-sm mt-1">คะแนนสภาพรวม</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -179,15 +179,15 @@ export default function PublicInspectionPage() {
                         {cond.label}
                       </span>
                     </div>
-                    {Boolean(item.notes) && <p className="text-sm text-gray-600 mt-1 ml-7">{String(item.notes)}</p>}
-                    {Number(item.estimated_cost) > 0 && (
+                    {item.notes ? <p className="text-sm text-gray-600 mt-1 ml-7">{String(item.notes)}</p> : null}
+                    {Number(item.estimated_cost) > 0 ? (
                       <p className="text-sm text-orange-600 mt-1 ml-7 font-medium">ค่าใช้จ่าย: ฿{Number(item.estimated_cost).toLocaleString()}</p>
-                    )}
-                    {Boolean(item.photo_url) && (
+                    ) : null}
+                    {item.photo_url ? (
                       <div className="mt-2 ml-7">
                         <img src={String(item.photo_url)} alt={String(item.item_name)} className="rounded-lg max-h-48 object-cover" />
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
@@ -196,12 +196,12 @@ export default function PublicInspectionPage() {
         ))}
 
         {/* Notes */}
-        {Boolean(inspection.notes) && (
+        {inspection.notes ? (
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <h3 className="font-semibold text-gray-900 mb-2">หมายเหตุจากช่าง</h3>
             <p className="text-gray-600 text-sm">{String(inspection.notes)}</p>
           </div>
-        )}
+        ) : null}
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-400 pt-4">

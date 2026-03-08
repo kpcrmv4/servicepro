@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { cn, formatCurrency } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import {
   Wrench,
   Package,
@@ -11,7 +11,6 @@ import {
   Shield,
   BarChart3,
   Car,
-  CalendarPlus,
   ClipboardCheck,
   Smartphone,
   Star,
@@ -26,109 +25,235 @@ import {
   X,
   Phone,
   Mail,
-  MapPin,
   Globe,
-  Play,
   TrendingUp,
   Clock,
-  Heart,
   MessageCircle,
+  Search,
+  Bell,
+  Timer,
+  Camera,
+  FileText,
+  Palette,
+  Lock,
+  Headphones,
+  CircleDot,
+  Layers,
+  LineChart,
+  Settings,
+  QrCode,
 } from "lucide-react"
+
+/* ========== NAVBAR ========== */
+function Navbar() {
+  const [open, setOpen] = useState(false)
+
+  const links = [
+    { label: "ฟีเจอร์", href: "#features" },
+    { label: "ขั้นตอน", href: "#how-it-works" },
+    { label: "ราคา", href: "#pricing" },
+    { label: "รีวิว", href: "#testimonials" },
+    { label: "คำถามที่พบบ่อย", href: "#faq" },
+  ]
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm">
+            KP
+          </div>
+          <span className="text-lg font-bold tracking-tight">
+            KPService<span className="text-primary">Pro</span>
+          </span>
+        </Link>
+
+        {/* Desktop */}
+        <div className="hidden items-center gap-1 md:flex">
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
+
+        <div className="hidden items-center gap-3 md:flex">
+          <Link
+            href="/login"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            เข้าสู่ระบบ
+          </Link>
+          <Link
+            href="/trial"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            ทดลองฟรี 7 วัน
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {/* Mobile toggle */}
+        <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-lg hover:bg-muted/50">
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="border-t border-border/50 bg-background px-4 pb-4 md:hidden">
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            >
+              {l.label}
+            </a>
+          ))}
+          <div className="mt-3 flex flex-col gap-2">
+            <Link href="/login" className="rounded-lg border border-border px-4 py-2.5 text-center text-sm font-medium">
+              เข้าสู่ระบบ
+            </Link>
+            <Link href="/trial" className="rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground">
+              ทดลองฟรี 7 วัน
+            </Link>
+          </div>
+        </div>
+      )}
+    </nav>
+  )
+}
 
 /* ========== HERO ========== */
 function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground">
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-primary/90 text-white">
+      {/* Background effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-primary/20 blur-[100px]" />
+        <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-blue-500/10 blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[120px]" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-32">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm backdrop-blur-sm mb-6">
-              <Zap className="h-4 w-4" />
-              ทดลองใช้ฟรี 30 วัน ไม่ต้องผูกบัตร
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm backdrop-blur-sm mb-8">
+              <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+              ทดลองใช้ฟรี 7 วัน ไม่ต้องผูกบัตร
             </div>
 
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              ระบบจัดการ
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.1]">
+              บริหารอู่ซ่อมรถ
               <br />
-              <span className="text-white/90">อู่ซ่อมรถ</span>
+              <span className="bg-gradient-to-r from-blue-400 to-primary bg-clip-text text-transparent">
+                ยุคใหม่
+              </span>
               <br />
-              ครบวงจร
+              ครบจบในที่เดียว
             </h1>
 
-            <p className="mt-6 text-lg leading-relaxed opacity-90 max-w-lg">
-              จัดการงานซ่อม อะไหล่ เคลมประกัน การเงิน CRM และอีกมากมายในที่เดียว
-              ช่วยให้อู่ของคุณทำงานได้เร็วขึ้น ลดข้อผิดพลาด และเพิ่มรายได้
+            <p className="mt-6 text-lg leading-relaxed text-white/70 max-w-lg">
+              KPServicePro คือระบบจัดการอู่ซ่อมรถอัจฉริยะ ที่ช่วยให้คุณจัดการงานซ่อม สต็อกอะไหล่ การเงิน
+              และเชื่อมต่อลูกค้าผ่าน LINE OA ได้ในแพลตฟอร์มเดียว
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
-                href="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-primary font-semibold shadow-lg hover:bg-white/90 transition-colors"
+                href="/trial"
+                className="group inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-base font-semibold shadow-lg shadow-primary/25 hover:bg-primary/90 hover:shadow-primary/40 transition-all"
               >
-                เริ่มทดลองฟรี
-                <ArrowRight className="h-4 w-4" />
+                เริ่มทดลองฟรี 7 วัน
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              <button className="inline-flex items-center gap-2 rounded-xl border-2 border-white/30 px-6 py-3 font-semibold backdrop-blur-sm hover:bg-white/10 transition-colors">
-                <Play className="h-4 w-4" />
-                ดูเดโม
-              </button>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-7 py-3.5 text-base font-semibold backdrop-blur-sm hover:bg-white/10 transition-colors"
+              >
+                เข้าสู่ระบบ
+              </Link>
             </div>
 
-            <div className="mt-10 flex items-center gap-8 text-sm opacity-80">
+            <div className="mt-10 flex flex-wrap items-center gap-6 text-sm text-white/60">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                ไม่ต้องผูกบัตร
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
+                ไม่ต้องผูกบัตรเครดิต
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
                 ตั้งค่าใน 5 นาที
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                ซัพพอร์ตฟรี
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
+                ซัพพอร์ตฟรีตลอด
               </div>
             </div>
           </div>
 
-          {/* Dashboard preview mockup */}
+          {/* Dashboard preview */}
           <div className="hidden lg:block">
-            <div className="relative rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm shadow-2xl">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-3 w-3 rounded-full bg-red-400" />
-                <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                <div className="h-3 w-3 rounded-full bg-green-400" />
-              </div>
-              <div className="rounded-xl bg-white/90 p-4 text-foreground space-y-3">
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { label: "งานวันนี้", value: "12", color: "bg-primary/10 text-primary" },
-                    { label: "รายรับ", value: "฿42K", color: "bg-success/10 text-success" },
-                    { label: "รออะไหล่", value: "3", color: "bg-warning/10 text-warning" },
-                    { label: "เสร็จแล้ว", value: "8", color: "bg-info/10 text-info" },
-                  ].map((stat) => (
-                    <div key={stat.label} className={cn("rounded-lg p-2.5 text-center", stat.color)}>
-                      <p className="text-lg font-bold">{stat.value}</p>
-                      <p className="text-[10px]">{stat.label}</p>
-                    </div>
-                  ))}
+            <div className="relative">
+              {/* Glow effect */}
+              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-primary/20 to-blue-500/20 blur-2xl" />
+              <div className="relative rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-md shadow-2xl">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="h-3 w-3 rounded-full bg-red-400/80" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-400/80" />
+                  <div className="h-3 w-3 rounded-full bg-green-400/80" />
+                  <span className="ml-2 text-xs text-white/40">KPServicePro Dashboard</span>
                 </div>
-                <div className="space-y-1.5">
-                  {["Toyota Camry - เปลี่ยนผ้าเบรค", "Honda Civic - เช็คระยะ 50,000", "Isuzu D-Max - ซ่อมแอร์"].map((job, i) => (
-                    <div key={i} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2 text-xs">
-                      <div className={cn("h-2 w-2 rounded-full", i === 0 ? "bg-primary" : i === 1 ? "bg-warning" : "bg-success")} />
-                      {job}
-                    </div>
-                  ))}
+                <div className="rounded-xl bg-white p-4 text-slate-900 space-y-3">
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: "งานวันนี้", value: "12", icon: "wrench", color: "bg-blue-50 text-blue-600" },
+                      { label: "รายรับ", value: "฿42K", icon: "dollar", color: "bg-green-50 text-green-600" },
+                      { label: "รออะไหล่", value: "3", icon: "package", color: "bg-amber-50 text-amber-600" },
+                      { label: "เสร็จแล้ว", value: "8", icon: "check", color: "bg-emerald-50 text-emerald-600" },
+                    ].map((stat) => (
+                      <div key={stat.label} className={cn("rounded-lg p-2.5 text-center", stat.color)}>
+                        <p className="text-lg font-bold">{stat.value}</p>
+                        <p className="text-[10px] opacity-70">{stat.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    {[
+                      { car: "Toyota Camry", job: "เปลี่ยนผ้าเบรค", status: "กำลังซ่อม", color: "bg-blue-500" },
+                      { car: "Honda Civic", job: "เช็คระยะ 50,000", status: "รออะไหล่", color: "bg-amber-500" },
+                      { car: "Isuzu D-Max", job: "ซ่อมแอร์", status: "เสร็จแล้ว", color: "bg-green-500" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("h-2 w-2 rounded-full", item.color)} />
+                          <span className="font-medium">{item.car}</span>
+                          <span className="text-slate-400">- {item.job}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500">{item.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-green-50 p-2 text-xs text-green-700">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    LINE: ลูกค้าใหม่เพิ่มเป็นเพื่อน 3 คนวันนี้
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Wave divider */}
+      <div className="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+          <path d="M0 60V30C240 0 480 0 720 30C960 60 1200 60 1440 30V60H0Z" className="fill-background" />
+        </svg>
       </div>
     </section>
   )
@@ -137,19 +262,22 @@ function HeroSection() {
 /* ========== STATS ========== */
 function StatsSection() {
   const stats = [
-    { value: "500+", label: "อู่ที่ใช้งาน" },
-    { value: "50,000+", label: "งานซ่อมต่อเดือน" },
-    { value: "98%", label: "ความพึงพอใจ" },
-    { value: "30%", label: "รายได้เพิ่มขึ้น" },
+    { value: "500+", label: "อู่ที่ไว้วางใจ", icon: Building2 },
+    { value: "50,000+", label: "งานซ่อมต่อเดือน", icon: Wrench },
+    { value: "98%", label: "ความพึงพอใจ", icon: Star },
+    { value: "30%", label: "รายได้เพิ่มขึ้น", icon: TrendingUp },
   ]
 
   return (
-    <section className="border-b border-border bg-muted/30 py-12">
+    <section className="py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <p className="text-3xl font-extrabold text-primary">{stat.value}</p>
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <stat.icon className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-3xl font-extrabold text-foreground sm:text-4xl">{stat.value}</p>
               <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
             </div>
           ))}
@@ -166,92 +294,325 @@ function FeaturesSection() {
       icon: ClipboardCheck,
       title: "รับรถ & ใบงาน",
       desc: "รับรถเข้าอู่แบบดิจิทัล ถ่ายรูปรอบคัน สร้างใบงานอัตโนมัติ ติดตามสถานะแบบเรียลไทม์",
-      color: "text-primary",
-      bg: "bg-primary/10",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
     },
     {
       icon: Wrench,
       title: "จัดการงานซ่อม",
-      desc: "Kanban Board จัดคิวงาน แจกงานให้ช่าง บันทึกรูปก่อน-หลัง QC ก่อนส่งมอบ",
-      color: "text-blue-600",
-      bg: "bg-blue-600/10",
+      desc: "Kanban Board จัดคิวงาน แจกงานให้ช่าง บันทึกรูปก่อน-หลัง ตรวจสอบคุณภาพก่อนส่งมอบ",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+    },
+    {
+      icon: Camera,
+      title: "ตรวจสภาพรถ (DVI)",
+      desc: "ระบบ Traffic Light แดง-เหลือง-เขียว ถ่ายรูปจุดเสียหาย ส่งรายงานให้ลูกค้าดูผ่านมือถือ",
+      color: "text-rose-600",
+      bg: "bg-rose-50",
     },
     {
       icon: Package,
       title: "สต็อกอะไหล่",
       desc: "จัดการอะไหล่ Barcode/QR ตัดสต็อกอัตโนมัติ แจ้งเตือนสั่งซื้อเมื่อถึงจุดสั่ง",
       color: "text-amber-600",
-      bg: "bg-amber-600/10",
+      bg: "bg-amber-50",
     },
     {
       icon: Shield,
       title: "เคลมประกัน",
       desc: "บันทึกเคลม ติดตามสถานะ อัพโหลดเอกสาร คำนวณยอดเบิกอัตโนมัติ",
       color: "text-green-600",
-      bg: "bg-green-600/10",
+      bg: "bg-green-50",
     },
     {
       icon: DollarSign,
       title: "การเงิน & บัญชี",
-      desc: "ใบเสนอราคา ใบแจ้งหนี้ ใบเสร็จ ติดตามรายรับ-รายจ่าย รายงานภาษี VAT",
+      desc: "ใบเสนอราคา ใบแจ้งหนี้ ใบเสร็จ ติดตามรายรับ-รายจ่าย รายงานภาษี",
       color: "text-emerald-600",
-      bg: "bg-emerald-600/10",
+      bg: "bg-emerald-50",
+    },
+    {
+      icon: MessageCircle,
+      title: "LINE OA Integration",
+      desc: "เชื่อมต่อ LINE แจ้งสถานะอัตโนมัติ ลูกค้าเช็คสถานะงานซ่อมผ่านแชทได้เลย",
+      color: "text-green-500",
+      bg: "bg-green-50",
+    },
+    {
+      icon: Bell,
+      title: "แจ้งเตือนเช็คระยะ",
+      desc: "ระบบคำนวณรอบเช็คระยะอัตโนมัติ แจ้งเตือนลูกค้าเมื่อถึงกำหนด ดึงลูกค้าเก่ากลับมา",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
+    {
+      icon: Timer,
+      title: "จับเวลาช่าง",
+      desc: "ช่างกด Clock In/Out จากมือถือ คำนวณชั่วโมงทำงาน ประเมินประสิทธิภาพ",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+    },
+    {
+      icon: Layers,
+      title: "แพ็กเกจบริการ",
+      desc: "สร้างแพ็กเกจเหมาจ่าย เช่น เปลี่ยนถ่ายน้ำมัน ขายงานได้ง่ายขึ้น ปิดยอดเร็วขึ้น",
+      color: "text-cyan-600",
+      bg: "bg-cyan-50",
     },
     {
       icon: Users,
-      title: "CRM & ลูกค้าสัมพันธ์",
-      desc: "ระบบสมาชิก แต้มสะสม คูปอง Smart Recall แจ้งเตือนเช็คระยะ ดึงลูกค้ากลับมา",
-      color: "text-purple-600",
-      bg: "bg-purple-600/10",
-    },
-    {
-      icon: Smartphone,
-      title: "Customer Portal",
-      desc: "ลูกค้าดูสถานะงานซ่อม ประวัติรถ จองคิวออนไลน์ รับแจ้งเตือนผ่าน LINE",
-      color: "text-rose-600",
-      bg: "bg-rose-600/10",
+      title: "CRM ลูกค้า",
+      desc: "ฐานข้อมูลลูกค้าครบถ้วน ประวัติซ่อม สมาชิก สะสมแต้ม Referral Program",
+      color: "text-pink-600",
+      bg: "bg-pink-50",
     },
     {
       icon: BarChart3,
-      title: "รายงาน & วิเคราะห์",
-      desc: "แดชบอร์ดเรียลไทม์ รายงานรายรับ ประสิทธิภาพช่าง ยอดขายอะไหล่ แนวโน้มธุรกิจ",
-      color: "text-indigo-600",
-      bg: "bg-indigo-600/10",
-    },
-    {
-      icon: Car,
-      title: "ตรวจสภาพรถ (DVI)",
-      desc: "ตรวจสภาพดิจิทัลแบบ Traffic Light ส่งรายงานให้ลูกค้า สร้างโอกาสขายเพิ่ม",
-      color: "text-sky-600",
-      bg: "bg-sky-600/10",
+      title: "รายงานวิเคราะห์",
+      desc: "Dashboard สรุปรายได้ ต้นทุน กำไร วิเคราะห์แนวโน้ม ช่วยตัดสินใจทางธุรกิจ",
+      color: "text-violet-600",
+      bg: "bg-violet-50",
     },
   ]
 
   return (
-    <section id="features" className="py-20">
+    <section id="features" className="py-16 sm:py-24 bg-muted/30">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">
-            ฟีเจอร์ครบวงจร สำหรับทุกอู่
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+            <Zap className="h-4 w-4" />
+            ฟีเจอร์ครบวงจร
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            ทุกเครื่องมือที่อู่ของคุณต้องการ
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            ทุกเครื่องมือที่อู่ซ่อมรถต้องการ รวมไว้ในระบบเดียว ใช้งานง่าย ไม่ต้องติดตั้ง
+          <p className="mt-4 text-lg text-muted-foreground">
+            ครอบคลุมทุกขั้นตอนการทำงานของอู่ซ่อมรถ ตั้งแต่รับรถจนถึงส่งมอบ
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => {
-            const Icon = f.icon
-            return (
-              <div key={f.title} className="group rounded-xl border border-border bg-card p-6 transition-shadow hover:shadow-lg">
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", f.bg)}>
-                  <Icon className={cn("h-6 w-6", f.color)} />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-foreground">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
+          {features.map((f) => (
+            <div
+              key={f.title}
+              className="group rounded-2xl border border-border/50 bg-background p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+            >
+              <div className={cn("inline-flex h-12 w-12 items-center justify-center rounded-xl", f.bg)}>
+                <f.icon className={cn("h-6 w-6", f.color)} />
               </div>
-            )
-          })}
+              <h3 className="mt-4 text-lg font-bold">{f.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ========== LINE OA HIGHLIGHT ========== */
+function LineOASection() {
+  const features = [
+    {
+      icon: MessageCircle,
+      title: "แจ้งสถานะอัตโนมัติ",
+      desc: "เมื่อช่างอัปเดตสถานะงาน ระบบจะส่งข้อความเข้า LINE ลูกค้าทันที ลดภาระแอดมินที่ต้องคอยตอบคำถาม",
+    },
+    {
+      icon: Search,
+      title: "เช็คสถานะผ่านแชท",
+      desc: "ลูกค้าพิมพ์ \"สถานะ\" ในแชท LINE ระบบจะดึงข้อมูลงานซ่อมปัจจุบันมาตอบให้อัตโนมัติ",
+    },
+    {
+      icon: FileText,
+      title: "ส่งใบเสนอราคาผ่าน LINE",
+      desc: "ส่ง Flex Message ใบเสนอราคาสวยงาม ลูกค้ากดอนุมัติได้จากในแชทเลย ไม่ต้องโทรตาม",
+    },
+    {
+      icon: Bell,
+      title: "แจ้งเตือนเช็คระยะ",
+      desc: "ระบบจะแจ้งเตือนลูกค้าเมื่อถึงรอบเช็คระยะ ช่วยดึงลูกค้าเก่ากลับมาใช้บริการ",
+    },
+  ]
+
+  return (
+    <section className="py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-sm font-medium text-green-700 mb-4">
+              <MessageCircle className="h-4 w-4" />
+              LINE OA Integration
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+              เชื่อมต่อลูกค้าผ่าน
+              <span className="text-green-600"> LINE OA</span>
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              ลูกค้าไม่ต้องโหลดแอปเพิ่ม ใช้ LINE ที่คุ้นเคยในการติดตามงานซ่อม
+              รับใบเสนอราคา และนัดหมายเข้ารับบริการ
+            </p>
+
+            <div className="mt-8 space-y-5">
+              {features.map((f) => (
+                <div key={f.title} className="flex gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-50">
+                    <f.icon className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{f.title}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* LINE Chat mockup */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-sm rounded-3xl border border-border bg-gradient-to-b from-green-50 to-background p-1 shadow-xl">
+              <div className="rounded-[20px] bg-background overflow-hidden">
+                {/* LINE header */}
+                <div className="bg-green-500 px-4 py-3 text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
+                      KP
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">อู่ช่างเก่ง Auto Service</p>
+                      <p className="text-xs text-white/70">ตอบกลับอัตโนมัติ</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Chat messages */}
+                <div className="p-4 space-y-3 min-h-[300px]">
+                  {/* Customer message */}
+                  <div className="flex justify-end">
+                    <div className="rounded-2xl rounded-tr-sm bg-green-500 px-4 py-2 text-white text-sm max-w-[75%]">
+                      สถานะรถผมเป็นยังไงบ้างครับ
+                    </div>
+                  </div>
+                  {/* Bot reply */}
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl rounded-tl-sm bg-white border border-border px-4 py-3 text-sm max-w-[85%] shadow-sm">
+                      <p className="font-medium mb-2">สถานะงานซ่อมของท่าน:</p>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-blue-500" />
+                          <span>JOB-0042: Toyota Camry (กท-1234)</span>
+                        </div>
+                        <p className="ml-4 text-muted-foreground">สถานะ: กำลังซ่อม</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Flex message - quotation */}
+                  <div className="flex justify-start">
+                    <div className="rounded-2xl rounded-tl-sm bg-white border border-border overflow-hidden max-w-[85%] shadow-sm">
+                      <div className="bg-primary px-4 py-2">
+                        <p className="text-white text-xs font-medium">ใบเสนอราคา #QT-0015</p>
+                      </div>
+                      <div className="p-3 text-xs space-y-1">
+                        <p>เปลี่ยนผ้าเบรคหน้า-หลัง</p>
+                        <p className="font-bold text-base">฿4,500</p>
+                      </div>
+                      <button className="w-full border-t border-border py-2.5 text-xs font-semibold text-green-600 hover:bg-green-50">
+                        อนุมัติซ่อม
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ========== DVI HIGHLIGHT ========== */
+function DVISection() {
+  return (
+    <section className="py-16 sm:py-24 bg-muted/30">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+          {/* DVI Report mockup */}
+          <div className="order-2 lg:order-1">
+            <div className="rounded-2xl border border-border bg-background p-6 shadow-xl max-w-md mx-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">รายงานตรวจสภาพรถ</h3>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">8.5/10</span>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: "น้ำมันเครื่อง", status: "good", label: "ดี" },
+                  { name: "ผ้าเบรคหน้า", status: "fair", label: "ควรเปลี่ยนเร็วๆ นี้" },
+                  { name: "ยางรถยนต์ (หน้าซ้าย)", status: "poor", label: "ต้องเปลี่ยน" },
+                  { name: "แบตเตอรี่", status: "good", label: "ดี" },
+                  { name: "น้ำหล่อเย็น", status: "good", label: "ดี" },
+                  { name: "ไฟหน้า", status: "fair", label: "เริ่มมัว" },
+                ].map((item) => (
+                  <div key={item.name} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                    <span className="text-sm">{item.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
+                      <div className={cn(
+                        "h-3 w-3 rounded-full",
+                        item.status === "good" ? "bg-green-500" :
+                        item.status === "fair" ? "bg-yellow-500" : "bg-red-500"
+                      )} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {["ยางสึก", "ผ้าเบรค", "ไฟหน้า"].map((label) => (
+                  <div key={label} className="aspect-square rounded-lg bg-muted flex items-center justify-center">
+                    <div className="text-center">
+                      <Camera className="h-5 w-5 mx-auto text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="order-1 lg:order-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-4 py-1.5 text-sm font-medium text-rose-700 mb-4">
+              <Camera className="h-4 w-4" />
+              Digital Vehicle Inspection
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+              ตรวจสภาพรถดิจิทัล
+              <span className="text-rose-600"> สร้างความไว้วางใจ</span>
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              ช่างตรวจสภาพรถด้วยระบบ Traffic Light แนบรูปถ่ายจุดเสียหาย
+              ส่งรายงานให้ลูกค้าดูผ่านมือถือ สร้างความโปร่งใสและเพิ่มโอกาสขายงานเพิ่ม (Upsell)
+            </p>
+
+            <div className="mt-8 space-y-4">
+              {[
+                { color: "bg-green-500", label: "เขียว = สภาพดี ไม่ต้องซ่อม" },
+                { color: "bg-yellow-500", label: "เหลือง = ควรเปลี่ยนเร็วๆ นี้" },
+                { color: "bg-red-500", label: "แดง = ต้องซ่อม/เปลี่ยนทันที" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-3">
+                  <div className={cn("h-4 w-4 rounded-full", item.color)} />
+                  <span className="text-sm">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 rounded-xl bg-rose-50 border border-rose-100 p-4">
+              <p className="text-sm text-rose-800">
+                <strong>ผลลัพธ์จริง:</strong> อู่ที่ใช้ระบบ DVI มีรายได้จากงาน Upsell เพิ่มขึ้นเฉลี่ย 25-40%
+                เพราะลูกค้าเห็นภาพจริงของจุดที่ต้องซ่อม
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -261,27 +622,57 @@ function FeaturesSection() {
 /* ========== HOW IT WORKS ========== */
 function HowItWorksSection() {
   const steps = [
-    { step: 1, title: "สมัครทดลองฟรี", desc: "ลงทะเบียนใน 2 นาที ไม่ต้องผูกบัตร เริ่มใช้งานได้ทันที" },
-    { step: 2, title: "ตั้งค่าอู่ของคุณ", desc: "กรอกข้อมูลอู่ เพิ่มช่าง ตั้งค่าบริการ นำเข้าข้อมูลลูกค้า" },
-    { step: 3, title: "เริ่มรับงาน", desc: "รับรถเข้าอู่ สร้างใบงาน จัดการทุกอย่างผ่านระบบคลาวด์" },
-    { step: 4, title: "เติบโตไปด้วยกัน", desc: "ดูรายงาน วิเคราะห์ผล ปรับปรุงธุรกิจ เพิ่มรายได้" },
+    {
+      step: "01",
+      title: "สมัครทดลองฟรี",
+      desc: "กรอกข้อมูลอู่ของคุณ ระบบพร้อมใช้งานทันทีภายใน 5 นาที ไม่ต้องผูกบัตรเครดิต",
+      icon: Globe,
+    },
+    {
+      step: "02",
+      title: "ตั้งค่าอู่ของคุณ",
+      desc: "เพิ่มข้อมูลพนักงาน รายการอะไหล่ และเชื่อมต่อ LINE OA ของร้าน",
+      icon: Settings,
+    },
+    {
+      step: "03",
+      title: "เริ่มใช้งานจริง",
+      desc: "รับรถ สร้างใบงาน ตรวจสภาพรถ ออกใบเสนอราคา ทุกอย่างในระบบเดียว",
+      icon: Wrench,
+    },
+    {
+      step: "04",
+      title: "เติบโตไปด้วยกัน",
+      desc: "ดูรายงานวิเคราะห์ ปรับปรุงการทำงาน เพิ่มรายได้ ขยายธุรกิจ",
+      icon: TrendingUp,
+    },
   ]
 
   return (
-    <section className="bg-muted/30 py-20">
+    <section id="how-it-works" className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">เริ่มต้นง่ายใน 4 ขั้นตอน</h2>
-          <p className="mt-4 text-lg text-muted-foreground">ตั้งค่าใน 5 นาที พร้อมใช้งานทันที</p>
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            เริ่มต้นง่ายใน 4 ขั้นตอน
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            ไม่ต้องติดตั้งโปรแกรม ไม่ต้องซื้อเซิร์ฟเวอร์ เปิดเบราว์เซอร์แล้วใช้งานได้เลย
+          </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-4">
-          {steps.map((s) => (
-            <div key={s.step} className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
-                {s.step}
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((s, i) => (
+            <div key={s.step} className="relative text-center">
+              {i < steps.length - 1 && (
+                <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] border-t-2 border-dashed border-border" />
+              )}
+              <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
+                <s.icon className="h-8 w-8 text-primary" />
+                <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {s.step}
+                </span>
               </div>
-              <h3 className="mt-4 text-base font-semibold text-foreground">{s.title}</h3>
+              <h3 className="text-lg font-bold">{s.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
             </div>
           ))}
@@ -296,123 +687,121 @@ function PricingSection() {
   const plans = [
     {
       name: "Starter",
-      price: 990,
-      desc: "สำหรับอู่ขนาดเล็ก",
+      price: "1,490",
+      period: "/เดือน",
+      desc: "สำหรับอู่ขนาดเล็ก 1-3 ช่าง",
       features: [
+        "ผู้ใช้งาน 3 คน",
         "งานซ่อมไม่จำกัด",
-        "ช่างสูงสุด 3 คน",
-        "จัดการสต็อกอะไหล่",
+        "สต็อกอะไหล่",
         "ใบเสนอราคา & ใบเสร็จ",
         "รายงานพื้นฐาน",
-        "Customer Portal",
-      ],
-      cta: "เริ่มทดลองฟรี",
-      popular: false,
-      icon: Zap,
-    },
-    {
-      name: "Professional",
-      price: 1990,
-      desc: "สำหรับอู่ที่ต้องการเติบโต",
-      features: [
-        "ทุกอย่างใน Starter",
-        "ช่างไม่จำกัด",
-        "เคลมประกัน",
-        "CRM & ระบบสมาชิก",
-        "ตรวจสภาพรถ (DVI)",
-        "Smart Recall",
-        "รายงานขั้นสูง",
         "LINE แจ้งเตือน",
       ],
       cta: "เริ่มทดลองฟรี",
+      popular: false,
+    },
+    {
+      name: "Professional",
+      price: "2,990",
+      period: "/เดือน",
+      desc: "สำหรับอู่ขนาดกลาง 4-10 ช่าง",
+      features: [
+        "ผู้ใช้งาน 10 คน",
+        "ทุกอย่างใน Starter",
+        "ตรวจสภาพรถ (DVI)",
+        "เคลมประกัน",
+        "แพ็กเกจบริการ",
+        "จับเวลาช่าง",
+        "แจ้งเตือนเช็คระยะ",
+        "รายงานวิเคราะห์",
+      ],
+      cta: "เริ่มทดลองฟรี",
       popular: true,
-      icon: Crown,
     },
     {
       name: "Enterprise",
-      price: 4990,
-      desc: "สำหรับอู่ขนาดใหญ่และเครือข่าย",
+      price: "5,990",
+      period: "/เดือน",
+      desc: "สำหรับอู่ขนาดใหญ่หรือหลายสาขา",
       features: [
+        "ผู้ใช้งานไม่จำกัด",
         "ทุกอย่างใน Professional",
         "หลายสาขา",
-        "API เชื่อมต่อ",
+        "CRM & สมาชิก",
+        "API Integration",
+        "รายงานขั้นสูง",
+        "ซัพพอร์ตพิเศษ",
         "Custom Branding",
-        "Dedicated Support",
-        "SLA 99.9%",
-        "ฝึกอบรมทีม",
-        "ออกแบบรายงานเฉพาะ",
       ],
-      cta: "ติดต่อทีมขาย",
+      cta: "ติดต่อเรา",
       popular: false,
-      icon: Building2,
     },
   ]
 
   return (
-    <section id="pricing" className="py-20">
+    <section id="pricing" className="py-16 sm:py-24 bg-muted/30">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">แพ็กเกจราคา</h2>
-          <p className="mt-4 text-lg text-muted-foreground">เลือกแพ็กเกจที่เหมาะกับอู่ของคุณ ทดลองฟรี 30 วัน ทุกแพ็กเกจ</p>
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            ราคาที่คุ้มค่า เหมาะกับทุกขนาดอู่
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            ทดลองใช้ฟรี 7 วัน ทุกแพ็กเกจ ไม่ต้องผูกบัตรเครดิต ยกเลิกได้ทุกเมื่อ
+          </p>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          {plans.map((plan) => {
-            const Icon = plan.icon
-            return (
-              <div
-                key={plan.name}
+        <div className="grid gap-6 md:grid-cols-3 lg:gap-8">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={cn(
+                "relative rounded-2xl border bg-background p-6 sm:p-8",
+                plan.popular
+                  ? "border-primary shadow-xl shadow-primary/10 scale-[1.02]"
+                  : "border-border"
+              )}
+            >
+              {plan.popular && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
+                    <Crown className="h-3 w-3" />
+                    แนะนำ
+                  </span>
+                </div>
+              )}
+
+              <div className="text-center">
+                <h3 className="text-lg font-bold">{plan.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{plan.desc}</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-extrabold">฿{plan.price}</span>
+                  <span className="text-muted-foreground">{plan.period}</span>
+                </div>
+              </div>
+
+              <ul className="mt-8 space-y-3">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href={plan.name === "Enterprise" ? "#contact" : "/trial"}
                 className={cn(
-                  "relative rounded-2xl border bg-card p-8 transition-shadow hover:shadow-lg",
+                  "mt-8 block w-full rounded-xl py-3 text-center text-sm font-semibold transition-colors",
                   plan.popular
-                    ? "border-primary shadow-lg scale-105"
-                    : "border-border"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "border border-border hover:bg-muted"
                 )}
               >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
-                    แนะนำ
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", plan.popular ? "bg-primary/10" : "bg-muted")}>
-                    <Icon className={cn("h-5 w-5", plan.popular ? "text-primary" : "text-muted-foreground")} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
-                    <p className="text-xs text-muted-foreground">{plan.desc}</p>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <span className="text-4xl font-extrabold text-foreground">฿{plan.price.toLocaleString()}</span>
-                  <span className="text-muted-foreground">/เดือน</span>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href="/register"
-                  className={cn(
-                    "block w-full rounded-xl py-3 text-center font-semibold transition-colors",
-                    plan.popular
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "border border-border hover:bg-muted"
-                  )}
-                >
-                  {plan.cta}
-                </Link>
-              </div>
-            )
-          })}
+                {plan.cta}
+              </Link>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -423,48 +812,52 @@ function PricingSection() {
 function TestimonialsSection() {
   const testimonials = [
     {
-      name: "สมชาย ประเสริฐ",
-      role: "เจ้าของ อู่สมชาย เซอร์วิส",
-      text: "เปลี่ยนจากจดสมุดมาใช้ KPServicePro ทำให้ไม่ลืมงาน ลูกค้าประทับใจมาก ติดตามสถานะรถได้เอง รายได้เพิ่มขึ้น 25% ใน 3 เดือน",
+      name: "สมชาย วงศ์ประเสริฐ",
+      role: "เจ้าของอู่ช่างเก่ง Auto Service",
+      text: "ก่อนใช้ KPServicePro จดทุกอย่างในสมุด หาข้อมูลลำบากมาก ตอนนี้ทุกอย่างอยู่ในระบบ ลูกค้าก็ชอบที่ได้รับแจ้งเตือนผ่าน LINE",
       rating: 5,
     },
     {
-      name: "วิไลวรรณ ทองสุข",
-      role: "ผู้จัดการ Car Care Center",
-      text: "ระบบสต็อกอะไหล่ดีมาก แจ้งเตือนเมื่อถึงจุดสั่งซื้อ ไม่เคยขาดสต็อกอีกเลย ลดค่าใช้จ่ายอะไหล่ลง 15%",
+      name: "วิภา แสงทอง",
+      role: "ผู้จัดการอู่ Top Speed Garage",
+      text: "ระบบ DVI ช่วยได้มาก ลูกค้าเห็นรูปจุดเสียหายจริง ตัดสินใจซ่อมเร็วขึ้น รายได้จาก Upsell เพิ่มขึ้น 35% ภายใน 3 เดือน",
       rating: 5,
     },
     {
-      name: "อนุชา ศรีวงศ์",
-      role: "เจ้าของ เครือข่ายอู่ Fast Fix 5 สาขา",
-      text: "ใช้ดูรายงานรวมทุกสาขาได้ในที่เดียว ประสิทธิภาพช่างวัดได้ชัด ทีม Support ตอบไว ช่วยเหลือดีมากครับ",
+      name: "ธนกร เจริญสุข",
+      role: "เจ้าของอู่ธนกรยนต์ 3 สาขา",
+      text: "ใช้มา 1 ปี ระบบเสถียรมาก ดูรายงานรวมทุกสาขาได้ในที่เดียว ช่วยตัดสินใจเรื่องสต็อกและพนักงานได้ดีขึ้นมาก",
       rating: 5,
     },
   ]
 
   return (
-    <section className="bg-muted/30 py-20">
+    <section id="testimonials" className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">เสียงจากผู้ใช้จริง</h2>
-          <p className="mt-4 text-lg text-muted-foreground">ดูว่าเจ้าของอู่คิดอย่างไรกับ KPServicePro</p>
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            เสียงจากเจ้าของอู่ที่ใช้จริง
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            กว่า 500 อู่ทั่วประเทศไว้วางใจ KPServicePro
+          </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((t) => (
-            <div key={t.name} className="rounded-xl border border-border bg-card p-6">
+            <div key={t.name} className="rounded-2xl border border-border bg-background p-6">
               <div className="flex gap-1 mb-4">
                 {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-warning text-warning" />
+                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <p className="text-sm leading-relaxed text-muted-foreground italic">&ldquo;{t.text}&rdquo;</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{t.text}&rdquo;</p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                  {t.name[0]}
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-bold text-primary">{t.name[0]}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                  <p className="text-sm font-semibold">{t.name}</p>
                   <p className="text-xs text-muted-foreground">{t.role}</p>
                 </div>
               </div>
@@ -480,56 +873,58 @@ function TestimonialsSection() {
 function FAQSection() {
   const faqs = [
     {
-      q: "ทดลองฟรี 30 วัน ต้องผูกบัตรเครดิตไหม?",
-      a: "ไม่ต้องผูกบัตรเครดิต สมัครด้วยอีเมลและเริ่มใช้งานได้ทันที หลัง 30 วันสามารถเลือกอัพเกรดหรือใช้แพลนฟรีต่อได้",
+      q: "ทดลองใช้ฟรี 7 วัน ต้องผูกบัตรเครดิตไหม?",
+      a: "ไม่ต้องผูกบัตรเครดิตครับ เพียงกรอกข้อมูลอู่ของคุณก็สามารถเริ่มใช้งานได้ทันที หลังหมดช่วงทดลอง สามารถเลือกแพ็กเกจที่เหมาะสมและชำระเงินเพื่อใช้งานต่อได้เลย",
     },
     {
-      q: "ข้อมูลปลอดภัยไหม?",
-      a: "ข้อมูลเข้ารหัส SSL/TLS ทุกการเชื่อมต่อ จัดเก็บบน Cloud ที่ได้มาตรฐาน สำรองข้อมูลทุกวัน และมีระบบแยกข้อมูลแต่ละอู่อย่างเข้มงวด (Multi-tenant RLS)",
+      q: "ข้อมูลของอู่ฉันปลอดภัยไหม?",
+      a: "ปลอดภัยครับ เราใช้ Supabase ซึ่งเป็นแพลตฟอร์มระดับ Enterprise ข้อมูลถูกเข้ารหัสทั้งขณะส่งและจัดเก็บ มีระบบ Row Level Security (RLS) แยกข้อมูลแต่ละอู่อย่างเข้มงวด",
     },
     {
-      q: "ใช้งานบนมือถือได้ไหม?",
-      a: "ได้ครับ ระบบเป็น Responsive Design ใช้งานผ่าน Browser บนมือถือ แท็บเล็ต และคอมพิวเตอร์ได้เลยโดยไม่ต้องติดตั้งแอพ",
+      q: "ต้องติดตั้งโปรแกรมอะไรเพิ่มไหม?",
+      a: "ไม่ต้องครับ KPServicePro เป็นระบบ Web-based เปิดเบราว์เซอร์บนคอมพิวเตอร์ แท็บเล็ต หรือมือถือก็ใช้งานได้เลย รองรับทุกระบบปฏิบัติการ",
     },
     {
-      q: "เปลี่ยนแพ็กเกจได้ไหม?",
-      a: "ได้ตลอดเวลา สามารถอัพเกรดหรือดาวน์เกรดแพ็กเกจได้ทันที ระบบจะคำนวณค่าใช้จ่ายตามสัดส่วนให้อัตโนมัติ",
+      q: "เชื่อมต่อ LINE OA ยากไหม?",
+      a: "ง่ายมากครับ เพียงนำ Channel ID, Channel Secret และ Access Token จาก LINE Developers Console มาใส่ในหน้าตั้งค่า ระบบจะเชื่อมต่อให้อัตโนมัติ มีคู่มือแนะนำทุกขั้นตอน",
     },
     {
-      q: "มีระบบเคลมประกันไหม?",
-      a: "มีครับ ตั้งแต่แพ็กเกจ Professional ขึ้นไป สามารถบันทึกเคลม ติดตามสถานะ อัพโหลดเอกสาร และคำนวณยอดเบิกได้อัตโนมัติ",
+      q: "หลังหมดทดลอง ข้อมูลจะหายไหม?",
+      a: "ไม่หายครับ ข้อมูลทั้งหมดจะถูกเก็บรักษาไว้ 30 วัน หลังหมดช่วงทดลอง คุณสามารถเลือกแพ็กเกจและเริ่มใช้งานต่อได้ทันที โดยข้อมูลทั้งหมดยังคงอยู่ครบถ้วน",
     },
     {
-      q: "ย้ายข้อมูลเก่าเข้ามาได้ไหม?",
-      a: "ได้ครับ ทีม Support จะช่วยย้ายข้อมูลลูกค้า รถ และประวัติงานซ่อมจากไฟล์ Excel หรือระบบเดิมให้ฟรี",
+      q: "รองรับหลายสาขาไหม?",
+      a: "รองรับครับ แพ็กเกจ Enterprise รองรับหลายสาขา สามารถดูรายงานรวมทุกสาขาได้ในที่เดียว แต่ละสาขามี LINE OA แยกกันได้",
     },
   ]
 
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [openIdx, setOpenIdx] = useState<number | null>(null)
 
   return (
-    <section id="faq" className="py-20">
+    <section id="faq" className="py-16 sm:py-24 bg-muted/30">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">คำถามที่พบบ่อย</h2>
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            คำถามที่พบบ่อย
+          </h2>
         </div>
 
         <div className="space-y-3">
           {faqs.map((faq, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card">
+            <div key={i} className="rounded-xl border border-border bg-background overflow-hidden">
               <button
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="flex w-full items-center justify-between p-4 text-left"
+                onClick={() => setOpenIdx(openIdx === i ? null : i)}
+                className="flex w-full items-center justify-between px-5 py-4 text-left"
               >
-                <span className="text-sm font-medium text-foreground pr-4">{faq.q}</span>
-                {openIndex === i ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-semibold pr-4">{faq.q}</span>
+                {openIdx === i ? (
+                  <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
               </button>
-              {openIndex === i && (
-                <div className="px-4 pb-4">
+              {openIdx === i && (
+                <div className="px-5 pb-4">
                   <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
                 </div>
               )}
@@ -544,164 +939,179 @@ function FAQSection() {
 /* ========== CTA ========== */
 function CTASection() {
   return (
-    <section className="bg-gradient-to-br from-primary to-primary/80 py-20 text-primary-foreground">
-      <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-extrabold sm:text-4xl">พร้อมยกระดับอู่ของคุณแล้วหรือยัง?</h2>
-        <p className="mt-4 text-lg opacity-90 max-w-2xl mx-auto">
-          เริ่มทดลองใช้ฟรี 30 วัน วันนี้ ไม่ต้องผูกบัตร ไม่ต้องติดตั้ง พร้อมทีม Support ช่วยเหลือตลอด
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-primary font-bold shadow-lg hover:bg-white/90 transition-colors"
-          >
-            เริ่มทดลองฟรี 30 วัน
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="#features"
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-white/30 px-8 py-3.5 font-semibold backdrop-blur-sm hover:bg-white/10 transition-colors"
-          >
-            ดูฟีเจอร์ทั้งหมด
-          </Link>
+    <section className="py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary/90 to-blue-700 px-6 py-16 text-center text-white sm:px-12 sm:py-20">
+          <div className="absolute inset-0">
+            <div className="absolute top-10 left-10 w-60 h-60 bg-white/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-10 right-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+          </div>
+
+          <div className="relative">
+            <h2 className="text-3xl font-extrabold sm:text-4xl">
+              พร้อมยกระดับอู่ของคุณหรือยัง?
+            </h2>
+            <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">
+              เริ่มทดลองใช้ KPServicePro ฟรี 7 วัน วันนี้ ไม่ต้องผูกบัตรเครดิต
+              ตั้งค่าเสร็จใน 5 นาที
+            </p>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link
+                href="/trial"
+                className="group inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-primary shadow-lg hover:bg-white/90 transition-colors"
+              >
+                เริ่มทดลองฟรี 7 วัน
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <a
+                href="tel:0812345678"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-white/30 px-8 py-3.5 text-base font-semibold backdrop-blur-sm hover:bg-white/10 transition-colors"
+              >
+                <Phone className="h-4 w-4" />
+                โทรปรึกษาฟรี
+              </a>
+            </div>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-white/60">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                ข้อมูลปลอดภัย 100%
+              </div>
+              <div className="flex items-center gap-2">
+                <Headphones className="h-4 w-4" />
+                ซัพพอร์ตตลอด 24/7
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                ยกเลิกได้ทุกเมื่อ
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-/* ========== NAVBAR ========== */
-function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-
-  return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
-      <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Wrench className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-foreground">KPServicePro</span>
-        </Link>
-
-        <div className="hidden md:flex items-center gap-6 text-sm">
-          <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">ฟีเจอร์</a>
-          <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">ราคา</a>
-          <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
-          <Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">เข้าสู่ระบบ</Link>
-          <Link
-            href="/register"
-            className="rounded-lg bg-primary px-4 py-2 text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
-          >
-            ทดลองฟรี
-          </Link>
-        </div>
-
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2">
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </div>
-
-      {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background p-4 space-y-3">
-          <a href="#features" className="block text-sm text-muted-foreground hover:text-foreground">ฟีเจอร์</a>
-          <a href="#pricing" className="block text-sm text-muted-foreground hover:text-foreground">ราคา</a>
-          <a href="#faq" className="block text-sm text-muted-foreground hover:text-foreground">FAQ</a>
-          <Link href="/login" className="block text-sm text-muted-foreground hover:text-foreground">เข้าสู่ระบบ</Link>
-          <Link
-            href="/register"
-            className="block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-primary-foreground font-medium"
-          >
-            ทดลองฟรี 30 วัน
-          </Link>
-        </div>
-      )}
-    </nav>
-  )
-}
-
 /* ========== FOOTER ========== */
 function Footer() {
   return (
-    <footer className="border-t border-border bg-card py-12">
+    <footer className="border-t border-border bg-muted/30 py-12">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <Wrench className="h-4 w-4 text-primary-foreground" />
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+                KP
               </div>
-              <span className="font-bold text-foreground">KPServicePro</span>
+              <span className="font-bold">
+                KPService<span className="text-primary">Pro</span>
+              </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              ระบบจัดการอู่ซ่อมรถออนไลน์ครบวงจร ช่วยให้อู่ทำงานง่ายขึ้น เพิ่มรายได้ ลดข้อผิดพลาด
+              ระบบจัดการอู่ซ่อมรถครบวงจร ช่วยให้อู่ของคุณทำงานได้อย่างมืออาชีพ
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-3">ผลิตภัณฑ์</h4>
+            <h4 className="font-semibold mb-3 text-sm">ผลิตภัณฑ์</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#features" className="hover:text-foreground">ฟีเจอร์</a></li>
-              <li><a href="#pricing" className="hover:text-foreground">ราคา</a></li>
-              <li><a href="#" className="hover:text-foreground">อัพเดท</a></li>
-              <li><a href="#" className="hover:text-foreground">Roadmap</a></li>
+              <li><a href="#features" className="hover:text-foreground transition-colors">ฟีเจอร์</a></li>
+              <li><a href="#pricing" className="hover:text-foreground transition-colors">ราคา</a></li>
+              <li><Link href="/trial" className="hover:text-foreground transition-colors">ทดลองฟรี</Link></li>
+              <li><Link href="/login" className="hover:text-foreground transition-colors">เข้าสู่ระบบ</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-3">สนับสนุน</h4>
+            <h4 className="font-semibold mb-3 text-sm">ช่วยเหลือ</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#faq" className="hover:text-foreground">FAQ</a></li>
-              <li><a href="#" className="hover:text-foreground">คู่มือการใช้งาน</a></li>
-              <li><a href="#" className="hover:text-foreground">วิดีโอสอนใช้งาน</a></li>
-              <li><a href="#" className="hover:text-foreground">ติดต่อ Support</a></li>
+              <li><a href="#faq" className="hover:text-foreground transition-colors">คำถามที่พบบ่อย</a></li>
+              <li><a href="#" className="hover:text-foreground transition-colors">คู่มือการใช้งาน</a></li>
+              <li><a href="#" className="hover:text-foreground transition-colors">ข้อกำหนดการใช้งาน</a></li>
+              <li><a href="#" className="hover:text-foreground transition-colors">นโยบายความเป็นส่วนตัว</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-3">ติดต่อเรา</h4>
+            <h4 className="font-semibold mb-3 text-sm">ติดต่อเรา</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4" /> 02-xxx-xxxx
+                <Phone className="h-4 w-4" />
+                081-234-5678
               </li>
               <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4" /> support@kpservicepro.com
+                <Mail className="h-4 w-4" />
+                support@kpservicepro.com
               </li>
               <li className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" /> @kpservicepro
+                <MessageCircle className="h-4 w-4" />
+                @kpservicepro
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
-            © 2026 KPServicePro. สงวนลิขสิทธิ์ทุกประการ
-          </p>
-          <div className="flex gap-4 text-xs text-muted-foreground">
-            <a href="#" className="hover:text-foreground">นโยบายความเป็นส่วนตัว</a>
-            <a href="#" className="hover:text-foreground">เงื่อนไขการใช้บริการ</a>
-          </div>
+        <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+          &copy; {new Date().getFullYear()} KPServicePro. All rights reserved.
         </div>
       </div>
     </footer>
   )
 }
 
-/* ========== LANDING PAGE ========== */
+/* ========== STRUCTURED DATA (JSON-LD) ========== */
+function StructuredData() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "KPServicePro",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description: "ระบบจัดการอู่ซ่อมรถครบวงจร จัดการงานซ่อม อะไหล่ เคลมประกัน การเงิน และเชื่อมต่อ LINE OA",
+    offers: {
+      "@type": "AggregateOffer",
+      lowPrice: "1490",
+      highPrice: "5990",
+      priceCurrency: "THB",
+      offerCount: "3",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      ratingCount: "500",
+      bestRating: "5",
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+/* ========== MAIN PAGE ========== */
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <>
+      <StructuredData />
       <Navbar />
-      <HeroSection />
-      <StatsSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <PricingSection />
-      <TestimonialsSection />
-      <FAQSection />
-      <CTASection />
+      <main>
+        <HeroSection />
+        <StatsSection />
+        <FeaturesSection />
+        <LineOASection />
+        <DVISection />
+        <HowItWorksSection />
+        <PricingSection />
+        <TestimonialsSection />
+        <FAQSection />
+        <CTASection />
+      </main>
       <Footer />
-    </div>
+    </>
   )
 }

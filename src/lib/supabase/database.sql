@@ -1179,6 +1179,35 @@ CREATE TABLE subscription_history (
 CREATE INDEX idx_subscription_history_tenant_id ON subscription_history(tenant_id);
 
 -- ============================================================
+-- TRIAL REGISTRATIONS (Public form submissions before account creation)
+-- ============================================================
+
+CREATE TYPE trial_status AS ENUM ('pending', 'approved', 'rejected', 'converted', 'expired');
+
+CREATE TABLE trial_registrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_name TEXT NOT NULL,
+  owner_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  shop_address TEXT,
+  shop_type TEXT DEFAULT 'general',
+  employee_count TEXT DEFAULT '1-5',
+  how_did_you_find TEXT,
+  message TEXT,
+  status trial_status NOT NULL DEFAULT 'pending',
+  tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
+  approved_at TIMESTAMPTZ,
+  approved_by UUID REFERENCES auth.users(id),
+  rejected_reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_trial_registrations_status ON trial_registrations(status);
+CREATE INDEX idx_trial_registrations_email ON trial_registrations(email);
+
+-- ============================================================
 -- ENABLE ROW LEVEL SECURITY ON ALL TABLES
 -- ============================================================
 
@@ -1245,6 +1274,7 @@ ALTER TABLE shipping_rates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscription_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trial_registrations ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- RLS POLICIES - Tenant Isolation + Super Admin Bypass
