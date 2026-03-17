@@ -185,11 +185,11 @@ export default async function CustomerDetailPage({
                     <p className="font-bold text-primary">{v.license_plate as string}</p>
                     <p className="text-sm">{v.brand as string} {v.model as string}</p>
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {v.year && <span>ปี {String(v.year)}</span>}
-                      {v.color && <span>สี: {String(v.color)}</span>}
-                      {v.current_mileage && <span>{Number(v.current_mileage).toLocaleString()} กม.</span>}
+                      {v.year ? <span>ปี {String(v.year)}</span> : null}
+                      {v.color ? <span>สี: {String(v.color)}</span> : null}
+                      {v.current_mileage ? <span>{Number(v.current_mileage).toLocaleString()} กม.</span> : null}
                     </div>
-                    {v.vin && <p className="mt-1 font-mono text-[10px] text-muted-foreground">VIN: {String(v.vin)}</p>}
+                    {v.vin ? <p className="mt-1 font-mono text-[10px] text-muted-foreground">VIN: {String(v.vin)}</p> : null}
                   </div>
                 ))}
               </div>
