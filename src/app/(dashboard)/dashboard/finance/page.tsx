@@ -45,8 +45,8 @@ export default async function FinancePage({
 
   // Calculate summary
   const totalRevenue = invoices
-    .filter((inv: Record<string, unknown>) => inv.status === "paid")
-    .reduce((sum: number, inv: Record<string, unknown>) => sum + Number(inv.total_amount || 0), 0)
+    .filter((inv: Record<string, unknown>) => inv.payment_status === "paid")
+    .reduce((sum: number, inv: Record<string, unknown>) => sum + Number(inv.total || 0), 0)
 
   const totalExpenses = expenses
     .reduce((sum: number, exp: Record<string, unknown>) => sum + Number(exp.amount || 0), 0)
@@ -54,8 +54,8 @@ export default async function FinancePage({
   const profit = totalRevenue - totalExpenses
 
   const pendingAmount = invoices
-    .filter((inv: Record<string, unknown>) => inv.status === "pending" || inv.status === "overdue")
-    .reduce((sum: number, inv: Record<string, unknown>) => sum + Number(inv.total_amount || 0), 0)
+    .filter((inv: Record<string, unknown>) => inv.payment_status === "pending" || inv.payment_status === "overdue")
+    .reduce((sum: number, inv: Record<string, unknown>) => sum + Number(inv.total || 0), 0)
 
   const summaryCards = [
     { label: "รายรับ", value: totalRevenue, icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
@@ -140,14 +140,14 @@ export default async function FinancePage({
                   {invoices.map((inv: Record<string, unknown>) => {
                     const customer = inv.customers as Record<string, unknown> | null
                     const job = inv.jobs as Record<string, unknown> | null
-                    const status = inv.status as InvoiceStatus
+                    const status = inv.payment_status as InvoiceStatus
 
                     return (
                       <tr key={inv.id as string} className="border-b border-border last:border-0 hover:bg-muted/30">
                         <td className="px-4 py-3 text-sm font-medium text-primary">{inv.invoice_number as string}</td>
                         <td className="px-4 py-3 text-sm text-card-foreground">{customer?.name as string || "-"}</td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{job?.job_number as string || "-"}</td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">{formatCurrency(Number(inv.total_amount) || 0)}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">{formatCurrency(Number(inv.total) || 0)}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={cn(
                             "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
@@ -156,7 +156,7 @@ export default async function FinancePage({
                             {invoiceStatusConfig[status]?.label || status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(inv.issue_date as string)}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(inv.created_at as string)}</td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(inv.due_date as string)}</td>
                       </tr>
                     )
@@ -201,7 +201,7 @@ export default async function FinancePage({
                            rec.payment_method === "credit_card" ? "บัตรเครดิต" :
                            rec.payment_method as string || "-"}
                         </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(rec.payment_date as string)}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(rec.created_at as string)}</td>
                       </tr>
                     )
                   })}
@@ -240,7 +240,7 @@ export default async function FinancePage({
                       </td>
                       <td className="px-4 py-3 text-sm text-card-foreground">{exp.description as string || "-"}</td>
                       <td className="px-4 py-3 text-right text-sm font-medium text-error">{formatCurrency(Number(exp.amount) || 0)}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(exp.expense_date as string)}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(exp.date as string)}</td>
                     </tr>
                   ))}
                   {expenses.length === 0 && (
