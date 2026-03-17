@@ -217,6 +217,22 @@ export async function notifyPaymentReceived(params: {
   })
 }
 
+export async function notifyExpenseDue(params: {
+  tenantId: string
+  expenseName: string
+  category: string
+  recurringExpenseId: string
+}) {
+  return sendNotification({
+    tenantId: params.tenantId,
+    eventType: 'expense_due',
+    title: 'ครบกำหนดชำระค่าใช้จ่าย',
+    body: `ครบกำหนดชำระ "${params.expenseName}" (${params.category}) กรุณากรอกจำนวนเงินและบันทึก`,
+    url: '/dashboard/finance?tab=expenses',
+    data: { recurringExpenseId: params.recurringExpenseId, expenseName: params.expenseName },
+  })
+}
+
 export async function notifyPaymentOverdue(params: {
   tenantId: string
   invoiceNumber: string

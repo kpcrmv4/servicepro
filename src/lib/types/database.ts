@@ -226,6 +226,27 @@ export interface Expense {
 }
 
 // ============================================================
+// Recurring Expenses
+// ============================================================
+
+export type RecurringExpenseType = 'fixed' | 'variable'
+
+export interface RecurringExpense {
+  id: string
+  tenant_id: string
+  name: string
+  category: string
+  type: RecurringExpenseType
+  amount: number | null
+  day_of_month: number
+  is_active: boolean
+  last_generated_month: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================
 // Parts & Inventory Tables
 // ============================================================
 
@@ -302,6 +323,35 @@ export interface StockMovement {
   type: StockMovementType
   quantity: number
   reference: string | null
+  notes: string | null
+  created_by: string
+  created_at: string
+}
+
+export interface StockBatch {
+  id: string
+  tenant_id: string
+  part_id: string
+  po_id: string | null
+  quantity_received: number
+  quantity_remaining: number
+  cost_per_unit: number
+  expiry_date: string | null
+  batch_reference: string | null
+  created_at: string
+}
+
+export interface PosSale {
+  id: string
+  tenant_id: string
+  sale_number: string
+  items: Record<string, unknown>[]
+  subtotal: number
+  discount: number
+  vat: number
+  total: number
+  payment_method: PaymentMethod
+  customer_id: string | null
   notes: string | null
   created_by: string
   created_at: string

@@ -278,6 +278,30 @@ CREATE INDEX idx_expenses_tenant_id ON expenses(tenant_id);
 CREATE INDEX idx_expenses_date ON expenses(tenant_id, date DESC);
 
 -- ============================================================
+-- RECURRING EXPENSES TABLE
+-- ============================================================
+
+CREATE TYPE recurring_expense_type AS ENUM ('fixed', 'variable');
+
+CREATE TABLE recurring_expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  type recurring_expense_type NOT NULL DEFAULT 'fixed',
+  amount NUMERIC(12,2),  -- NULL for variable type
+  day_of_month INTEGER NOT NULL CHECK (day_of_month >= 1 AND day_of_month <= 28),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_generated_month TEXT,  -- YYYY-MM format of last generated expense
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_recurring_expenses_tenant_id ON recurring_expenses(tenant_id);
+CREATE INDEX idx_recurring_expenses_active ON recurring_expenses(tenant_id, is_active) WHERE is_active = true;
+
+-- ============================================================
 -- PARTS & INVENTORY TABLES
 -- ============================================================
 
@@ -377,6 +401,44 @@ CREATE TABLE stock_movements (
 
 CREATE INDEX idx_stock_movements_tenant_id ON stock_movements(tenant_id);
 CREATE INDEX idx_stock_movements_part_id ON stock_movements(part_id);
+CREATE INDEX idx_stock_movements_job_id ON stock_movements(job_id);
+
+-- Stock Batches: tracks each incoming lot for FEFO and weighted average cost
+CREATE TABLE stock_batches (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  part_id UUID NOT NULL REFERENCES parts(id) ON DELETE RESTRICT,
+  po_id UUID REFERENCES purchase_orders(id) ON DELETE SET NULL,
+  quantity_received NUMERIC(10,2) NOT NULL,
+  quantity_remaining NUMERIC(10,2) NOT NULL,
+  cost_per_unit NUMERIC(12,2) NOT NULL DEFAULT 0,
+  expiry_date DATE,
+  batch_reference TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_stock_batches_part_id ON stock_batches(part_id);
+CREATE INDEX idx_stock_batches_expiry ON stock_batches(part_id, expiry_date ASC NULLS LAST) WHERE quantity_remaining > 0;
+
+-- POS Sales table
+CREATE TABLE pos_sales (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  sale_number TEXT NOT NULL,
+  items JSONB NOT NULL DEFAULT '[]',
+  subtotal NUMERIC(12,2) NOT NULL DEFAULT 0,
+  discount NUMERIC(12,2) NOT NULL DEFAULT 0,
+  vat NUMERIC(12,2) NOT NULL DEFAULT 0,
+  total NUMERIC(12,2) NOT NULL DEFAULT 0,
+  payment_method payment_method NOT NULL DEFAULT 'cash',
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  notes TEXT,
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX idx_pos_sales_number ON pos_sales(tenant_id, sale_number);
+CREATE INDEX idx_pos_sales_tenant_id ON pos_sales(tenant_id);
 
 -- ============================================================
 -- INSURANCE TABLES

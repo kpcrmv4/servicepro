@@ -1,6 +1,4 @@
 import {
-  Plus,
-  Search,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -8,11 +6,16 @@ import {
   FileText,
   Receipt,
   CreditCard,
+  Settings,
 } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
-import { getInvoices, getReceipts, getExpenses } from "@/lib/actions/finance"
+import { getInvoices, getReceipts, getExpenses, getRecurringExpenses, getPendingInvoices } from "@/lib/actions/finance"
+import { getJobs } from "@/lib/actions/jobs"
+import { getCustomers } from "@/lib/actions/customers"
 import Link from "next/link"
+import { FinanceActionButtons } from "@/components/finance/finance-actions"
+import { RecurringExpenseManager } from "@/components/finance/recurring-expense-manager"
 
 type InvoiceStatus = "paid" | "pending" | "overdue" | "cancelled"
 
@@ -27,6 +30,7 @@ const tabs = [
   { key: "invoices", label: "ใบแจ้งหนี้", icon: FileText },
   { key: "receipts", label: "ใบเสร็จ", icon: Receipt },
   { key: "expenses", label: "ค่าใช้จ่าย", icon: CreditCard },
+  { key: "recurring", label: "ค่าใช้จ่ายประจำ", icon: Settings },
 ]
 
 export default async function FinancePage({
@@ -37,10 +41,14 @@ export default async function FinancePage({
   const params = await searchParams
   const activeTab = params.tab || "invoices"
 
-  const [invoices, receipts, expenses] = await Promise.all([
+  const [invoices, receipts, expenses, recurringExpenses, pendingInvoices, jobs, customers] = await Promise.all([
     getInvoices(),
     getReceipts(),
     getExpenses(),
+    getRecurringExpenses(),
+    getPendingInvoices(),
+    getJobs(),
+    getCustomers(),
   ])
 
   // Calculate summary
@@ -64,14 +72,32 @@ export default async function FinancePage({
     { label: "ลูกหนี้ค้าง", value: pendingAmount, icon: AlertCircle, color: "text-warning", bg: "bg-warning/10" },
   ]
 
+  const categoryLabels: Record<string, string> = {
+    salary: 'ค่าจ้างพนักงาน',
+    rent: 'ค่าเช่า',
+    utilities: 'ค่าน้ำ/ค่าไฟ',
+    supplies: 'วัสดุสิ้นเปลือง',
+    equipment: 'อุปกรณ์/เครื่องมือ',
+    marketing: 'การตลาด/โฆษณา',
+    insurance: 'ประกันภัย',
+    transport: 'ค่าขนส่ง',
+    maintenance: 'ค่าบำรุงรักษา',
+    internet: 'ค่าอินเทอร์เน็ต',
+    phone: 'ค่าโทรศัพท์',
+    software: 'ค่าซอฟต์แวร์/สมาชิก',
+    other: 'อื่นๆ',
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="การเงิน"
         action={
-          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            <Plus className="h-4 w-4" /> สร้างใบแจ้งหนี้
-          </button>
+          <FinanceActionButtons
+            jobs={jobs}
+            customers={customers}
+            pendingInvoices={pendingInvoices}
+          />
         }
       />
 
@@ -112,7 +138,7 @@ export default async function FinancePage({
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
               </Link>
             )
           })}
@@ -182,6 +208,7 @@ export default async function FinancePage({
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขที่</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ใบแจ้งหนี้</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">ลูกค้า</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">จำนวนเงิน</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">วิธีชำระ</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">วันที่</th>
@@ -190,15 +217,18 @@ export default async function FinancePage({
                 <tbody>
                   {receipts.map((rec: Record<string, unknown>) => {
                     const invoice = rec.invoices as Record<string, unknown> | null
+                    const invoiceCustomer = invoice?.customers as Record<string, unknown> | null
                     return (
                       <tr key={rec.id as string} className="border-b border-border last:border-0 hover:bg-muted/30">
                         <td className="px-4 py-3 text-sm font-medium text-primary">{rec.receipt_number as string}</td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{invoice?.invoice_number as string || "-"}</td>
+                        <td className="px-4 py-3 text-sm text-card-foreground">{invoiceCustomer?.name as string || "-"}</td>
                         <td className="px-4 py-3 text-right text-sm font-medium text-card-foreground">{formatCurrency(Number(rec.amount) || 0)}</td>
                         <td className="px-4 py-3 text-center text-sm text-card-foreground">
                           {rec.payment_method === "cash" ? "เงินสด" :
                            rec.payment_method === "transfer" ? "โอนเงิน" :
                            rec.payment_method === "credit_card" ? "บัตรเครดิต" :
+                           rec.payment_method === "promptpay" ? "PromptPay" :
                            rec.payment_method as string || "-"}
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(rec.created_at as string)}</td>
@@ -207,7 +237,7 @@ export default async function FinancePage({
                   })}
                   {receipts.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                         ยังไม่มีใบเสร็จ
                       </td>
                     </tr>
@@ -235,7 +265,7 @@ export default async function FinancePage({
                     <tr key={exp.id as string} className="border-b border-border last:border-0 hover:bg-muted/30">
                       <td className="px-4 py-3">
                         <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                          {exp.category as string || "-"}
+                          {categoryLabels[exp.category as string] || exp.category as string || "-"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-card-foreground">{exp.description as string || "-"}</td>
@@ -253,6 +283,12 @@ export default async function FinancePage({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {activeTab === "recurring" && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <RecurringExpenseManager recurringExpenses={recurringExpenses} />
           </div>
         )}
       </div>
