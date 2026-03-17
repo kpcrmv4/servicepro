@@ -226,6 +226,27 @@ export interface Expense {
 }
 
 // ============================================================
+// Recurring Expenses
+// ============================================================
+
+export type RecurringExpenseType = 'fixed' | 'variable'
+
+export interface RecurringExpense {
+  id: string
+  tenant_id: string
+  name: string
+  category: string
+  type: RecurringExpenseType
+  amount: number | null
+  day_of_month: number
+  is_active: boolean
+  last_generated_month: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================
 // Parts & Inventory Tables
 // ============================================================
 

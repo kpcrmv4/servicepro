@@ -278,6 +278,30 @@ CREATE INDEX idx_expenses_tenant_id ON expenses(tenant_id);
 CREATE INDEX idx_expenses_date ON expenses(tenant_id, date DESC);
 
 -- ============================================================
+-- RECURRING EXPENSES TABLE
+-- ============================================================
+
+CREATE TYPE recurring_expense_type AS ENUM ('fixed', 'variable');
+
+CREATE TABLE recurring_expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  type recurring_expense_type NOT NULL DEFAULT 'fixed',
+  amount NUMERIC(12,2),  -- NULL for variable type
+  day_of_month INTEGER NOT NULL CHECK (day_of_month >= 1 AND day_of_month <= 28),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_generated_month TEXT,  -- YYYY-MM format of last generated expense
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_recurring_expenses_tenant_id ON recurring_expenses(tenant_id);
+CREATE INDEX idx_recurring_expenses_active ON recurring_expenses(tenant_id, is_active) WHERE is_active = true;
+
+-- ============================================================
 -- PARTS & INVENTORY TABLES
 -- ============================================================
 

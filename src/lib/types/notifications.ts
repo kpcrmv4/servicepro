@@ -28,6 +28,7 @@ export const NOTIFICATION_EVENTS = {
   // การเงิน
   payment_received: { label: 'รับชำระเงิน', category: 'finance', icon: '💰' },
   payment_overdue: { label: 'ค้างชำระเกินกำหนด', category: 'finance', icon: '⚠️' },
+  expense_due: { label: 'ครบกำหนดชำระค่าใช้จ่าย', category: 'finance', icon: '📅' },
 
   // สต็อกอะไหล่
   stock_low: { label: 'สต็อกอะไหล่ต่ำ', category: 'inventory', icon: '📦' },
@@ -183,6 +184,7 @@ export const DEFAULT_ROLE_CONFIG: Record<NotificationEventType, UserRole[]> = {
   dvi_sent_customer: ['owner', 'admin', 'manager', 'receptionist'],
   payment_received: ['owner', 'admin', 'manager', 'receptionist'],
   payment_overdue: ['owner', 'admin', 'manager'],
+  expense_due: ['owner', 'admin', 'manager'],
   stock_low: ['owner', 'admin', 'manager'],
   stock_out: ['owner', 'admin', 'manager'],
   po_received: ['owner', 'admin', 'manager'],

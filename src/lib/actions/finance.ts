@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { notifyExpenseDue } from '@/lib/notifications/triggers'
 
 async function getUserInfo() {
   const supabase = await createClient()
@@ -215,4 +216,254 @@ export async function getFinanceOverview() {
     pendingAmount,
     pendingCount: pending?.length || 0,
   }
+}
+
+// =============================================================================
+// Recurring Expenses
+// =============================================================================
+
+export async function getRecurringExpenses() {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return []
+
+  const { data } = await supabase
+    .from('recurring_expenses')
+    .select('*, created_by_user:users!recurring_expenses_created_by_fkey(full_name)')
+    .eq('tenant_id', userInfo.tenant_id)
+    .order('created_at', { ascending: false })
+
+  return data || []
+}
+
+export async function createRecurringExpense(formData: FormData) {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const type = formData.get('type') as string || 'fixed'
+  const amount = type === 'fixed' ? (Number(formData.get('amount')) || 0) : null
+
+  const { error } = await supabase.from('recurring_expenses').insert({
+    tenant_id: userInfo.tenant_id,
+    name: formData.get('name') as string,
+    category: formData.get('category') as string,
+    type,
+    amount,
+    day_of_month: Number(formData.get('day_of_month')) || 1,
+    is_active: true,
+    created_by: userInfo.id,
+  })
+
+  if (error) return { error: error.message }
+  revalidatePath('/dashboard/finance')
+  return { success: true }
+}
+
+export async function updateRecurringExpense(id: string, formData: FormData) {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const type = formData.get('type') as string || 'fixed'
+  const amount = type === 'fixed' ? (Number(formData.get('amount')) || 0) : null
+
+  const { error } = await supabase
+    .from('recurring_expenses')
+    .update({
+      name: formData.get('name') as string,
+      category: formData.get('category') as string,
+      type,
+      amount,
+      day_of_month: Number(formData.get('day_of_month')) || 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('tenant_id', userInfo.tenant_id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/dashboard/finance')
+  return { success: true }
+}
+
+export async function toggleRecurringExpense(id: string, isActive: boolean) {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const { error } = await supabase
+    .from('recurring_expenses')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', userInfo.tenant_id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/dashboard/finance')
+  return { success: true }
+}
+
+export async function generateFixedExpenseNow(recurringExpenseId: string) {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  // Fetch the recurring expense
+  const { data: recurring } = await supabase
+    .from('recurring_expenses')
+    .select('*')
+    .eq('id', recurringExpenseId)
+    .eq('tenant_id', userInfo.tenant_id)
+    .single()
+
+  if (!recurring) return { error: 'ไม่พบค่าใช้จ่ายประจำ' }
+  if (recurring.type !== 'fixed') return { error: 'ใช้ได้เฉพาะค่าใช้จ่ายคงที่เท่านั้น' }
+
+  const now = new Date()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  if (recurring.last_generated_month === currentMonth) {
+    return { error: 'ค่าใช้จ่ายเดือนนี้ถูกสร้างแล้ว' }
+  }
+
+  // Create expense entry
+  const { error: expenseError } = await supabase.from('expenses').insert({
+    tenant_id: userInfo.tenant_id,
+    category: recurring.category,
+    description: `${recurring.name} (ประจำเดือน ${currentMonth})`,
+    amount: recurring.amount,
+    date: now.toISOString().split('T')[0],
+    created_by: userInfo.id,
+  })
+
+  if (expenseError) return { error: expenseError.message }
+
+  // Update last_generated_month
+  await supabase
+    .from('recurring_expenses')
+    .update({ last_generated_month: currentMonth, updated_at: new Date().toISOString() })
+    .eq('id', recurringExpenseId)
+
+  revalidatePath('/dashboard/finance')
+  return { success: true }
+}
+
+export async function processRecurringExpenses() {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const now = new Date()
+  const currentDay = now.getDate()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  // Fetch active recurring expenses due today
+  const { data: recurringExpenses } = await supabase
+    .from('recurring_expenses')
+    .select('*')
+    .eq('tenant_id', userInfo.tenant_id)
+    .eq('is_active', true)
+    .eq('day_of_month', currentDay)
+    .or(`last_generated_month.is.null,last_generated_month.neq.${currentMonth}`)
+
+  if (!recurringExpenses || recurringExpenses.length === 0) {
+    return { success: true, message: 'ไม่มีค่าใช้จ่ายประจำที่ครบกำหนดวันนี้' }
+  }
+
+  let generated = 0
+  let notified = 0
+
+  for (const recurring of recurringExpenses) {
+    if (recurring.type === 'fixed' && recurring.amount) {
+      // Auto-create expense for fixed type
+      await supabase.from('expenses').insert({
+        tenant_id: userInfo.tenant_id,
+        category: recurring.category,
+        description: `${recurring.name} (ประจำเดือน ${currentMonth})`,
+        amount: recurring.amount,
+        date: now.toISOString().split('T')[0],
+        created_by: recurring.created_by,
+      })
+
+      await supabase
+        .from('recurring_expenses')
+        .update({ last_generated_month: currentMonth, updated_at: new Date().toISOString() })
+        .eq('id', recurring.id)
+
+      generated++
+    } else if (recurring.type === 'variable') {
+      // Send notification for variable type
+      await notifyExpenseDue({
+        tenantId: userInfo.tenant_id,
+        expenseName: recurring.name,
+        category: recurring.category,
+        recurringExpenseId: recurring.id,
+      })
+      notified++
+    }
+  }
+
+  revalidatePath('/dashboard/finance')
+  return { success: true, generated, notified }
+}
+
+export async function recordVariableExpense(recurringExpenseId: string, amount: number) {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const { data: recurring } = await supabase
+    .from('recurring_expenses')
+    .select('*')
+    .eq('id', recurringExpenseId)
+    .eq('tenant_id', userInfo.tenant_id)
+    .single()
+
+  if (!recurring) return { error: 'ไม่พบค่าใช้จ่ายประจำ' }
+
+  const now = new Date()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  const { error } = await supabase.from('expenses').insert({
+    tenant_id: userInfo.tenant_id,
+    category: recurring.category,
+    description: `${recurring.name} (ประจำเดือน ${currentMonth})`,
+    amount,
+    date: now.toISOString().split('T')[0],
+    created_by: userInfo.id,
+  })
+
+  if (error) return { error: error.message }
+
+  await supabase
+    .from('recurring_expenses')
+    .update({ last_generated_month: currentMonth, updated_at: new Date().toISOString() })
+    .eq('id', recurringExpenseId)
+
+  revalidatePath('/dashboard/finance')
+  return { success: true }
+}
+
+// =============================================================================
+// Get pending invoices for receipt creation (unpaid/partial)
+// =============================================================================
+
+export async function getPendingInvoices() {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return []
+
+  const { data } = await supabase
+    .from('invoices')
+    .select(`
+      id,
+      invoice_number,
+      total,
+      payment_status,
+      customers(name)
+    `)
+    .eq('tenant_id', userInfo.tenant_id)
+    .in('payment_status', ['pending', 'partial'])
+    .order('created_at', { ascending: false })
+
+  return data || []
 }
