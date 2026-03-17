@@ -89,20 +89,66 @@ export async function getTenant(id: string) {
   return data
 }
 
+export async function createTenant(formData: FormData) {
+  const ctx = await verifySuperAdmin()
+  if (!ctx) return { error: 'ไม่มีสิทธิ์' }
+
+  const { supabase } = ctx
+
+  const name = formData.get('name') as string
+  const slug = formData.get('slug') as string
+  const phone = formData.get('phone') as string
+  const address = formData.get('address') as string
+  const taxId = formData.get('tax_id') as string
+  const plan = formData.get('plan') as string || 'free'
+  const subscriptionStatus = formData.get('subscription_status') as string || 'trial'
+
+  if (!name || !slug) {
+    return { error: 'กรุณากรอกชื่อร้านและ slug' }
+  }
+
+  const { error } = await supabase
+    .from('tenants')
+    .insert({
+      name,
+      slug,
+      phone: phone || null,
+      address: address || null,
+      tax_id: taxId || null,
+      plan,
+      subscription_status: subscriptionStatus,
+      trial_ends_at: subscriptionStatus === 'trial'
+        ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+    })
+
+  if (error) {
+    if (error.message.includes('duplicate') || error.message.includes('unique')) {
+      return { error: 'Slug นี้ถูกใช้งานแล้ว' }
+    }
+    return { error: error.message }
+  }
+
+  revalidatePath('/super-admin')
+  return { success: true }
+}
+
 export async function updateTenant(id: string, formData: FormData) {
   const ctx = await verifySuperAdmin()
   if (!ctx) return { error: 'ไม่มีสิทธิ์' }
 
   const { supabase } = ctx
 
+  const updates: Record<string, unknown> = {}
+  const fields = ['name', 'slug', 'phone', 'address', 'tax_id', 'plan', 'subscription_status']
+  for (const field of fields) {
+    const val = formData.get(field)
+    if (val !== null) updates[field] = val as string
+  }
+
   const { error } = await supabase
     .from('tenants')
-    .update({
-      name: formData.get('name') as string,
-      plan: formData.get('plan') as string,
-      subscription_status: formData.get('subscription_status') as string,
-      is_active: formData.get('is_active') === 'true',
-    })
+    .update(updates)
     .eq('id', id)
 
   if (error) return { error: error.message }
@@ -116,10 +162,9 @@ export async function deleteTenant(id: string) {
 
   const { supabase } = ctx
 
-  // Soft delete by deactivating
   const { error } = await supabase
     .from('tenants')
-    .update({ is_active: false })
+    .delete()
     .eq('id', id)
 
   if (error) return { error: error.message }
