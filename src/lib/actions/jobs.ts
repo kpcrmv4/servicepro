@@ -134,11 +134,21 @@ export async function updateJobStatus(id: string, status: string, notes?: string
 
   if (error) return { error: error.message }
 
+  const statusNotesMap: Record<string, string> = {
+    diagnosing: 'เริ่มตรวจสอบสภาพรถ',
+    quoted: 'เสนอราคาลูกค้า',
+    in_progress: 'เริ่มดำเนินการซ่อม',
+    quality_check: 'ส่งตรวจสอบคุณภาพ',
+    waiting_pickup: 'ซ่อมเสร็จ - รอลูกค้ารับ',
+    completed: 'ลูกค้ารับรถแล้ว - เสร็จสิ้น',
+    cancelled: 'ยกเลิกงาน',
+  }
+
   // Add timeline entry
   await supabase.from('job_timeline').insert({
     job_id: id,
-    status: status as 'pending' | 'in_progress' | 'quality_check' | 'waiting_pickup' | 'completed' | 'cancelled',
-    notes: notes || `เปลี่ยนสถานะเป็น ${status}`,
+    status: status as 'pending' | 'diagnosing' | 'quoted' | 'in_progress' | 'quality_check' | 'waiting_pickup' | 'completed' | 'cancelled',
+    notes: notes || statusNotesMap[status] || `เปลี่ยนสถานะเป็น ${status}`,
     created_by: userInfo.id,
   })
 

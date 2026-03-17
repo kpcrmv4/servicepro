@@ -23,8 +23,10 @@ import { getJobs } from "@/lib/actions/jobs"
 import Link from "next/link"
 import type { JobStatus, JobPriority, JobType } from "@/lib/types/database"
 
-const statusConfig: Record<JobStatus, { label: string; className: string }> = {
+const statusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: "รอดำเนินการ", className: "bg-warning/10 text-warning border-warning/20" },
+  diagnosing: { label: "กำลังตรวจสอบ", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+  quoted: { label: "รอลูกค้าอนุมัติ", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
   in_progress: { label: "กำลังซ่อม", className: "bg-info/10 text-info border-info/20" },
   quality_check: { label: "รอตรวจ QC", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
   waiting_pickup: { label: "รอลูกค้ารับ", className: "bg-info/10 text-info border-info/20" },
@@ -47,9 +49,9 @@ const jobTypeLabels: Record<JobType, string> = {
   other: "อื่นๆ",
 }
 
-const statusSteps: JobStatus[] = ["pending", "in_progress", "quality_check", "waiting_pickup", "completed"]
+const statusSteps: string[] = ["in_progress", "quality_check", "waiting_pickup", "completed"]
 
-function StatusDots({ currentStatus }: { currentStatus: JobStatus }) {
+function StatusDots({ currentStatus }: { currentStatus: string }) {
   const currentIndex = statusSteps.indexOf(currentStatus)
   return (
     <div className="flex items-center gap-1">
@@ -69,11 +71,14 @@ function StatusDots({ currentStatus }: { currentStatus: JobStatus }) {
 const tabFilters = [
   { value: "all", label: "ทั้งหมด" },
   { value: "in_progress", label: "กำลังซ่อม" },
-  { value: "pending", label: "รอดำเนินการ" },
   { value: "quality_check", label: "รอตรวจ QC" },
   { value: "waiting_pickup", label: "รอลูกค้ารับ" },
   { value: "completed", label: "เสร็จแล้ว" },
+  { value: "cancelled", label: "ยกเลิก" },
 ]
+
+// Repair-phase statuses (excludes reception-phase: pending, diagnosing, quoted)
+const repairPhaseStatuses = ["in_progress", "quality_check", "waiting_pickup", "completed", "cancelled"]
 
 export default async function JobsPage({
   searchParams,
@@ -82,20 +87,24 @@ export default async function JobsPage({
 }) {
   const params = await searchParams
   const activeTab = params.status || "all"
-  const jobs = await getJobs({
-    status: activeTab,
-    search: params.search,
-  })
+  const allJobsRaw = await getJobs({ search: params.search })
 
-  // Get counts for each tab
-  const allJobs = await getJobs()
+  // Filter to only repair-phase jobs (exclude reception-phase: pending, diagnosing, quoted)
+  const repairJobs = allJobsRaw.filter((j: Record<string, unknown>) =>
+    repairPhaseStatuses.includes(j.status as string)
+  )
+
+  const jobs = activeTab === "all"
+    ? repairJobs
+    : repairJobs.filter((j: Record<string, unknown>) => j.status === activeTab)
+
   const tabCounts: Record<string, number> = {
-    all: allJobs.length,
-    in_progress: allJobs.filter((j: Record<string, unknown>) => j.status === "in_progress").length,
-    pending: allJobs.filter((j: Record<string, unknown>) => j.status === "pending").length,
-    quality_check: allJobs.filter((j: Record<string, unknown>) => j.status === "quality_check").length,
-    waiting_pickup: allJobs.filter((j: Record<string, unknown>) => j.status === "waiting_pickup").length,
-    completed: allJobs.filter((j: Record<string, unknown>) => j.status === "completed").length,
+    all: repairJobs.length,
+    in_progress: repairJobs.filter((j: Record<string, unknown>) => j.status === "in_progress").length,
+    quality_check: repairJobs.filter((j: Record<string, unknown>) => j.status === "quality_check").length,
+    waiting_pickup: repairJobs.filter((j: Record<string, unknown>) => j.status === "waiting_pickup").length,
+    completed: repairJobs.filter((j: Record<string, unknown>) => j.status === "completed").length,
+    cancelled: repairJobs.filter((j: Record<string, unknown>) => j.status === "cancelled").length,
   }
 
   return (

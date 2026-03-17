@@ -241,11 +241,64 @@ async function handlePostback(tenantId: string, lineUserId: string, event: Recor
 
   if (action === 'approve_quotation') {
     const quotationId = params.get('quotation_id');
+    const jobId = params.get('job_id');
     if (quotationId) {
-      await getSupabase()
+      // Get quotation totals
+      const { data: qt } = await getSupabase()
         .from('quotations')
-        .update({ status: 'approved', approved_at: new Date().toISOString() })
-        .eq('id', quotationId);
+        .select('id, status, total, subtotal, vat, items')
+        .eq('id', quotationId)
+        .single();
+
+      if (qt && qt.status === 'sent') {
+        // Approve quotation
+        await getSupabase()
+          .from('quotations')
+          .update({ status: 'approved', approved_at: new Date().toISOString() })
+          .eq('id', quotationId);
+
+        // Update job
+        if (jobId) {
+          const items = (qt.items as { type: string; quantity: number; unitPrice: number; discount: number }[]) || [];
+          const totalPartsCost = items
+            .filter((i) => i.type === 'part')
+            .reduce((sum, i) => sum + ((i.quantity * i.unitPrice) - (i.discount || 0)), 0);
+          const totalLaborCost = items
+            .filter((i) => i.type === 'labor')
+            .reduce((sum, i) => sum + ((i.quantity * i.unitPrice) - (i.discount || 0)), 0);
+
+          await getSupabase()
+            .from('jobs')
+            .update({
+              status: 'in_progress',
+              total_parts_cost: totalPartsCost,
+              total_labor_cost: totalLaborCost,
+              total_amount: qt.subtotal,
+              vat: qt.vat,
+              grand_total: qt.total,
+            })
+            .eq('id', jobId);
+
+          await getSupabase().from('job_timeline').insert({
+            job_id: jobId,
+            status: 'in_progress',
+            notes: 'ลูกค้าอนุมัติใบเสนอราคาผ่าน LINE',
+          });
+        }
+
+        // Reply confirmation
+        const { data: lineConfig } = await getSupabase()
+          .from('line_oa_configs')
+          .select('channel_access_token')
+          .eq('tenant_id', tenantId)
+          .single();
+
+        if (lineConfig) {
+          await sendReply(lineConfig.channel_access_token, event, [
+            { type: 'text', text: 'อนุมัติใบเสนอราคาเรียบร้อยแล้ว ขอบคุณครับ! ทางอู่จะเริ่มดำเนินการซ่อมให้ทันทีครับ' },
+          ]);
+        }
+      }
     }
   }
 }

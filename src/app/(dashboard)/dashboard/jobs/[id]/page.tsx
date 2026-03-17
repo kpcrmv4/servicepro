@@ -1,18 +1,24 @@
-import { ArrowLeft, Car, User, Calendar, Wrench, DollarSign, Clock, Package } from "lucide-react"
+import { ArrowLeft, Car, User, Calendar, Wrench, DollarSign, Clock, Package, FileText } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getJob } from "@/lib/actions/jobs"
+import { getQuotationByJobId } from "@/lib/actions/quotations"
+import { checkCustomerLineLinked } from "@/lib/actions/line-link"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { JobStatusActions } from "@/components/jobs/job-status-actions"
+import { ReceptionStatusActions } from "@/components/reception/reception-status-actions"
+import { LineLinkCard } from "@/components/reception/line-link-card"
+
+const receptionPhaseStatuses = ["pending", "diagnosing", "quoted"]
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: "รอรับรถ", color: "bg-warning/10 text-warning" },
-  checked_in: { label: "รับรถแล้ว", color: "bg-blue-100 text-blue-700" },
-  diagnosing: { label: "ตรวจสอบ", color: "bg-purple-100 text-purple-700" },
+  pending: { label: "รอตรวจสอบ", color: "bg-warning/10 text-warning" },
+  diagnosing: { label: "กำลังตรวจสอบ", color: "bg-purple-100 text-purple-700" },
+  quoted: { label: "รอลูกค้าอนุมัติ", color: "bg-blue-100 text-blue-700" },
   in_progress: { label: "กำลังซ่อม", color: "bg-primary/10 text-primary" },
-  waiting_parts: { label: "รออะไหล่", color: "bg-orange-100 text-orange-700" },
+  quality_check: { label: "ตรวจ QC", color: "bg-purple-100 text-purple-700" },
+  waiting_pickup: { label: "รอลูกค้ารับ", color: "bg-info/10 text-info" },
   completed: { label: "เสร็จแล้ว", color: "bg-success/10 text-success" },
-  delivered: { label: "ส่งมอบแล้ว", color: "bg-muted text-muted-foreground" },
   cancelled: { label: "ยกเลิก", color: "bg-error/10 text-error" },
 }
 
@@ -22,7 +28,13 @@ export default async function JobDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const job = await getJob(id)
+  const [job, quotation] = await Promise.all([
+    getJob(id),
+    getQuotationByJobId(id),
+  ])
+
+  const customerId = job?.customer_id as string | undefined
+  const isLineLinked = customerId ? await checkCustomerLineLinked(customerId) : false
 
   if (!job) {
     notFound()
@@ -33,12 +45,16 @@ export default async function JobDetailPage({
   const technician = job.assigned_user as Record<string, unknown> | null
   const jobParts = (job.job_items as Record<string, unknown>[]) || []
   const status = job.status as string
+  const quotationId = (job.quotation_id as string) || (quotation?.id as string) || null
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4 px-4 pt-2 sm:px-6">
-        <Link href="/dashboard/jobs" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted">
+        <Link
+          href={receptionPhaseStatuses.includes(status) ? "/dashboard/reception" : "/dashboard/jobs"}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex-1">
@@ -130,8 +146,57 @@ export default async function JobDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Status Actions */}
-          <JobStatusActions jobId={job.id as string} currentStatus={status} />
+          {/* Status Actions - use reception or repair component based on phase */}
+          {receptionPhaseStatuses.includes(status) ? (
+            <ReceptionStatusActions jobId={job.id as string} currentStatus={status} quotationId={quotationId} />
+          ) : (
+            <JobStatusActions jobId={job.id as string} currentStatus={status} />
+          )}
+
+          {/* Quotation Info */}
+          {quotation && (
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" /> ใบเสนอราคา
+              </h2>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">เลขที่</span>
+                  <Link
+                    href={`/dashboard/jobs/${job.id}/quotation`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {quotation.quotation_number as string}
+                  </Link>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">สถานะ</span>
+                  <span className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-medium",
+                    {
+                      draft: "bg-muted text-muted-foreground",
+                      sent: "bg-blue-100 text-blue-700",
+                      approved: "bg-success/10 text-success",
+                      rejected: "bg-error/10 text-error",
+                      expired: "bg-warning/10 text-warning",
+                    }[quotation.status as string] || "bg-muted text-muted-foreground"
+                  )}>
+                    {{
+                      draft: "แบบร่าง",
+                      sent: "ส่งแล้ว",
+                      approved: "อนุมัติ",
+                      rejected: "ไม่อนุมัติ",
+                      expired: "หมดอายุ",
+                    }[quotation.status as string] || quotation.status}
+                  </span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span className="text-muted-foreground">ยอดรวม</span>
+                  <span className="text-primary">{formatCurrency(Number(quotation.total) || 0)}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Customer Info */}
           <div className="rounded-xl border border-border bg-card p-5">
@@ -148,6 +213,15 @@ export default async function JobDetailPage({
               <p className="text-sm text-muted-foreground">ไม่มีข้อมูล</p>
             )}
           </div>
+
+          {/* LINE Link - show during reception phase */}
+          {receptionPhaseStatuses.includes(status) && customer && (
+            <LineLinkCard
+              customerId={job.customer_id as string}
+              customerName={customer.name as string}
+              isLinked={isLineLinked}
+            />
+          )}
 
           {/* Vehicle Info */}
           <div className="rounded-xl border border-border bg-card p-5">

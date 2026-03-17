@@ -16,10 +16,6 @@ import {
 type JobStatus = "pending" | "in_progress" | "quality_check" | "waiting_pickup" | "completed" | "cancelled"
 
 const statusFlow: Record<string, { next: JobStatus; label: string; icon: React.ElementType; color: string }[]> = {
-  pending: [
-    { next: "in_progress", label: "เริ่มซ่อม", icon: Play, color: "bg-primary text-primary-foreground hover:bg-primary/90" },
-    { next: "cancelled", label: "ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
-  ],
   in_progress: [
     { next: "quality_check", label: "ส่งตรวจ QC", icon: CheckCircle, color: "bg-purple-600 text-white hover:bg-purple-700" },
     { next: "cancelled", label: "ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
@@ -36,7 +32,6 @@ const statusFlow: Record<string, { next: JobStatus; label: string; icon: React.E
 }
 
 const statusSteps: { key: JobStatus; label: string }[] = [
-  { key: "pending", label: "รอดำเนินการ" },
   { key: "in_progress", label: "กำลังซ่อม" },
   { key: "quality_check", label: "ตรวจ QC" },
   { key: "waiting_pickup", label: "รอลูกค้ารับ" },

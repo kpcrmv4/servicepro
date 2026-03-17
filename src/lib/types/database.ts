@@ -3,7 +3,7 @@
 // ============================================================
 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'technician' | 'receptionist' | 'viewer'
-export type JobStatus = 'pending' | 'in_progress' | 'quality_check' | 'waiting_pickup' | 'completed' | 'cancelled'
+export type JobStatus = 'pending' | 'diagnosing' | 'quoted' | 'in_progress' | 'quality_check' | 'waiting_pickup' | 'completed' | 'cancelled'
 export type JobPriority = 'urgent' | 'normal' | 'low'
 export type JobType = 'repair' | 'maintenance' | 'inspection' | 'insurance' | 'warranty' | 'other'
 export type PaymentMethod = 'cash' | 'transfer' | 'credit_card' | 'promptpay'
