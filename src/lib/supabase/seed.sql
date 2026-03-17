@@ -1,12 +1,38 @@
 -- ============================================================
 -- KPServicePro - Seed Data
 -- ============================================================
--- Run this AFTER database.sql and AFTER creating auth users in Supabase
+-- Run this AFTER database.sql
+-- This script creates auth users automatically in STEP 0,
+-- then populates all application tables with sample data.
 --
--- IMPORTANT: Replace the UUIDs below with actual auth.users IDs from Supabase
--- The super admin user should be created first via Supabase Auth,
--- then their UUID used here.
+-- Default password for all seed users: password123
 -- ============================================================
+
+-- ============================================================
+-- STEP 0: Create Auth Users (required for FK constraint)
+-- These must exist in auth.users before inserting into public.users
+-- ============================================================
+
+INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change) VALUES
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'superadmin@servicepro.app', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"System Administrator"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'owner@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"สมศักดิ์ มิตรดี"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"วิภา จัดการดี"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tech1@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"ประเสริฐ ช่างเก่ง"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tech2@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"สุชาติ ฝีมือดี"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'reception@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"นภา ต้อนรับดี"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'owner@kpgarage.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"กิตติพงศ์ เจ้าของอู่"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tech@kpgarage.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"อนุชา ช่างยนต์"}', now(), now(), '', '', '', '');
+
+-- Also create identities for each auth user (required by Supabase)
+INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at) VALUES
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000001', 'email', 'superadmin@servicepro.app'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000010', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000010', 'email', 'owner@changmit.com'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000011', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000011', 'email', 'admin@changmit.com'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000012', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000012', 'email', 'tech1@changmit.com'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000013', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000013', 'email', 'tech2@changmit.com'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000014', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000014', 'email', 'reception@changmit.com'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000020', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000020', 'email', 'owner@kpgarage.com'), 'email', now(), now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000021', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000021', 'email', 'tech@kpgarage.com'), 'email', now(), now(), now());
 
 -- ============================================================
 -- STEP 1: Create Tenants (Shops)
@@ -18,8 +44,7 @@ INSERT INTO tenants (id, name, slug, address, phone, tax_id, plan, subscription_
   ('a0000000-0000-0000-0000-000000000003', 'สมชาย คาร์แคร์', 'somchai-carcare', '456 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110', '02-345-6789', '5555555555555', 'free', 'trial', now() + interval '14 days');
 
 -- ============================================================
--- STEP 2: Create Users (must match auth.users IDs)
--- Replace these UUIDs with real auth.users IDs after signup
+-- STEP 2: Create Users (IDs must match auth.users from STEP 0)
 -- ============================================================
 
 -- Super Admin (no tenant_id)
