@@ -328,6 +328,35 @@ export interface StockMovement {
   created_at: string
 }
 
+export interface StockBatch {
+  id: string
+  tenant_id: string
+  part_id: string
+  po_id: string | null
+  quantity_received: number
+  quantity_remaining: number
+  cost_per_unit: number
+  expiry_date: string | null
+  batch_reference: string | null
+  created_at: string
+}
+
+export interface PosSale {
+  id: string
+  tenant_id: string
+  sale_number: string
+  items: Record<string, unknown>[]
+  subtotal: number
+  discount: number
+  vat: number
+  total: number
+  payment_method: PaymentMethod
+  customer_id: string | null
+  notes: string | null
+  created_by: string
+  created_at: string
+}
+
 // ============================================================
 // Insurance Tables
 // ============================================================
