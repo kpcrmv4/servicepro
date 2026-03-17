@@ -162,7 +162,7 @@ export function CheckinWizard() {
     if (vehicleSearch.length < 2) return
     setIsSearchingVehicle(true)
     const results = await searchVehicleByPlate(vehicleSearch)
-    setVehicleResults(results as VehicleSearchResult[])
+    setVehicleResults(results as unknown as VehicleSearchResult[])
     setIsSearchingVehicle(false)
   }
 
