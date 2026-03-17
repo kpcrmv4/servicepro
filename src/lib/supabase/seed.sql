@@ -310,8 +310,8 @@ INSERT INTO inspection_items (inspection_id, category, item_name, condition, not
 -- ============================================================
 
 INSERT INTO service_packages (id, tenant_id, name, description, category, base_price, estimated_duration_minutes, is_popular, is_active, compatible_brands) VALUES
-  ('59000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'เปลี่ยนถ่ายน้ำมันเครื่อง Basic', 'เปลี่ยนน้ำมันเครื่อง + กรองน้ำมัน', 'บำรุงรักษา', 1200.00, 30, true, true, '["Toyota","Honda","Nissan","Mazda"]'),
-  ('59000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'เปลี่ยนถ่ายน้ำมันเครื่อง Premium', 'เปลี่ยนน้ำมันเครื่องสังเคราะห์ + กรองน้ำมัน + กรองอากาศ + เช็ค 20 จุด', 'บำรุงรักษา', 2200.00, 45, true, true, '["Toyota","Honda","Nissan","Mazda","BMW","Benz"]'),
+  ('59000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'เปลี่ยนถ่ายน้ำมันเครื่อง Basic', 'เปลี่ยนน้ำมันเครื่อง + กรองน้ำมัน', 'บำรุงรักษา', 1200.00, 30, true, true, '{"Toyota","Honda","Nissan","Mazda"}'),
+  ('59000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'เปลี่ยนถ่ายน้ำมันเครื่อง Premium', 'เปลี่ยนน้ำมันเครื่องสังเคราะห์ + กรองน้ำมัน + กรองอากาศ + เช็ค 20 จุด', 'บำรุงรักษา', 2200.00, 45, true, true, '{"Toyota","Honda","Nissan","Mazda","BMW","Benz"}'),
   ('59000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'เปลี่ยนผ้าเบรกหน้า', 'เปลี่ยนผ้าเบรกหน้า + ตรวจจานเบรก', 'ระบบเบรก', 2500.00, 60, false, true, NULL),
   ('59000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'เปลี่ยนผ้าเบรกหน้า-หลัง', 'เปลี่ยนผ้าเบรกหน้า-หลัง + เจียร์จานเบรก + เปลี่ยนน้ำมันเบรก', 'ระบบเบรก', 5500.00, 120, true, true, NULL),
   ('59000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', 'เช็คระยะ 10,000 กม.', 'เปลี่ยนน้ำมันเครื่อง + กรอง + ตรวจเช็ค 30 จุด', 'เช็คระยะ', 1800.00, 60, false, true, NULL),
@@ -373,8 +373,8 @@ INSERT INTO time_clock_summaries (tenant_id, user_id, date, total_hours, product
 -- STEP 21: LINE OA Config (sample for Tenant 1)
 -- ============================================================
 
-INSERT INTO line_oa_configs (tenant_id, channel_id, channel_secret, channel_access_token, welcome_message, auto_reply_enabled, notify_job_status, notify_job_complete, notify_quotation, notify_inspection, notify_reminder, is_active) VALUES
-  ('a0000000-0000-0000-0000-000000000001', 'REPLACE_WITH_CHANNEL_ID', 'REPLACE_WITH_CHANNEL_SECRET', 'REPLACE_WITH_ACCESS_TOKEN', 'ยินดีต้อนรับสู่อู่ช่างมิตร ออโต้เซอร์วิส! 🚗🔧\n\nพิมพ์ "สถานะ" เพื่อเช็คสถานะงานซ่อม\nพิมพ์ "จอง" เพื่อจองคิวซ่อม', true, true, true, true, true, true, false);
+INSERT INTO line_oa_configs (tenant_id, channel_id, channel_secret, channel_access_token, welcome_message, auto_reply_enabled, notification_settings, is_active) VALUES
+  ('a0000000-0000-0000-0000-000000000001', 'REPLACE_WITH_CHANNEL_ID', 'REPLACE_WITH_CHANNEL_SECRET', 'REPLACE_WITH_ACCESS_TOKEN', 'ยินดีต้อนรับสู่อู่ช่างมิตร ออโต้เซอร์วิส! 🚗🔧\n\nพิมพ์ "สถานะ" เพื่อเช็คสถานะงานซ่อม\nพิมพ์ "จอง" เพื่อจองคิวซ่อม', true, '{"job_status": true, "quotation": true, "invoice": true, "reminder": true, "dvi_report": true}', false);
 
 -- LINE Followers (sample)
 INSERT INTO line_followers (tenant_id, line_user_id, display_name, picture_url, customer_id, is_following, followed_at) VALUES
