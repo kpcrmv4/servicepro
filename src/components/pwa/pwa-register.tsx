@@ -44,9 +44,12 @@ export function PWARegister() {
 
     registerSW()
 
-    // Listen for install prompt
+    // Listen for install prompt (only capture once)
+    let promptCaptured = false
     const handleBeforeInstallPrompt = (e: Event) => {
+      if (promptCaptured) return
       e.preventDefault()
+      promptCaptured = true
       setInstallPrompt(e)
       // Show install banner after 30 seconds if not already installed
       const dismissed = localStorage.getItem("pwa-install-dismissed")
@@ -55,17 +58,19 @@ export function PWARegister() {
       }
     }
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-
-    // Listen for successful installation
-    window.addEventListener("appinstalled", () => {
+    const handleAppInstalled = () => {
       setShowInstallBanner(false)
       setInstallPrompt(null)
+      promptCaptured = false
       console.log("[PWA] App installed successfully")
-    })
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+    window.addEventListener("appinstalled", handleAppInstalled)
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+      window.removeEventListener("appinstalled", handleAppInstalled)
     }
   }, [])
 
