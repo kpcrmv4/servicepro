@@ -9,6 +9,7 @@ import {
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
 import { getCustomers } from "@/lib/actions/customers"
+import Link from "next/link"
 
 type MembershipTier = "bronze" | "silver" | "gold" | "platinum"
 
@@ -108,12 +109,12 @@ export default async function CustomersPage({
                   return (
                     <tr key={customer.id as string} className="border-b border-border last:border-0 hover:bg-muted/30">
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
+                        <Link href={`/dashboard/customers/${customer.id}`} className="flex items-center gap-3 hover:underline">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                             {(customer.name as string).charAt(0)}
                           </div>
                           <span className="text-sm font-medium text-card-foreground">{customer.name as string}</span>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
