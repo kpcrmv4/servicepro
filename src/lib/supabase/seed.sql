@@ -31,7 +31,8 @@ DELETE FROM auth.users WHERE id IN (
 -- These must exist in auth.users before inserting into public.users
 -- ============================================================
 
-INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change) VALUES
+INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
+VALUES
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'superadmin@servicepro.app', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"System Administrator"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'owner@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"สมศักดิ์ มิตรดี"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"วิภา จัดการดี"}', now(), now(), '', '', '', ''),
@@ -39,9 +40,21 @@ INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, e
   ('00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tech2@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"สุชาติ ฝีมือดี"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'reception@changmit.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"นภา ต้อนรับดี"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'owner@kpgarage.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"กิตติพงศ์ เจ้าของอู่"}', now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tech@kpgarage.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"อนุชา ช่างยนต์"}', now(), now(), '', '', '', '');
+  ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tech@kpgarage.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"อนุชา ช่างยนต์"}', now(), now(), '', '', '', '')
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  encrypted_password = EXCLUDED.encrypted_password,
+  raw_user_meta_data = EXCLUDED.raw_user_meta_data,
+  updated_at = now();
 
 -- Also create identities for each auth user (required by Supabase)
+-- Delete existing identities first to avoid duplicates (identities PK is random UUID)
+DELETE FROM auth.identities WHERE user_id IN (
+  '00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000010',
+  '00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000012',
+  '00000000-0000-0000-0000-000000000013','00000000-0000-0000-0000-000000000014',
+  '00000000-0000-0000-0000-000000000020','00000000-0000-0000-0000-000000000021'
+);
 INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at) VALUES
   (gen_random_uuid(), '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000001', 'email', 'superadmin@servicepro.app'), 'email', now(), now(), now()),
   (gen_random_uuid(), '00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000010', jsonb_build_object('sub', '00000000-0000-0000-0000-000000000010', 'email', 'owner@changmit.com'), 'email', now(), now(), now()),
@@ -59,15 +72,20 @@ INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, 
 INSERT INTO tenants (id, name, slug, address, phone, tax_id, plan, subscription_status, trial_ends_at) VALUES
   ('a0000000-0000-0000-0000-000000000001', 'อู่ช่างมิตร ออโต้เซอร์วิส', 'changmit-auto', '123/45 ถ.เพชรเกษม แขวงบางแค เขตบางแค กรุงเทพฯ 10160', '02-456-7890', '1234567890123', 'professional', 'active', now() + interval '365 days'),
   ('a0000000-0000-0000-0000-000000000002', 'KP Garage สาขาลาดพร้าว', 'kp-garage-ladprao', '789/10 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900', '02-789-0123', '9876543210987', 'basic', 'active', now() + interval '30 days'),
-  ('a0000000-0000-0000-0000-000000000003', 'สมชาย คาร์แคร์', 'somchai-carcare', '456 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110', '02-345-6789', '5555555555555', 'free', 'trial', now() + interval '14 days');
+  ('a0000000-0000-0000-0000-000000000003', 'สมชาย คาร์แคร์', 'somchai-carcare', '456 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110', '02-345-6789', '5555555555555', 'free', 'trial', now() + interval '14 days')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, address = EXCLUDED.address, phone = EXCLUDED.phone, tax_id = EXCLUDED.tax_id, plan = EXCLUDED.plan, subscription_status = EXCLUDED.subscription_status, trial_ends_at = EXCLUDED.trial_ends_at;
 
 -- ============================================================
--- STEP 2: Create Users (IDs must match auth.users from STEP 0)
+-- STEP 2: Create/Update Users (IDs must match auth.users from STEP 0)
+-- Uses ON CONFLICT UPDATE because the handle_new_user() trigger on
+-- auth.users already created rows in public.users during STEP 0.
+-- We update them here with the full seed data (tenant_id, phone, role).
 -- ============================================================
 
 -- Super Admin (no tenant_id)
 INSERT INTO users (id, tenant_id, email, full_name, phone, role) VALUES
-  ('00000000-0000-0000-0000-000000000001', NULL, 'superadmin@servicepro.app', 'System Administrator', '099-999-9999', 'super_admin');
+  ('00000000-0000-0000-0000-000000000001', NULL, 'superadmin@servicepro.app', 'System Administrator', '099-999-9999', 'super_admin')
+ON CONFLICT (id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, email = EXCLUDED.email, full_name = EXCLUDED.full_name, phone = EXCLUDED.phone, role = EXCLUDED.role;
 
 -- Tenant 1: อู่ช่างมิตร
 INSERT INTO users (id, tenant_id, email, full_name, phone, role) VALUES
@@ -75,12 +93,14 @@ INSERT INTO users (id, tenant_id, email, full_name, phone, role) VALUES
   ('00000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000001', 'admin@changmit.com', 'วิภา จัดการดี', '082-345-6789', 'admin'),
   ('00000000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000001', 'tech1@changmit.com', 'ประเสริฐ ช่างเก่ง', '083-456-7890', 'technician'),
   ('00000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000001', 'tech2@changmit.com', 'สุชาติ ฝีมือดี', '084-567-8901', 'technician'),
-  ('00000000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000001', 'reception@changmit.com', 'นภา ต้อนรับดี', '085-678-9012', 'receptionist');
+  ('00000000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000001', 'reception@changmit.com', 'นภา ต้อนรับดี', '085-678-9012', 'receptionist')
+ON CONFLICT (id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, email = EXCLUDED.email, full_name = EXCLUDED.full_name, phone = EXCLUDED.phone, role = EXCLUDED.role;
 
 -- Tenant 2: KP Garage
 INSERT INTO users (id, tenant_id, email, full_name, phone, role) VALUES
   ('00000000-0000-0000-0000-000000000020', 'a0000000-0000-0000-0000-000000000002', 'owner@kpgarage.com', 'กิตติพงศ์ เจ้าของอู่', '086-789-0123', 'owner'),
-  ('00000000-0000-0000-0000-000000000021', 'a0000000-0000-0000-0000-000000000002', 'tech@kpgarage.com', 'อนุชา ช่างยนต์', '087-890-1234', 'technician');
+  ('00000000-0000-0000-0000-000000000021', 'a0000000-0000-0000-0000-000000000002', 'tech@kpgarage.com', 'อนุชา ช่างยนต์', '087-890-1234', 'technician')
+ON CONFLICT (id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, email = EXCLUDED.email, full_name = EXCLUDED.full_name, phone = EXCLUDED.phone, role = EXCLUDED.role;
 
 -- ============================================================
 -- STEP 3: Customers
