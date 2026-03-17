@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 
 CREATE TYPE user_role AS ENUM ('super_admin', 'owner', 'admin', 'manager', 'technician', 'receptionist', 'viewer');
-CREATE TYPE job_status AS ENUM ('pending', 'in_progress', 'quality_check', 'waiting_pickup', 'completed', 'cancelled');
+CREATE TYPE job_status AS ENUM ('pending', 'diagnosing', 'quoted', 'in_progress', 'quality_check', 'waiting_pickup', 'completed', 'cancelled');
 CREATE TYPE job_priority AS ENUM ('urgent', 'normal', 'low');
 CREATE TYPE job_type AS ENUM ('repair', 'maintenance', 'inspection', 'insurance', 'warranty', 'other');
 CREATE TYPE payment_method AS ENUM ('cash', 'transfer', 'credit_card', 'promptpay');

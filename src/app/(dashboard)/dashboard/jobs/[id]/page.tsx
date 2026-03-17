@@ -4,15 +4,18 @@ import { getJob } from "@/lib/actions/jobs"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { JobStatusActions } from "@/components/jobs/job-status-actions"
+import { ReceptionStatusActions } from "@/components/reception/reception-status-actions"
+
+const receptionPhaseStatuses = ["pending", "diagnosing", "quoted"]
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: "รอรับรถ", color: "bg-warning/10 text-warning" },
-  checked_in: { label: "รับรถแล้ว", color: "bg-blue-100 text-blue-700" },
-  diagnosing: { label: "ตรวจสอบ", color: "bg-purple-100 text-purple-700" },
+  pending: { label: "รอตรวจสอบ", color: "bg-warning/10 text-warning" },
+  diagnosing: { label: "กำลังตรวจสอบ", color: "bg-purple-100 text-purple-700" },
+  quoted: { label: "รอลูกค้าอนุมัติ", color: "bg-blue-100 text-blue-700" },
   in_progress: { label: "กำลังซ่อม", color: "bg-primary/10 text-primary" },
-  waiting_parts: { label: "รออะไหล่", color: "bg-orange-100 text-orange-700" },
+  quality_check: { label: "ตรวจ QC", color: "bg-purple-100 text-purple-700" },
+  waiting_pickup: { label: "รอลูกค้ารับ", color: "bg-info/10 text-info" },
   completed: { label: "เสร็จแล้ว", color: "bg-success/10 text-success" },
-  delivered: { label: "ส่งมอบแล้ว", color: "bg-muted text-muted-foreground" },
   cancelled: { label: "ยกเลิก", color: "bg-error/10 text-error" },
 }
 
@@ -38,7 +41,10 @@ export default async function JobDetailPage({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4 px-4 pt-2 sm:px-6">
-        <Link href="/dashboard/jobs" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted">
+        <Link
+          href={receptionPhaseStatuses.includes(status) ? "/dashboard/reception" : "/dashboard/jobs"}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex-1">
@@ -130,8 +136,12 @@ export default async function JobDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Status Actions */}
-          <JobStatusActions jobId={job.id as string} currentStatus={status} />
+          {/* Status Actions - use reception or repair component based on phase */}
+          {receptionPhaseStatuses.includes(status) ? (
+            <ReceptionStatusActions jobId={job.id as string} currentStatus={status} />
+          ) : (
+            <JobStatusActions jobId={job.id as string} currentStatus={status} />
+          )}
 
           {/* Customer Info */}
           <div className="rounded-xl border border-border bg-card p-5">

@@ -1,34 +1,37 @@
 import { Plus, Search, Car, User, Calendar, Wrench } from "lucide-react"
 import { cn, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
-import { getJobs } from "@/lib/actions/jobs"
+import { getReceptionJobs } from "@/lib/actions/reception"
 import Link from "next/link"
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: "รอรับรถ", color: "bg-warning/10 text-warning" },
-  checked_in: { label: "รับรถแล้ว", color: "bg-blue-100 text-blue-700" },
-  diagnosing: { label: "ตรวจสอบ", color: "bg-purple-100 text-purple-700" },
-  in_progress: { label: "กำลังซ่อม", color: "bg-primary/10 text-primary" },
-  waiting_parts: { label: "รออะไหล่", color: "bg-orange-100 text-orange-700" },
-  completed: { label: "เสร็จแล้ว", color: "bg-success/10 text-success" },
-  delivered: { label: "ส่งมอบแล้ว", color: "bg-muted text-muted-foreground" },
-  cancelled: { label: "ยกเลิก", color: "bg-error/10 text-error" },
+  pending: { label: "รอตรวจสอบ", color: "bg-warning/10 text-warning" },
+  diagnosing: { label: "กำลังตรวจสอบ", color: "bg-purple-100 text-purple-700" },
+  quoted: { label: "รอลูกค้าอนุมัติ", color: "bg-blue-100 text-blue-700" },
 }
+
+const tabFilters = [
+  { value: "all", label: "ทั้งหมด" },
+  { value: "pending", label: "รอตรวจสอบ" },
+  { value: "diagnosing", label: "กำลังตรวจสอบ" },
+  { value: "quoted", label: "รอลูกค้าอนุมัติ" },
+]
 
 export default async function ReceptionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ search?: string; status?: string }>
 }) {
   const params = await searchParams
-  const jobs = await getJobs(params.search ? { search: params.search } : undefined)
+  const activeTab = params.status || "all"
+  const jobs = await getReceptionJobs({
+    search: params.search,
+    status: activeTab !== "all" ? activeTab : undefined,
+  })
 
-  // Filter to show only active jobs (not delivered/cancelled)
-  const activeJobs = jobs.filter(
-    (j: Record<string, unknown>) => j.status !== "delivered" && j.status !== "cancelled"
-  )
+  const allJobs = activeTab !== "all" ? await getReceptionJobs() : jobs
 
-  const todayJobs = activeJobs.filter((j: Record<string, unknown>) => {
+  const todayJobs = allJobs.filter((j: Record<string, unknown>) => {
     const d = new Date(j.created_at as string).toDateString()
     return d === new Date().toDateString()
   })
@@ -36,26 +39,30 @@ export default async function ReceptionPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="รับรถเข้าซ่อม"
+        title="รับรถเข้าอู่"
         action={
           <Link
-            href="/dashboard/jobs"
+            href="/dashboard/reception/new"
             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            <Plus className="h-4 w-4" /> เปิด Job ใหม่
+            <Plus className="h-4 w-4" /> รับรถใหม่
           </Link>
         }
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 max-w-lg">
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-3 sm:gap-4 sm:px-6 max-w-2xl">
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">งานวันนี้</p>
+          <p className="text-xs text-muted-foreground">รับรถวันนี้</p>
           <p className="mt-1 text-2xl font-bold text-primary">{todayJobs.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">งานที่ยังเปิดอยู่</p>
-          <p className="mt-1 text-2xl font-bold">{activeJobs.length}</p>
+          <p className="text-xs text-muted-foreground">รอตรวจสอบ/เสนอราคา</p>
+          <p className="mt-1 text-2xl font-bold">{allJobs.length}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">รอลูกค้าอนุมัติ</p>
+          <p className="mt-1 text-2xl font-bold text-info">{allJobs.filter((j: Record<string, unknown>) => j.status === "quoted").length}</p>
         </div>
       </div>
 
@@ -66,13 +73,34 @@ export default async function ReceptionPage({
           <input type="text" name="search" placeholder="ค้นหาเลข Job, ทะเบียน, ชื่อลูกค้า..."
             defaultValue={params.search || ""}
             className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          {params.status && <input type="hidden" name="status" value={params.status} />}
         </form>
       </div>
 
-      {/* Active Jobs */}
+      {/* Tabs */}
+      <div className="px-4 sm:px-6">
+        <div className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1 max-w-2xl">
+          {tabFilters.map((tab) => (
+            <Link
+              key={tab.value}
+              href={`/dashboard/reception?status=${tab.value}${params.search ? `&search=${params.search}` : ""}`}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                activeTab === tab.value
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Reception Jobs */}
       <div className="px-4 sm:px-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {activeJobs.map((job: Record<string, unknown>) => {
+          {jobs.map((job: Record<string, unknown>) => {
             const customer = job.customers as Record<string, unknown> | null
             const vehicle = job.vehicles as Record<string, unknown> | null
             const status = job.status as string
@@ -116,9 +144,9 @@ export default async function ReceptionPage({
               </Link>
             )
           })}
-          {activeJobs.length === 0 && (
+          {jobs.length === 0 && (
             <div className="col-span-full rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-              ยังไม่มีงานที่เปิดอยู่
+              ไม่มีรถที่รอดำเนินการ
             </div>
           )}
         </div>

@@ -6,39 +6,46 @@ import { cn } from "@/lib/utils"
 import { updateJobStatus } from "@/lib/actions/jobs"
 import {
   ChevronRight,
+  Search,
+  FileText,
   Play,
-  CheckCircle,
-  Truck,
-  Flag,
   XCircle,
 } from "lucide-react"
 
-type JobStatus = "pending" | "in_progress" | "quality_check" | "waiting_pickup" | "completed" | "cancelled"
+type ReceptionStatus = "pending" | "diagnosing" | "quoted" | "in_progress" | "cancelled"
 
-const statusFlow: Record<string, { next: JobStatus; label: string; icon: React.ElementType; color: string }[]> = {
-  in_progress: [
-    { next: "quality_check", label: "ส่งตรวจ QC", icon: CheckCircle, color: "bg-purple-600 text-white hover:bg-purple-700" },
+const statusFlow: Record<string, { next: ReceptionStatus; label: string; icon: React.ElementType; color: string }[]> = {
+  pending: [
+    { next: "diagnosing", label: "เริ่มตรวจสอบ / DVI", icon: Search, color: "bg-purple-600 text-white hover:bg-purple-700" },
+    { next: "in_progress", label: "เริ่มซ่อมเลย (ข้ามขั้นตอน)", icon: Play, color: "bg-primary/10 text-primary hover:bg-primary/20" },
     { next: "cancelled", label: "ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
   ],
-  quality_check: [
-    { next: "waiting_pickup", label: "ผ่าน QC - รอลูกค้ารับ", icon: Truck, color: "bg-info text-white hover:bg-info/90" },
-    { next: "in_progress", label: "ไม่ผ่าน - ส่งกลับซ่อม", icon: Play, color: "bg-warning/10 text-warning hover:bg-warning/20" },
+  diagnosing: [
+    { next: "quoted", label: "เสนอราคาลูกค้า", icon: FileText, color: "bg-info text-white hover:bg-info/90" },
+    { next: "in_progress", label: "เริ่มซ่อมเลย (ข้ามขั้นตอน)", icon: Play, color: "bg-primary/10 text-primary hover:bg-primary/20" },
+    { next: "cancelled", label: "ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
   ],
-  waiting_pickup: [
-    { next: "completed", label: "ลูกค้ารับรถแล้ว - เสร็จสิ้น", icon: Flag, color: "bg-success text-white hover:bg-success/90" },
+  quoted: [
+    { next: "in_progress", label: "ลูกค้าอนุมัติ - เริ่มซ่อม", icon: Play, color: "bg-primary text-primary-foreground hover:bg-primary/90" },
+    { next: "cancelled", label: "ลูกค้าไม่อนุมัติ - ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
   ],
-  completed: [],
-  cancelled: [],
 }
 
-const statusSteps: { key: JobStatus; label: string }[] = [
-  { key: "in_progress", label: "กำลังซ่อม" },
-  { key: "quality_check", label: "ตรวจ QC" },
-  { key: "waiting_pickup", label: "รอลูกค้ารับ" },
-  { key: "completed", label: "เสร็จสิ้น" },
+const statusSteps: { key: string; label: string }[] = [
+  { key: "pending", label: "รับรถ" },
+  { key: "diagnosing", label: "ตรวจสอบ" },
+  { key: "quoted", label: "เสนอราคา" },
+  { key: "in_progress", label: "เริ่มซ่อม" },
 ]
 
-export function JobStatusActions({ jobId, currentStatus }: { jobId: string; currentStatus: string }) {
+const statusNotes: Record<string, string> = {
+  diagnosing: "เริ่มตรวจสอบสภาพรถ / DVI",
+  quoted: "เสนอราคาลูกค้า",
+  in_progress: "ลูกค้าอนุมัติ - เริ่มดำเนินการซ่อม",
+  cancelled: "ยกเลิกงาน",
+}
+
+export function ReceptionStatusActions({ jobId, currentStatus }: { jobId: string; currentStatus: string }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
@@ -46,10 +53,10 @@ export function JobStatusActions({ jobId, currentStatus }: { jobId: string; curr
   const actions = statusFlow[currentStatus] || []
   const currentIndex = statusSteps.findIndex((s) => s.key === currentStatus)
 
-  function handleStatusChange(nextStatus: JobStatus) {
+  function handleStatusChange(nextStatus: ReceptionStatus) {
     setError("")
     startTransition(async () => {
-      const result = await updateJobStatus(jobId, nextStatus)
+      const result = await updateJobStatus(jobId, nextStatus, statusNotes[nextStatus])
       if (result.error) {
         setError(result.error)
       } else {
@@ -58,13 +65,11 @@ export function JobStatusActions({ jobId, currentStatus }: { jobId: string; curr
     })
   }
 
-  if (currentStatus === "completed" || currentStatus === "cancelled") {
-    return null
-  }
+  if (actions.length === 0) return null
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold mb-4">เปลี่ยนสถานะ</h2>
+      <h2 className="text-sm font-semibold mb-4">ขั้นตอนรับรถ</h2>
 
       {/* Progress bar */}
       <div className="flex items-center gap-1 mb-4">
