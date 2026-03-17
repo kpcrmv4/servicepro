@@ -253,7 +253,7 @@ export default async function InventoryPage({
                           </td>
                           <td className="px-4 py-3">
                             <div className="text-sm text-card-foreground">{part.name as string}</div>
-                            {part.brand && <div className="text-xs text-muted-foreground">{part.brand as string}</div>}
+                            {part.brand ? <div className="text-xs text-muted-foreground">{part.brand as string}</div> : null}
                           </td>
                           <td className="px-4 py-3">
                             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
