@@ -3,6 +3,7 @@ import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getJob } from "@/lib/actions/jobs"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { JobStatusActions } from "@/components/jobs/job-status-actions"
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: "รอรับรถ", color: "bg-warning/10 text-warning" },
@@ -129,6 +130,9 @@ export default async function JobDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Status Actions */}
+          <JobStatusActions jobId={job.id as string} currentStatus={status} />
+
           {/* Customer Info */}
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">

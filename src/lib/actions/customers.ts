@@ -100,6 +100,36 @@ export async function updateCustomer(id: string, formData: FormData) {
   return { success: true }
 }
 
+export async function getCustomerJobs(customerId: string) {
+  const supabase = await createClient()
+  const tenantId = await getTenantId()
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('jobs')
+    .select('*, vehicles(license_plate, brand, model), assigned_user:users!jobs_assigned_to_fkey(full_name)')
+    .eq('customer_id', customerId)
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+
+  return data || []
+}
+
+export async function getCustomerInvoices(customerId: string) {
+  const supabase = await createClient()
+  const tenantId = await getTenantId()
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('invoices')
+    .select('*, jobs(job_number)')
+    .eq('customer_id', customerId)
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+
+  return data || []
+}
+
 export async function deleteCustomer(id: string) {
   const supabase = await createClient()
   const tenantId = await getTenantId()

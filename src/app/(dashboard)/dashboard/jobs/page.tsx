@@ -103,10 +103,12 @@ export default async function JobsPage({
       <PageHeader
         title="จัดการงานซ่อม"
         action={
-          <Button>
-            <Plus className="h-4 w-4" />
-            สร้าง Job Order
-          </Button>
+          <Link href="/dashboard/jobs/new">
+            <Button>
+              <Plus className="h-4 w-4" />
+              สร้าง Job Order
+            </Button>
+          </Link>
         }
       />
 
