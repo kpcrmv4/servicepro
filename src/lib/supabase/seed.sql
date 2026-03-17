@@ -275,7 +275,7 @@ INSERT INTO audit_logs (tenant_id, user_id, action, table_name, record_id, creat
 -- STEP 17: Vehicle Inspections (DVI)
 -- ============================================================
 
-INSERT INTO vehicle_inspections (id, tenant_id, vehicle_id, job_id, inspector_id, status, overall_score, mileage_at_inspection, notes, share_token, created_at) VALUES
+INSERT INTO vehicle_inspections (id, tenant_id, vehicle_id, job_id, inspected_by, status, overall_score, mileage_at_inspection, notes, share_token, created_at) VALUES
   ('b1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', 'completed', 7.5, 45000, 'ตรวจสภาพก่อนเปลี่ยนถ่ายน้ำมัน พบผ้าเบรกหลังเริ่มบาง', 'dvi-share-token-001', now() - interval '50 minutes'),
   ('b1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000012', 'completed', 8.5, 15000, 'ตรวจเช็คระยะ 15,000 กม. สภาพดีโดยรวม', 'dvi-share-token-002', now() - interval '2 hours'),
   ('b1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', NULL, '00000000-0000-0000-0000-000000000013', 'in_progress', NULL, 120000, 'ตรวจสภาพรถบรรทุก', 'dvi-share-token-003', now() - interval '20 minutes');
