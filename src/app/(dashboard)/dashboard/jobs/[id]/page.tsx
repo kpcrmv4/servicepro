@@ -2,10 +2,12 @@ import { ArrowLeft, Car, User, Calendar, Wrench, DollarSign, Clock, Package, Fil
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getJob } from "@/lib/actions/jobs"
 import { getQuotationByJobId } from "@/lib/actions/quotations"
+import { checkCustomerLineLinked } from "@/lib/actions/line-link"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { JobStatusActions } from "@/components/jobs/job-status-actions"
 import { ReceptionStatusActions } from "@/components/reception/reception-status-actions"
+import { LineLinkCard } from "@/components/reception/line-link-card"
 
 const receptionPhaseStatuses = ["pending", "diagnosing", "quoted"]
 
@@ -30,6 +32,9 @@ export default async function JobDetailPage({
     getJob(id),
     getQuotationByJobId(id),
   ])
+
+  const customerId = job?.customer_id as string | undefined
+  const isLineLinked = customerId ? await checkCustomerLineLinked(customerId) : false
 
   if (!job) {
     notFound()
@@ -208,6 +213,15 @@ export default async function JobDetailPage({
               <p className="text-sm text-muted-foreground">ไม่มีข้อมูล</p>
             )}
           </div>
+
+          {/* LINE Link - show during reception phase */}
+          {receptionPhaseStatuses.includes(status) && customer && (
+            <LineLinkCard
+              customerId={job.customer_id as string}
+              customerName={customer.name as string}
+              isLinked={isLineLinked}
+            />
+          )}
 
           {/* Vehicle Info */}
           <div className="rounded-xl border border-border bg-card p-5">

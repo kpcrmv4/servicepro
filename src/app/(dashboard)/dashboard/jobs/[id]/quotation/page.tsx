@@ -10,6 +10,11 @@ import {
   Save,
   Loader2,
   FileText,
+  MessageCircle,
+  Link2,
+  QrCode,
+  Copy,
+  Check,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -24,6 +29,7 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { QRCodeImage } from "@/components/ui/qr-code"
 import { getJob } from "@/lib/actions/jobs"
 import {
   createQuotation,
@@ -32,6 +38,7 @@ import {
   getQuotationByJobId,
   type QuotationItem,
 } from "@/lib/actions/quotations"
+import { sendQuotationViaLine } from "@/lib/actions/quotation-line"
 
 interface LineItem {
   type: "part" | "labor" | "other"
@@ -375,36 +382,153 @@ export default function QuotationPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3 pb-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleSave}
-            disabled={isPending}
-          >
-            {isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            บันทึกใบเสนอราคา
-          </Button>
-
-          {existingQuotation && quotationStatus === "draft" && (
+        <div className="space-y-4 pb-6">
+          <div className="flex flex-wrap gap-3">
             <Button
               type="button"
-              onClick={handleSendToCustomer}
+              variant="outline"
+              onClick={handleSave}
               disabled={isPending}
             >
-              {isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
-              ส่งใบเสนอราคาให้ลูกค้า
+              {isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+              บันทึกใบเสนอราคา
             </Button>
-          )}
 
-          {quotationStatus === "sent" && (
-            <span className="flex items-center gap-1 text-sm text-info font-medium px-3 py-2 rounded-lg bg-info/10">
-              <Send className="h-4 w-4" />
-              ส่งให้ลูกค้าแล้ว - รออนุมัติ
-            </span>
+            {existingQuotation && quotationStatus === "draft" && (
+              <Button
+                type="button"
+                onClick={handleSendToCustomer}
+                disabled={isPending}
+              >
+                {isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                ส่งใบเสนอราคาให้ลูกค้า
+              </Button>
+            )}
+          </div>
+
+          {/* Sharing section - show after quotation is sent */}
+          {existingQuotation && (quotationStatus === "sent" || quotationStatus === "draft") && (
+            <QuotationSharePanel
+              quotationId={existingQuotation.id as string}
+              jobId={jobId}
+              status={quotationStatus || "draft"}
+              isPending={isPending}
+              startTransition={startTransition}
+              setError={setError}
+              setSuccess={setSuccess}
+            />
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function QuotationSharePanel({
+  quotationId,
+  jobId,
+  status,
+  isPending,
+  startTransition,
+  setError,
+  setSuccess,
+}: {
+  quotationId: string
+  jobId: string
+  status: string
+  isPending: boolean
+  startTransition: (fn: () => Promise<void>) => void
+  setError: (s: string) => void
+  setSuccess: (s: string) => void
+}) {
+  const [copied, setCopied] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+  const [lineSending, setLineSending] = useState(false)
+
+  const quotationUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/c/quotation/${quotationId}`
+    : `/c/quotation/${quotationId}`
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(quotationUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleSendViaLine() {
+    setLineSending(true)
+    setError("")
+    startTransition(async () => {
+      const result = await sendQuotationViaLine(quotationId, jobId)
+      setLineSending(false)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setSuccess("ส่งใบเสนอราคาทาง LINE แล้ว")
+      }
+    })
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Send className="h-4 w-4 text-primary" />
+        ส่งใบเสนอราคาให้ลูกค้า
+      </div>
+
+      {status === "sent" && (
+        <div className="rounded-lg border border-info/30 bg-info/10 p-2 text-xs text-info text-center font-medium">
+          ส่งให้ลูกค้าแล้ว - รออนุมัติ
+        </div>
+      )}
+
+      {/* Send via LINE */}
+      <button
+        onClick={handleSendViaLine}
+        disabled={isPending}
+        className="flex w-full items-center gap-3 rounded-lg border border-[#06C755]/30 bg-[#06C755]/5 px-4 py-3 text-sm font-medium text-[#06C755] hover:bg-[#06C755]/10 transition-colors disabled:opacity-50"
+      >
+        <MessageCircle className="h-5 w-5" />
+        <div className="flex-1 text-left">
+          <p>ส่งทาง LINE</p>
+          <p className="text-xs text-muted-foreground font-normal">ส่งใบเสนอราคาพร้อมปุ่มอนุมัติ</p>
+        </div>
+        {lineSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+      </button>
+
+      {/* Copy link */}
+      <button
+        onClick={handleCopyLink}
+        className="flex w-full items-center gap-3 rounded-lg border border-border px-4 py-3 text-sm font-medium hover:bg-muted transition-colors"
+      >
+        <Link2 className="h-5 w-5 text-muted-foreground" />
+        <div className="flex-1 text-left">
+          <p>คัดลอกลิงก์</p>
+          <p className="text-xs text-muted-foreground font-normal">ส่งลิงก์ผ่านช่องทางอื่น (SMS, Email)</p>
+        </div>
+        {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+      </button>
+
+      {/* QR Code toggle */}
+      <button
+        onClick={() => setShowQR(!showQR)}
+        className="flex w-full items-center gap-3 rounded-lg border border-border px-4 py-3 text-sm font-medium hover:bg-muted transition-colors"
+      >
+        <QrCode className="h-5 w-5 text-muted-foreground" />
+        <div className="flex-1 text-left">
+          <p>QR Code</p>
+          <p className="text-xs text-muted-foreground font-normal">ให้ลูกค้าสแกนเปิดใบเสนอราคา</p>
+        </div>
+      </button>
+
+      {showQR && (
+        <div className="flex flex-col items-center gap-2 py-2">
+          <div className="rounded-xl border border-border bg-white p-3">
+            <QRCodeImage value={quotationUrl} size={200} />
+          </div>
+          <p className="text-xs text-muted-foreground">สแกนเพื่อดูใบเสนอราคาและอนุมัติ</p>
+        </div>
+      )}
     </div>
   )
 }
