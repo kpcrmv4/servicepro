@@ -34,10 +34,17 @@ export async function middleware(request: NextRequest) {
 
   // Allow public routes without authentication
   if (isPublicRoute(pathname)) {
-    // If authenticated user visits login/register, redirect to dashboard
+    // If authenticated user visits login/register, redirect based on role
     if (user && (pathname === '/login' || pathname === '/register')) {
+      const { supabase } = await updateSession(request)
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
       const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/dashboard'
+      redirectUrl.pathname = profile?.role === 'super_admin' ? '/super-admin' : '/dashboard'
       return NextResponse.redirect(redirectUrl)
     }
     return supabaseResponse
