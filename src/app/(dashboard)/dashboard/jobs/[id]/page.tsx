@@ -103,12 +103,11 @@ export default async function JobDetailPage({
                 </thead>
                 <tbody>
                   {jobParts.map((jp: Record<string, unknown>, i: number) => {
-                    const part = jp.parts as Record<string, unknown> | null
                     const qty = Number(jp.quantity) || 0
                     const price = Number(jp.unit_price) || 0
                     return (
                       <tr key={i} className="border-b border-border last:border-0">
-                        <td className="py-2 text-sm">{part?.name as string || "-"}</td>
+                        <td className="py-2 text-sm">{(jp.description as string) || "-"}</td>
                         <td className="py-2 text-center text-sm">{qty}</td>
                         <td className="py-2 text-right text-sm text-muted-foreground">{formatCurrency(price)}</td>
                         <td className="py-2 text-right text-sm font-medium">{formatCurrency(qty * price)}</td>
