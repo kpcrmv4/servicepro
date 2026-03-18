@@ -99,9 +99,13 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
 // -----------------------------------------------------------------------------
 
 export const QUEUE_COLUMNS = [
-  { key: "pending",     label: "รอดำเนินการ",  bg: "bg-warning/10",   color: "border-warning" },
-  { key: "in_progress", label: "กำลังซ่อม",    bg: "bg-info/10",      color: "border-info" },
-  { key: "completed",   label: "เสร็จแล้ว",    bg: "bg-success/10",   color: "border-success" },
+  { key: "pending",        label: "รอดำเนินการ",  bg: "bg-warning/10",        color: "border-warning",        dot: "bg-warning" },
+  { key: "diagnosing",     label: "ตรวจสอบ",     bg: "bg-purple-500/10",     color: "border-purple-500",     dot: "bg-purple-500" },
+  { key: "quoted",         label: "รอลูกค้าอนุมัติ", bg: "bg-blue-500/10",       color: "border-blue-500",       dot: "bg-blue-500" },
+  { key: "in_progress",    label: "กำลังซ่อม",    bg: "bg-info/10",           color: "border-info",           dot: "bg-info" },
+  { key: "quality_check",  label: "ตรวจ QC",     bg: "bg-purple-500/10",     color: "border-purple-500",     dot: "bg-purple-500" },
+  { key: "waiting_pickup", label: "รอลูกค้ารับ",   bg: "bg-cyan-500/10",       color: "border-cyan-500",       dot: "bg-cyan-500" },
+  { key: "completed",      label: "เสร็จแล้ว",    bg: "bg-success/10",        color: "border-success",        dot: "bg-success" },
 ] as const
 
 // -----------------------------------------------------------------------------

@@ -304,89 +304,157 @@ export default async function JobsPage({
         {/* ================================================================= */}
         {/* QUEUE / KANBAN TAB                                                */}
         {/* ================================================================= */}
-        {activeTab === "queue" && (
-          <div className="space-y-4">
-            <div className="overflow-x-auto pb-4">
-              <div className="flex min-w-[768px] gap-4">
+        {activeTab === "queue" && (() => {
+          const queueStatus = params.status || "all"
+          const queueJobs = queueStatus === "all"
+            ? allJobs.filter((j: Record<string, unknown>) => j.status !== "cancelled")
+            : allJobs.filter((j: Record<string, unknown>) => j.status === queueStatus)
+
+          return (
+            <div className="space-y-4">
+              {/* Summary bar - counts per status */}
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                 {QUEUE_COLUMNS.map((col) => {
-                  const columnJobs = allJobs.filter(
-                    (j: Record<string, unknown>) => j.status === col.key
-                  )
-
+                  const count = allJobs.filter((j: Record<string, unknown>) => j.status === col.key).length
+                  const isActive = queueStatus === col.key
                   return (
-                    <div key={col.key} className="flex-1">
-                      {/* Column header */}
-                      <div
-                        className={cn(
-                          "mb-3 rounded-lg border-l-4 px-3 py-2",
-                          col.color,
-                          col.bg
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold">
-                            {col.label}
-                          </span>
-                          <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium">
-                            {columnJobs.length}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Column cards */}
-                      <div className="space-y-2">
-                        {columnJobs.length === 0 && (
-                          <div className="rounded-lg border border-dashed border-border py-8 text-center text-xs text-muted-foreground">
-                            ไม่มีรายการ
-                          </div>
-                        )}
-                        {columnJobs.map((job: Record<string, unknown>) => {
-                          const customer = job.customers as Record<string, unknown> | null
-                          const vehicle = job.vehicles as Record<string, unknown> | null
-                          const tech = job.assigned_user as Record<string, unknown> | null
-                          const priority = job.priority as string
-
-                          return (
-                            <Link
-                              key={job.id as string}
-                              href={`/dashboard/jobs/${job.id}`}
-                              className="block rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
-                            >
-                              <div className="mb-1.5 flex items-center justify-between">
-                                <span className="text-xs font-medium text-primary">
-                                  {job.job_number as string}
-                                </span>
-                                {priority === "urgent" && (
-                                  <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium bg-error/10 text-error border-error/20">
-                                    <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />
-                                    ด่วน
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm truncate">
-                                {(customer?.name as string) || "-"}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {(vehicle?.license_plate as string) || ""}{" "}
-                                {vehicle?.brand as string} {vehicle?.model as string}
-                              </p>
-                              {tech && (
-                                <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Wrench className="h-3 w-3" />
-                                  {tech.full_name as string}
-                                </div>
-                              )}
-                            </Link>
-                          )
-                        })}
-                      </div>
-                    </div>
+                    <Link
+                      key={col.key}
+                      href={tabHref("queue", { status: col.key })}
+                      className={cn(
+                        "flex flex-col items-center gap-1 rounded-xl border p-2.5 transition-colors",
+                        isActive
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                          : "border-border bg-card hover:border-primary/20 hover:bg-accent/30"
+                      )}
+                    >
+                      <div className={cn("h-2.5 w-2.5 rounded-full", col.dot)} />
+                      <span className={cn(
+                        "text-lg font-bold",
+                        count > 0 ? "text-foreground" : "text-muted-foreground"
+                      )}>
+                        {count}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground text-center leading-tight">
+                        {col.label}
+                      </span>
+                    </Link>
                   )
                 })}
               </div>
+
+              {/* "ทั้งหมด" toggle */}
+              <div className="flex items-center gap-2">
+                <Link
+                  href={tabHref("queue", { status: "all" })}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    queueStatus === "all"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  ทั้งหมด ({allJobs.filter((j: Record<string, unknown>) => j.status !== "cancelled").length})
+                </Link>
+                {queueStatus !== "all" && (
+                  <span className="text-sm text-muted-foreground">
+                    กรอง: <span className="font-medium text-foreground">{QUEUE_COLUMNS.find(c => c.key === queueStatus)?.label}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Job cards */}
+              {queueJobs.length === 0 ? (
+                <EmptyState message="ไม่มีรายการในสถานะนี้" />
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {queueJobs.map((job: Record<string, unknown>) => {
+                    const customer = job.customers as Record<string, unknown> | null
+                    const vehicle = job.vehicles as Record<string, unknown> | null
+                    const tech = job.assigned_user as Record<string, unknown> | null
+                    const priority = job.priority as string
+                    const status = job.status as string
+                    const statusStyle = JOB_STATUS[status]
+                    const col = QUEUE_COLUMNS.find(c => c.key === status)
+
+                    return (
+                      <Link
+                        key={job.id as string}
+                        href={`/dashboard/jobs/${job.id}`}
+                        className={cn(
+                          "group block rounded-xl border-l-4 border border-border bg-card p-4 transition-all hover:shadow-md hover:border-primary/30",
+                          col?.color || "border-l-muted"
+                        )}
+                      >
+                        {/* Top row: job number + badges */}
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-sm font-bold text-primary">
+                            {job.job_number as string}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {priority === "urgent" && (
+                              <span className="inline-flex items-center gap-0.5 rounded-md bg-error/10 text-error border border-error/20 px-1.5 py-0.5 text-[10px] font-medium">
+                                <AlertTriangle className="h-2.5 w-2.5" />
+                                ด่วน
+                              </span>
+                            )}
+                            <span className={cn(
+                              "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium",
+                              statusStyle?.className || "bg-muted text-muted-foreground"
+                            )}>
+                              {statusStyle?.label || status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Customer + Vehicle */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-sm font-medium truncate">
+                              {(customer?.name as string) || "-"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="font-mono bg-muted/50 rounded px-1.5 py-0.5">
+                              {(vehicle?.license_plate as string) || "-"}
+                            </span>
+                            <span className="truncate">
+                              {vehicle?.brand as string} {vehicle?.model as string}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bottom row: technician + date */}
+                        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
+                          {tech ? (
+                            <div className="flex items-center gap-1">
+                              <Wrench className="h-3 w-3" />
+                              <span className="truncate max-w-[120px]">{tech.full_name as string}</span>
+                            </div>
+                          ) : (
+                            <span className="text-warning">ยังไม่มอบหมาย</span>
+                          )}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Calendar className="h-3 w-3" />
+                            {formatDateShort(job.created_at as string)}
+                          </div>
+                        </div>
+
+                        {/* Description preview */}
+                        {typeof job.description === "string" && job.description && (
+                          <p className="mt-2 text-xs text-muted-foreground line-clamp-1 border-t border-border pt-2">
+                            {job.description}
+                          </p>
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* ================================================================= */}
         {/* LIST TAB (DEFAULT)                                                */}
