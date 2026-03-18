@@ -6,6 +6,7 @@ import {
   Wrench,
   AlertTriangle,
   Inbox,
+  Car,
 } from "lucide-react"
 import { cn, formatDateShort, formatCurrency } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -188,12 +189,21 @@ export default async function JobsPage({
       <PageHeader
         title="จัดการงานซ่อม"
         action={
-          <Link href="/dashboard/jobs/new">
-            <Button>
-              <Plus className="h-4 w-4" />
-              สร้าง Job Order
-            </Button>
-          </Link>
+          activeTab === "reception" ? (
+            <Link href="/dashboard/reception/new">
+              <Button>
+                <Car className="h-4 w-4" />
+                รับรถใหม่
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/dashboard/jobs/new">
+              <Button>
+                <Plus className="h-4 w-4" />
+                สร้าง Job Order
+              </Button>
+            </Link>
+          )
         }
       />
 
