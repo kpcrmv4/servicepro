@@ -15,6 +15,7 @@ import {
   QrCode,
   Copy,
   Check,
+  Printer,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -529,6 +530,18 @@ function QuotationSharePanel({
           <p className="text-xs text-muted-foreground">สแกนเพื่อดูใบเสนอราคาและอนุมัติ</p>
         </div>
       )}
+
+      {/* Print */}
+      <button
+        onClick={() => window.open(`/c/quotation/${quotationId}?print=1`, '_blank')}
+        className="flex w-full items-center gap-3 rounded-lg border border-border px-4 py-3 text-sm font-medium hover:bg-muted transition-colors"
+      >
+        <Printer className="h-5 w-5 text-muted-foreground" />
+        <div className="flex-1 text-left">
+          <p>พิมพ์ใบเสนอราคา</p>
+          <p className="text-xs text-muted-foreground font-normal">เปิดหน้าพิมพ์ใบเสนอราคา</p>
+        </div>
+      </button>
     </div>
   )
 }

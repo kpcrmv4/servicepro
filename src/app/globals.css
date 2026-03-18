@@ -175,3 +175,46 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* Print styles */
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  nav,
+  aside,
+  header,
+  [data-sidebar],
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  /* Remove shadows and borders for clean print */
+  .print-clean {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Ensure content fills width */
+  main, .print-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Force page breaks */
+  .print-break-before {
+    page-break-before: always;
+  }
+
+  /* Quotation print header */
+  .print-header {
+    display: block !important;
+  }
+}

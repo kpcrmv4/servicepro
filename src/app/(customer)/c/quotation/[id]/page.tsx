@@ -3,13 +3,18 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { CheckCircle, XCircle, FileText, Car, User, Clock } from "lucide-react"
 import { QuotationApprovalButtons } from "./approval-buttons"
+import { QuotationPrintButton } from "./print-button"
 
 export default async function CustomerQuotationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { id } = await params
+  const search = await searchParams
+  const autoPrint = search.print === "1"
   const supabase = await createServerClient()
 
   const { data: quotation } = await supabase
@@ -152,9 +157,16 @@ export default async function CustomerQuotationPage({
         </p>
       )}
 
+      {/* Print button */}
+      <div className="no-print">
+        <QuotationPrintButton autoPrint={autoPrint} />
+      </div>
+
       {/* Approval buttons */}
       {isActionable && (
-        <QuotationApprovalButtons quotationId={quotation.id as string} jobId={quotation.job_id as string} />
+        <div className="no-print">
+          <QuotationApprovalButtons quotationId={quotation.id as string} jobId={quotation.job_id as string} />
+        </div>
       )}
     </div>
   )
