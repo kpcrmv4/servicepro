@@ -11,7 +11,7 @@ export async function getInspections(filters?: { vehicleId?: string; jobId?: str
       *,
       vehicle:vehicles(id, license_plate, brand, model, customer:customers(id, name, phone)),
       inspector:users!vehicle_inspections_inspected_by_fkey(id, full_name),
-      job:jobs(id, job_number),
+      job:jobs!vehicle_inspections_job_id_fkey(id, job_number),
       items:inspection_items(*)
     `)
     .order('created_at', { ascending: false });
@@ -37,7 +37,7 @@ export async function getInspection(id: string) {
       *,
       vehicle:vehicles(id, license_plate, brand, model, year, color, current_mileage, customer:customers(id, name, phone, email)),
       inspector:users!vehicle_inspections_inspected_by_fkey(id, full_name, avatar_url),
-      job:jobs(id, job_number, status, description),
+      job:jobs!vehicle_inspections_job_id_fkey(id, job_number, status, description),
       items:inspection_items(*)
     `)
     .eq('id', id)
