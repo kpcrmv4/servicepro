@@ -1,6 +1,5 @@
 'use server';
 
-import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getUserInfo } from '@/lib/actions/auth-helpers';
 
@@ -22,7 +21,11 @@ export async function getInspections(filters?: { vehicleId?: string; jobId?: str
   if (filters?.status) query = query.eq('status', filters.status);
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) {
+    console.error('[getInspections] error:', error.message, error.code, error.details);
+    throw error;
+  }
+  console.log('[getInspections] returned', data?.length ?? 0, 'rows');
   return data || [];
 }
 
@@ -91,7 +94,7 @@ export async function createInspection(data: {
       mileage_at_inspection: data.mileage_at_inspection || null,
       notes: data.notes || null,
       status: 'draft',
-      share_token: crypto.randomUUID().slice(0, 12),
+      share_token: globalThis.crypto.randomUUID().slice(0, 12),
     })
     .select()
     .single();
