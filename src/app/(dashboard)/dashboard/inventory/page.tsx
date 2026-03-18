@@ -9,6 +9,7 @@ import {
   Search,
   ShoppingBag,
   ShoppingCart,
+  Gift,
 } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -22,9 +23,11 @@ import {
   getActiveJobs,
   getPosSales,
 } from "@/lib/actions/parts"
+import { getServicePackages } from "@/lib/actions/service-packages"
 import Link from "next/link"
 import { InventoryActions, EditPartButton, ReceivePOButton } from "@/components/inventory/inventory-actions"
 import { CategoryManager } from "@/components/inventory/category-manager"
+import { PackagesTab } from "@/components/inventory/package-dialog"
 
 type StockStatus = "in_stock" | "low_stock" | "out_of_stock"
 
@@ -61,6 +64,7 @@ const tabs = [
   { key: "history", label: "ประวัติเบิก", icon: History },
   { key: "categories", label: "หมวดหมู่", icon: FolderOpen },
   { key: "pos", label: "POS", icon: ShoppingCart },
+  { key: "packages", label: "แพ็กเกจบริการ", icon: Gift },
 ]
 
 export default async function InventoryPage({
@@ -71,7 +75,7 @@ export default async function InventoryPage({
   const params = await searchParams
   const activeTab = params.tab || "parts"
 
-  const [parts, categories, suppliers, purchaseOrders, movements, expiringBatches, jobs, posSales] =
+  const [parts, categories, suppliers, purchaseOrders, movements, expiringBatches, jobs, posSales, servicePackages] =
     await Promise.all([
       getParts(params.search),
       getPartCategories(),
@@ -81,6 +85,7 @@ export default async function InventoryPage({
       getExpiringBatches(),
       getActiveJobs(),
       getPosSales(),
+      getServicePackages(),
     ])
 
   // Summary counts
@@ -459,6 +464,11 @@ export default async function InventoryPage({
               </table>
             </div>
           </div>
+        )}
+
+        {/* ==================== PACKAGES TAB ==================== */}
+        {activeTab === "packages" && (
+          <PackagesTab servicePackages={servicePackages} />
         )}
       </div>
     </div>

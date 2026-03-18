@@ -1,5 +1,4 @@
 import {
-  Plus,
   Search,
   Users,
   Crown,
@@ -9,6 +8,7 @@ import {
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
 import { getCustomers } from "@/lib/actions/customers"
+import { AddCustomerButton } from "@/components/customers/customer-actions"
 import Link from "next/link"
 
 type MembershipTier = "bronze" | "silver" | "gold" | "platinum"
@@ -42,11 +42,7 @@ export default async function CustomersPage({
     <div className="space-y-6">
       <PageHeader
         title="ลูกค้า"
-        action={
-          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            <Plus className="h-4 w-4" /> เพิ่มลูกค้า
-          </button>
-        }
+        action={<AddCustomerButton />}
       />
 
       {/* Summary Cards */}
@@ -76,7 +72,7 @@ export default async function CustomersPage({
           <input
             type="text"
             name="search"
-            placeholder="ค้นหาชื่อ, เบอร์โทร, หรืออีเมล..."
+            placeholder="ค้นหาชื่อ, เบอร์โทร, อีเมล, หรือทะเบียนรถ..."
             defaultValue={params.search || ""}
             className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />

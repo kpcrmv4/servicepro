@@ -9,28 +9,20 @@ import {
   LayoutDashboard,
   ClipboardList,
   Wrench,
-  Calendar,
   Package,
   DollarSign,
   Users,
-  Car,
   UserCog,
   BarChart3,
   Settings,
-  Shield,
   Plus,
   MoreHorizontal,
   X,
-  FileText,
   CheckSquare,
-  Receipt,
   Bell,
   LogOut,
-  User,
   ClipboardCheck,
-  PackageCheck,
-  Clock,
-  MessageCircle,
+  ShieldCheck,
 } from "lucide-react"
 
 // ============================================================
@@ -46,42 +38,62 @@ interface NavItem {
 }
 
 interface RoleNavConfig {
-  items: [NavItem, NavItem, NavItem, NavItem] // exactly 4 items: [left1, left2, right1, right2(=more)]
+  items: [NavItem, NavItem, NavItem, NavItem]
   centerAction: NavItem & { color: string }
 }
 
 // ============================================================
-// All menu items (for "More" overlay)
+// All menu items — 8 items (ลดจาก 19)
 // ============================================================
 
-const allMenuItems: NavItem[] = [
-  { title: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard },
-  { title: "รับรถ", href: "/dashboard/reception", icon: ClipboardList },
-  { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
-  { title: "คิวงาน", href: "/dashboard/queue", icon: CheckSquare },
-  { title: "ตรวจสภาพรถ", href: "/dashboard/inspections", icon: ClipboardCheck },
-  { title: "ตารางงาน", href: "/dashboard/planning", icon: Calendar },
-  { title: "ใบเสนอราคา", href: "/dashboard/quotations", icon: FileText },
-  { title: "แพ็กเกจ", href: "/dashboard/service-packages", icon: PackageCheck },
-  { title: "อะไหล่", href: "/dashboard/inventory", icon: Package },
-  { title: "การเงิน", href: "/dashboard/finance", icon: DollarSign },
-  { title: "ลูกค้า", href: "/dashboard/customers", icon: Users },
-  { title: "รถ", href: "/dashboard/vehicles", icon: Car },
-  { title: "ประกัน", href: "/dashboard/insurance", icon: Shield },
-  { title: "พนักงาน", href: "/dashboard/employees", icon: UserCog },
-  { title: "บันทึกเวลา", href: "/dashboard/time-clock", icon: Clock },
-  { title: "แจ้งเตือน", href: "/dashboard/reminders", icon: Bell },
-  { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3 },
-  { title: "LINE OA", href: "/dashboard/settings/line", icon: MessageCircle },
-  { title: "ตั้งค่า", href: "/dashboard/settings", icon: Settings },
+interface MenuItemWithAccess extends NavItem {
+  allowedRoles: UserRole[]
+}
+
+const allMenuItems: MenuItemWithAccess[] = [
+  {
+    title: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard,
+    allowedRoles: ["owner", "admin", "manager", "technician", "receptionist", "viewer"],
+  },
+  {
+    title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench,
+    allowedRoles: ["owner", "admin", "manager", "technician", "receptionist", "viewer"],
+  },
+  {
+    title: "ตรวจสภาพ", href: "/dashboard/inspections", icon: ClipboardCheck,
+    allowedRoles: ["owner", "admin", "manager", "technician", "receptionist"],
+  },
+  {
+    title: "คลังอะไหล่", href: "/dashboard/inventory", icon: Package,
+    allowedRoles: ["owner", "admin", "manager", "technician"],
+  },
+  {
+    title: "การเงิน", href: "/dashboard/finance", icon: DollarSign,
+    allowedRoles: ["owner", "admin", "manager"],
+  },
+  {
+    title: "ลูกค้า", href: "/dashboard/customers", icon: Users,
+    allowedRoles: ["owner", "admin", "manager", "receptionist", "viewer"],
+  },
+  {
+    title: "ทีมงาน", href: "/dashboard/team", icon: UserCog,
+    allowedRoles: ["owner", "admin", "manager"],
+  },
+  {
+    title: "รับประกัน", href: "/dashboard/warranty", icon: ShieldCheck,
+    allowedRoles: ["owner", "admin", "manager"],
+  },
+  {
+    title: "รายงาน", href: "/dashboard/reports", icon: BarChart3,
+    allowedRoles: ["owner", "admin", "manager", "viewer"],
+  },
 ]
 
 // ============================================================
-// Role-based navigation configs
+// Role-based navigation configs — route ใหม่
 // ============================================================
 
 const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
-  // เจ้าของ: เน้นภาพรวม + การเงิน + สร้างงานใหม่
   owner: {
     items: [
       { title: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard },
@@ -89,49 +101,44 @@ const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
       { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3 },
       { title: "เพิ่มเติม", href: "#more", icon: MoreHorizontal },
     ],
-    centerAction: { title: "สร้างงาน", href: "/dashboard/reception", icon: Plus, color: "bg-primary" },
+    centerAction: { title: "สร้างงาน", href: "/dashboard/jobs/new", icon: Plus, color: "bg-primary" },
   },
-  // ผู้ดูแล: เน้นจัดการระบบ + งาน + สร้างงานใหม่
   admin: {
     items: [
       { title: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard },
       { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
-      { title: "ตั้งค่า", href: "/dashboard/settings", icon: Settings },
+      { title: "ทีมงาน", href: "/dashboard/team", icon: UserCog },
       { title: "เพิ่มเติม", href: "#more", icon: MoreHorizontal },
     ],
-    centerAction: { title: "สร้างงาน", href: "/dashboard/reception", icon: Plus, color: "bg-primary" },
+    centerAction: { title: "สร้างงาน", href: "/dashboard/jobs/new", icon: Plus, color: "bg-primary" },
   },
-  // ผู้จัดการ: เน้นจัดการงาน + ตารางงาน + สร้างงานใหม่
   manager: {
     items: [
       { title: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard },
       { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
-      { title: "ตารางงาน", href: "/dashboard/planning", icon: Calendar },
+      { title: "คลังอะไหล่", href: "/dashboard/inventory", icon: Package },
       { title: "เพิ่มเติม", href: "#more", icon: MoreHorizontal },
     ],
-    centerAction: { title: "รับรถ", href: "/dashboard/reception", icon: ClipboardList, color: "bg-emerald-500" },
+    centerAction: { title: "รับรถ", href: "/dashboard/jobs?tab=reception", icon: ClipboardList, color: "bg-emerald-500" },
   },
-  // ช่าง: เน้นคิวงาน + งานของตัวเอง + อัพเดทงาน
   technician: {
     items: [
-      { title: "คิวงาน", href: "/dashboard/queue", icon: CheckSquare },
       { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
-      { title: "อะไหล่", href: "/dashboard/inventory", icon: Package },
+      { title: "คลังอะไหล่", href: "/dashboard/inventory", icon: Package },
+      { title: "ตรวจสภาพ", href: "/dashboard/inspections", icon: ClipboardCheck },
       { title: "เพิ่มเติม", href: "#more", icon: MoreHorizontal },
     ],
-    centerAction: { title: "อัพเดทงาน", href: "/dashboard/jobs", icon: Wrench, color: "bg-orange-500" },
+    centerAction: { title: "คิวงาน", href: "/dashboard/jobs?tab=queue", icon: CheckSquare, color: "bg-orange-500" },
   },
-  // พนักงานต้อนรับ: เน้นรับรถ + ลูกค้า + รับรถใหม่
   receptionist: {
     items: [
       { title: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard },
       { title: "ลูกค้า", href: "/dashboard/customers", icon: Users },
-      { title: "คิวงาน", href: "/dashboard/queue", icon: CheckSquare },
+      { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
       { title: "เพิ่มเติม", href: "#more", icon: MoreHorizontal },
     ],
-    centerAction: { title: "รับรถ", href: "/dashboard/reception", icon: ClipboardList, color: "bg-emerald-500" },
+    centerAction: { title: "รับรถ", href: "/dashboard/jobs?tab=reception", icon: ClipboardList, color: "bg-emerald-500" },
   },
-  // ผู้ดู: เน้นดูข้อมูลอย่างเดียว
   viewer: {
     items: [
       { title: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard },
@@ -139,7 +146,7 @@ const roleNavConfigs: Record<UserRole, RoleNavConfig> = {
       { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3 },
       { title: "เพิ่มเติม", href: "#more", icon: MoreHorizontal },
     ],
-    centerAction: { title: "ดูงาน", href: "/dashboard/jobs", icon: Wrench, color: "bg-primary" },
+    centerAction: { title: "ดูงาน", href: "/dashboard/jobs?tab=list", icon: Wrench, color: "bg-primary" },
   },
 }
 
@@ -158,7 +165,6 @@ export function BottomNav() {
     loadUserRole()
   }, [])
 
-  // Close more menu on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
@@ -171,7 +177,6 @@ export function BottomNav() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [moreOpen])
 
-  // Close more menu on route change
   useEffect(() => {
     setMoreOpen(false)
   }, [pathname])
@@ -200,8 +205,14 @@ export function BottomNav() {
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard"
     if (href === "#more") return false
-    return pathname.startsWith(href)
+    const [hrefPath] = href.split("?")
+    return pathname.startsWith(hrefPath)
   }
+
+  // Filter menu items by role
+  const visibleMenuItems = allMenuItems.filter(item =>
+    item.allowedRoles.includes(role)
+  )
 
   const config = roleNavConfigs[role] || roleNavConfigs.viewer
   const leftItems = config.items.slice(0, 2)
@@ -215,13 +226,11 @@ export function BottomNav() {
       {/* More Menu Overlay */}
       {moreOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" ref={moreRef}>
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setMoreOpen(false)}
           />
 
-          {/* Menu Panel - slides up from bottom */}
           <div className="absolute bottom-0 left-0 right-0 animate-slide-up">
             <div className="mx-2 mb-2 rounded-2xl border border-border bg-card shadow-2xl">
               {/* Header */}
@@ -235,9 +244,9 @@ export function BottomNav() {
                 </button>
               </div>
 
-              {/* Grid Menu */}
+              {/* Grid Menu — 8 items max, filtered by role */}
               <div className="grid grid-cols-4 gap-1 p-3">
-                {allMenuItems.map((item) => {
+                {visibleMenuItems.map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
                   return (
@@ -267,16 +276,16 @@ export function BottomNav() {
                     onClick={() => setMoreOpen(false)}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <User className="h-4 w-4" />
-                    โปรไฟล์
+                    <Settings className="h-4 w-4" />
+                    ตั้งค่า
                   </Link>
                   <Link
-                    href="/dashboard/settings"
+                    href="/dashboard/notifications"
                     onClick={() => setMoreOpen(false)}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <Settings className="h-4 w-4" />
-                    ตั้งค่า
+                    <Bell className="h-4 w-4" />
+                    แจ้งเตือน
                   </Link>
                 </div>
               </div>
@@ -287,7 +296,6 @@ export function BottomNav() {
 
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
-        {/* Safe area background */}
         <div className="border-t border-border bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
           <div className="relative flex items-end justify-around px-2 pt-1">
             {/* Left items (positions 1 & 2) */}
@@ -321,7 +329,6 @@ export function BottomNav() {
                   "text-white"
                 )}
               >
-                {/* Glow effect */}
                 <div className={cn("absolute inset-0 rounded-full opacity-30 blur-md", center.color)} />
                 <center.icon className="relative h-6 w-6 stroke-[2.5]" />
               </Link>
@@ -334,7 +341,7 @@ export function BottomNav() {
             </div>
 
             {/* Right items (positions 4 & 5) */}
-            {rightItems.map((item, idx) => {
+            {rightItems.map((item) => {
               const Icon = item.icon
               const isMore = item.href === "#more"
               const active = isMore ? moreOpen : isActive(item.href)

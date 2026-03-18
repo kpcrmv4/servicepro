@@ -1,0 +1,128 @@
+'use client'
+
+import { useState } from 'react'
+import { Plus, Phone } from 'lucide-react'
+import { cn, formatDateShort } from '@/lib/utils'
+import { MemberDialog } from './member-dialog'
+
+const roleLabels: Record<string, string> = {
+  owner: 'เจ้าของ',
+  admin: 'แอดมิน',
+  manager: 'ผู้จัดการ',
+  technician: 'ช่าง',
+  receptionist: 'พนักงานต้อนรับ',
+  viewer: 'ผู้ชม',
+}
+
+const roleColors: Record<string, string> = {
+  owner: 'bg-purple-100 text-purple-700',
+  admin: 'bg-blue-100 text-blue-700',
+  manager: 'bg-indigo-100 text-indigo-700',
+  technician: 'bg-amber-100 text-amber-700',
+  receptionist: 'bg-green-100 text-green-700',
+  viewer: 'bg-gray-100 text-gray-700',
+}
+
+interface TeamMembersClientProps {
+  members: Array<Record<string, unknown>>
+}
+
+export function TeamMembersClient({ members }: TeamMembersClientProps) {
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editMember, setEditMember] = useState<Record<string, unknown> | null>(null)
+
+  const totalMembers = members.length
+  const technicians = members.filter((m) => m.role === 'technician').length
+
+  function openInvite() {
+    setEditMember(null)
+    setDialogOpen(true)
+  }
+
+  function openEdit(member: Record<string, unknown>) {
+    setEditMember(member)
+    setDialogOpen(true)
+  }
+
+  function handleOpenChange(open: boolean) {
+    setDialogOpen(open)
+    if (!open) setEditMember(null)
+  }
+
+  return (
+    <>
+      {/* Invite Button - rendered via portal in PageHeader */}
+      <div className="flex justify-end px-4 sm:px-6 -mt-14 mb-8">
+        <button
+          onClick={openInvite}
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> เพิ่มพนักงาน
+        </button>
+      </div>
+
+      {/* Summary */}
+      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 sm:px-6 max-w-lg">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">พนักงานทั้งหมด</p>
+          <p className="mt-1 text-2xl font-bold">{totalMembers}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">ช่าง</p>
+          <p className="mt-1 text-2xl font-bold">{technicians}</p>
+        </div>
+      </div>
+
+      {/* Employee Grid */}
+      <div className="grid gap-3 px-4 sm:gap-4 sm:px-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {members.map((emp) => (
+          <div
+            key={emp.id as string}
+            onClick={() => openEdit(emp)}
+            className="cursor-pointer rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {(emp.full_name as string)?.charAt(0) || '?'}
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-card-foreground">{emp.full_name as string}</h3>
+                  <span className={cn('mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium', roleColors[emp.role as string] || 'bg-muted text-muted-foreground')}>
+                    {roleLabels[emp.role as string] || (emp.role as string)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className={cn('h-2.5 w-2.5 rounded-full', emp.is_active ? 'bg-success' : 'bg-error')} />
+                <span className="text-xs text-muted-foreground">{emp.is_active ? 'ใช้งาน' : 'ปิดใช้งาน'}</span>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                {(emp.phone as string) || '-'}
+              </div>
+              <p className="text-xs text-muted-foreground">{emp.email as string}</p>
+              <p className="text-xs text-muted-foreground">เข้าร่วม: {formatDateShort(emp.created_at as string)}</p>
+            </div>
+          </div>
+        ))}
+        {members.length === 0 && (
+          <div className="col-span-full rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+            ยังไม่มีพนักงาน
+          </div>
+        )}
+      </div>
+
+      {/* Dialog */}
+      <MemberDialog
+        key={editMember?.id as string || 'new'}
+        open={dialogOpen}
+        onOpenChange={handleOpenChange}
+        editMember={editMember}
+      />
+    </>
+  )
+}

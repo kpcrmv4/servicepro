@@ -14,6 +14,8 @@ import {
 } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getCustomer, getCustomerJobs, getCustomerInvoices } from "@/lib/actions/customers"
+import { EditCustomerButton } from "@/components/customers/customer-actions"
+import { AddVehicleButton, EditVehicleCard } from "@/components/customers/vehicle-actions"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -89,6 +91,7 @@ export default async function CustomerDetailPage({
               </div>
             </div>
           </div>
+          <EditCustomerButton customer={customer as Record<string, unknown>} />
         </div>
       </div>
 
@@ -175,22 +178,16 @@ export default async function CustomerDetailPage({
         <div className="lg:col-span-2 space-y-6">
           {/* Vehicles */}
           <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Car className="h-4 w-4 text-primary" /> รถยนต์ ({vehicles.length})
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Car className="h-4 w-4 text-primary" /> รถยนต์ ({vehicles.length})
+              </h2>
+              <AddVehicleButton customerId={customer.id as string} />
+            </div>
             {vehicles.length > 0 ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {vehicles.map((v: Record<string, unknown>) => (
-                  <div key={v.id as string} className="rounded-lg border border-border p-3">
-                    <p className="font-bold text-primary">{v.license_plate as string}</p>
-                    <p className="text-sm">{v.brand as string} {v.model as string}</p>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {v.year ? <span>ปี {String(v.year)}</span> : null}
-                      {v.color ? <span>สี: {String(v.color)}</span> : null}
-                      {v.current_mileage ? <span>{Number(v.current_mileage).toLocaleString()} กม.</span> : null}
-                    </div>
-                    {v.vin ? <p className="mt-1 font-mono text-[10px] text-muted-foreground">VIN: {String(v.vin)}</p> : null}
-                  </div>
+                  <EditVehicleCard key={v.id as string} vehicle={v} customerId={customer.id as string} />
                 ))}
               </div>
             ) : (

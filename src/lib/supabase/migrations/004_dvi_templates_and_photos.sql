@@ -1,0 +1,11 @@
+-- ============================================================
+-- Migration: DVI Templates, Categories & Photo Storage
+-- ============================================================
+-- Already applied to Supabase via MCP
+
+-- 1. inspection_templates
+-- 2. inspection_categories
+-- 3. ALTER vehicle_inspections (template_id, customer_approved_at, customer_approval_notes, created_job_id)
+-- 4. ALTER inspection_items (customer_approved_at)
+-- 5. Storage bucket: inspection-photos (public read, authenticated write/delete)
+-- 6. Seed 5 default categories per tenant

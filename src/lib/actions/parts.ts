@@ -2,14 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function getUserInfo() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase.from('users').select('id, tenant_id, role').eq('id', user.id).single()
-  return profile
-}
+import { getUserInfo, generateSequenceNumber } from '@/lib/actions/auth-helpers'
 
 const REVALIDATE_PATH = '/dashboard/inventory'
 
@@ -262,12 +255,7 @@ export async function createPurchaseOrder(formData: FormData) {
   const userInfo = await getUserInfo()
   if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
 
-  const { count } = await supabase
-    .from('purchase_orders')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', userInfo.tenant_id)
-
-  const poNumber = `PO-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`
+  const poNumber = await generateSequenceNumber(supabase, 'purchase_orders', 'PO', userInfo.tenant_id)
 
   const items = JSON.parse(formData.get('items') as string || '[]')
   const subtotal = items.reduce((sum: number, item: Record<string, unknown>) =>
@@ -551,12 +539,7 @@ export async function createPosSale(formData: FormData) {
   const userInfo = await getUserInfo()
   if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
 
-  const { count } = await supabase
-    .from('pos_sales')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', userInfo.tenant_id)
-
-  const saleNumber = `SALE-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`
+  const saleNumber = await generateSequenceNumber(supabase, 'pos_sales', 'SALE', userInfo.tenant_id)
 
   const items = JSON.parse(formData.get('items') as string || '[]') as Array<{
     part_id: string

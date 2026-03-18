@@ -3,8 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getInspection, updateInspectionItem, addInspectionItem, deleteInspectionItem, updateInspectionStatus } from '@/lib/actions/inspections';
+import { getInspectionCategories } from '@/lib/actions/inspection-templates';
 import { sendDVIReportNotification } from '@/lib/actions/line';
-import { ArrowLeft, ClipboardCheck, Camera, Trash2, Plus, Send, CheckCircle, AlertTriangle, XCircle, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, Trash2, Plus, Send, CheckCircle, AlertTriangle, XCircle, MessageCircle, Share2 } from 'lucide-react';
+import { PhotoUploadButton } from '@/components/inspections/photo-upload-button';
+import { ShareInspectionModal } from '@/components/inspections/share-inspection-modal';
 
 const conditionConfig = {
   good: { label: 'ดี', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', icon: CheckCircle },
@@ -21,6 +24,9 @@ export default function InspectionDetailPage() {
   const [newItem, setNewItem] = useState({ category: '', item_name: '', condition: 'good' as 'good' | 'fair' | 'poor', notes: '', estimated_cost: 0 });
   const [showAddItem, setShowAddItem] = useState(false);
   const [sendingLine, setSendingLine] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [inspectionCategories, setInspectionCategories] = useState<Record<string, unknown>[]>([]);
+  const [customCategory, setCustomCategory] = useState(false);
 
   const loadInspection = useCallback(async () => {
     try {
@@ -36,7 +42,17 @@ export default function InspectionDetailPage() {
 
   useEffect(() => {
     loadInspection();
+    loadCategories();
   }, [loadInspection]);
+
+  async function loadCategories() {
+    try {
+      const cats = await getInspectionCategories();
+      setInspectionCategories(cats);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  }
 
   async function handleConditionChange(itemId: string, condition: 'good' | 'fair' | 'poor') {
     try {
@@ -195,6 +211,15 @@ export default function InspectionDetailPage() {
               </button>
             </>
           )}
+          {Boolean(inspection.share_token) && (
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              แชร์รายงาน
+            </button>
+          )}
         </div>
       </div>
 
@@ -267,6 +292,11 @@ export default function InspectionDetailPage() {
                     {Number(item.estimated_cost) > 0 && (
                       <p className="text-sm text-orange-600 mt-1 ml-7">ค่าใช้จ่ายโดยประมาณ: ฿{Number(item.estimated_cost).toLocaleString()}</p>
                     )}
+                    {Boolean(item.photo_url) && (
+                      <div className="mt-2 ml-7">
+                        <img src={String(item.photo_url)} alt={String(item.item_name)} className="rounded-lg max-h-32 object-cover border border-gray-200" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-7 sm:ml-0">
                     {/* Traffic Light Buttons */}
@@ -282,9 +312,12 @@ export default function InspectionDetailPage() {
                         title={conditionConfig[c].label}
                       />
                     ))}
-                    <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                      <Camera className="h-4 w-4" />
-                    </button>
+                    <PhotoUploadButton
+                      itemId={String(item.id)}
+                      inspectionId={params.id as string}
+                      currentPhotoUrl={item.photo_url ? String(item.photo_url) : null}
+                      onPhotoChange={() => loadInspection()}
+                    />
                     <button
                       onClick={() => handleDeleteItem(String(item.id))}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
@@ -304,13 +337,45 @@ export default function InspectionDetailPage() {
         <div className="bg-white rounded-xl border border-blue-200 p-4 sm:p-5">
           <h3 className="font-semibold text-gray-900 mb-4">เพิ่มรายการตรวจ</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="หมวดหมู่ (เช่น ภายนอก, ใต้ฝากระโปรง)"
-              value={newItem.category}
-              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-              className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
+            {customCategory ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="พิมพ์ชื่อหมวดหมู่..."
+                  value={newItem.category}
+                  onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setCustomCategory(false); setNewItem({ ...newItem, category: '' }); }}
+                  className="px-2 py-2 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  เลือกจากรายการ
+                </button>
+              </div>
+            ) : (
+              <select
+                value={newItem.category}
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    setCustomCategory(true);
+                    setNewItem({ ...newItem, category: '' });
+                  } else {
+                    setNewItem({ ...newItem, category: e.target.value });
+                  }
+                }}
+                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- เลือกหมวดหมู่ --</option>
+                {inspectionCategories.map(cat => (
+                  <option key={cat.id as string} value={cat.name as string}>
+                    {cat.icon ? `${cat.icon} ` : ''}{cat.name as string}
+                  </option>
+                ))}
+                <option value="__custom__">อื่นๆ (พิมพ์เอง)</option>
+              </select>
+            )}
             <input
               type="text"
               placeholder="ชื่อรายการ (เช่น น้ำมันเครื่อง, ผ้าเบรก)"
@@ -373,6 +438,17 @@ export default function InspectionDetailPage() {
           <Plus className="h-5 w-5" />
           เพิ่มรายการตรวจ
         </button>
+      )}
+
+      {/* Share Modal */}
+      {Boolean(inspection.share_token) && (
+        <ShareInspectionModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          shareToken={String(inspection.share_token)}
+          inspectionId={params.id as string}
+          hasLineConfig={true}
+        />
       )}
     </div>
   );

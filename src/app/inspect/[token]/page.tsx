@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { getInspectionByShareToken } from '@/lib/actions/inspections';
 import { CheckCircle, AlertTriangle, XCircle, ClipboardCheck, Car, User, Calendar, Gauge } from 'lucide-react';
+import { CustomerApprovalForm } from '@/components/inspections/customer-approval-form';
 
 const conditionConfig = {
   good: { label: 'ดี', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200', icon: CheckCircle },
@@ -194,6 +195,27 @@ export default function PublicInspectionPage() {
             </div>
           </div>
         ))}
+
+        {/* Customer Approval Form */}
+        <CustomerApprovalForm
+          shareToken={params.token as string}
+          items={items.map(item => ({
+            id: String(item.id),
+            item_name: String(item.item_name || ''),
+            category: String(item.category || 'อื่นๆ'),
+            condition: item.condition as 'good' | 'fair' | 'poor',
+            estimated_cost: Number(item.estimated_cost) || null,
+            customer_approved: item.customer_approved as boolean | null,
+            photo_url: item.photo_url ? String(item.photo_url) : null,
+            notes: item.notes ? String(item.notes) : null,
+          }))}
+          isAlreadyApproved={!!inspection.created_job_id}
+          createdJobNumber={
+            (inspection.created_job as Record<string, unknown> | null)?.job_number
+              ? String((inspection.created_job as Record<string, unknown>).job_number)
+              : null
+          }
+        />
 
         {/* Notes */}
         {inspection.notes ? (

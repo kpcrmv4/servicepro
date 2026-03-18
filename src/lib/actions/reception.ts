@@ -2,20 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function getUserInfo() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('id, tenant_id, role')
-    .eq('id', user.id)
-    .single()
-
-  return profile
-}
+import { getUserInfo, generateSequenceNumber } from '@/lib/actions/auth-helpers'
 
 export async function searchCustomers(query: string) {
   const supabase = await createClient()
@@ -125,12 +112,7 @@ export async function createCheckinJob(data: CheckinData) {
   }
 
   // Step 3: Generate job number
-  const { count } = await supabase
-    .from('jobs')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', userInfo.tenant_id)
-
-  const jobNumber = `JOB-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`
+  const jobNumber = await generateSequenceNumber(supabase, 'jobs', 'JOB', userInfo.tenant_id)
 
   // Step 4: Create job
   const { data: job, error: jobError } = await supabase

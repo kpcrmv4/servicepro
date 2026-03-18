@@ -7,12 +7,14 @@ import {
   Receipt,
   CreditCard,
   Settings,
+  Shield,
 } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
 import { getInvoices, getReceipts, getExpenses, getRecurringExpenses, getPendingInvoices } from "@/lib/actions/finance"
 import { getJobs } from "@/lib/actions/jobs"
 import { getCustomers } from "@/lib/actions/customers"
+import { createServerClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { FinanceActionButtons } from "@/components/finance/finance-actions"
 import { RecurringExpenseManager } from "@/components/finance/recurring-expense-manager"
@@ -31,6 +33,7 @@ const tabs = [
   { key: "receipts", label: "ใบเสร็จ", icon: Receipt },
   { key: "expenses", label: "ค่าใช้จ่าย", icon: CreditCard },
   { key: "recurring", label: "ค่าใช้จ่ายประจำ", icon: Settings },
+  { key: "insurance", label: "เคลมประกัน", icon: Shield },
 ]
 
 export default async function FinancePage({
@@ -50,6 +53,36 @@ export default async function FinancePage({
     getJobs(),
     getCustomers(),
   ])
+
+  // Fetch insurance claims
+  let insuranceClaims: Record<string, unknown>[] = []
+  if (activeTab === "insurance") {
+    const supabase = await createServerClient()
+    const { data: user } = await supabase.auth.getUser()
+    if (user.user) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("id", user.user.id)
+        .single()
+      if (profile?.tenant_id) {
+        const { data: claims } = await supabase
+          .from("insurance_claims")
+          .select("*, jobs(job_number), vehicles(license_plate, brand, model)")
+          .eq("tenant_id", profile.tenant_id)
+          .order("created_at", { ascending: false })
+        insuranceClaims = claims || []
+      }
+    }
+  }
+
+  const claimStatusConfig: Record<string, { label: string; color: string }> = {
+    pending: { label: "รอดำเนินการ", color: "bg-warning/10 text-warning" },
+    submitted: { label: "ยื่นแล้ว", color: "bg-blue-100 text-blue-700" },
+    approved: { label: "อนุมัติ", color: "bg-success/10 text-success" },
+    rejected: { label: "ปฏิเสธ", color: "bg-error/10 text-error" },
+    paid: { label: "จ่ายแล้ว", color: "bg-primary/10 text-primary" },
+  }
 
   // Calculate summary
   const totalRevenue = invoices
@@ -289,6 +322,62 @@ export default async function FinancePage({
         {activeTab === "recurring" && (
           <div className="rounded-xl border border-border bg-card p-4">
             <RecurringExpenseManager recurringExpenses={recurringExpenses} />
+          </div>
+        )}
+
+        {activeTab === "insurance" && (
+          <div className="rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขเคลม</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">บริษัทประกัน</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">เลขกรมธรรม์</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">รถ</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Job</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">จำนวนเงิน</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">สถานะ</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">วันที่</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {insuranceClaims.map((claim: Record<string, unknown>) => {
+                    const vehicle = claim.vehicles as Record<string, unknown> | null
+                    const job = claim.jobs as Record<string, unknown> | null
+                    const status = claim.status as string
+                    return (
+                      <tr key={claim.id as string} className="border-b border-border last:border-0 hover:bg-muted/30">
+                        <td className="px-4 py-3 text-sm font-medium text-primary">{claim.claim_number as string}</td>
+                        <td className="px-4 py-3 text-sm">{claim.insurance_company as string || "-"}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{claim.policy_number as string || "-"}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {vehicle ? `${vehicle.license_plate} ${vehicle.brand}` : "-"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{job?.job_number as string || "-"}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium">{formatCurrency(Number(claim.claim_amount) || 0)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={cn(
+                            "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                            claimStatusConfig[status]?.color || "bg-muted text-muted-foreground"
+                          )}>
+                            {claimStatusConfig[status]?.label || status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{formatDateShort(claim.created_at as string)}</td>
+                      </tr>
+                    )
+                  })}
+                  {insuranceClaims.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        ยังไม่มีข้อมูลเคลมประกัน
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

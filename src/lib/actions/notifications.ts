@@ -10,21 +10,7 @@ import type {
 } from '@/lib/types/notifications'
 import { ROLE_CONFIG_KEYS } from '@/lib/types/notifications'
 import type { UserRole } from '@/lib/types/database'
-
-// =============================================================================
-// Helper: ดึงข้อมูล user ปัจจุบัน
-// =============================================================================
-async function getCurrentUser() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from('users')
-    .select('id, tenant_id, role, full_name')
-    .eq('id', user.id)
-    .single()
-  return profile as { id: string; tenant_id: string; role: UserRole; full_name: string } | null
-}
+import { getCurrentUser } from '@/lib/actions/auth-helpers'
 
 // =============================================================================
 // Push Subscription Management

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createInspection, bulkAddInspectionItems } from '@/lib/actions/inspections';
+import { getInspectionTemplates } from '@/lib/actions/inspection-templates';
 
 const defaultInspectionTemplate = [
   { category: 'ภายนอก', items: ['สีตัวถัง', 'กระจกหน้า', 'กระจกหลัง', 'กระจกข้าง', 'ไฟหน้า', 'ไฟท้าย', 'ไฟเลี้ยว', 'กันชนหน้า', 'กันชนหลัง', 'ยางล้อ', 'ล้อแม็ก', 'ใบปัดน้ำฝน'] },
@@ -12,7 +13,14 @@ const defaultInspectionTemplate = [
   { category: 'ระบบขับเคลื่อน', items: ['เกียร์', 'คลัตช์', 'เพลาขับ', 'ลูกปืนล้อ'] },
 ];
 import { getVehicles } from '@/lib/actions/vehicles';
-import { ArrowLeft, ClipboardCheck, Search } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, ClipboardCheck, Search, Settings } from 'lucide-react';
+
+interface TemplateItem {
+  category: string;
+  item_name: string;
+  sort_order: number;
+}
 
 export default function NewInspectionPage() {
   const router = useRouter();
@@ -27,9 +35,12 @@ export default function NewInspectionPage() {
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
   const [useTemplate, setUseTemplate] = useState(true);
+  const [templates, setTemplates] = useState<Record<string, unknown>[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   useEffect(() => {
     loadVehicles();
+    loadTemplates();
   }, []);
 
   async function loadVehicles() {
@@ -39,6 +50,53 @@ export default function NewInspectionPage() {
     } catch (err) {
       console.error('Failed to load vehicles:', err);
     }
+  }
+
+  async function loadTemplates() {
+    try {
+      const data = await getInspectionTemplates();
+      setTemplates(data);
+      // Auto-select the default template
+      const defaultTmpl = data.find((t: Record<string, unknown>) => t.is_default);
+      if (defaultTmpl) {
+        setSelectedTemplateId(defaultTmpl.id as string);
+      } else if (data.length > 0) {
+        setSelectedTemplateId(data[0].id as string);
+      }
+    } catch (err) {
+      console.error('Failed to load templates:', err);
+    }
+  }
+
+  function getSelectedTemplateItems(): Array<{ category: string; item_name: string; condition: 'good' | 'fair' | 'poor'; sort_order: number }> {
+    // If a DB template is selected, use its items
+    if (selectedTemplateId && templates.length > 0) {
+      const tmpl = templates.find(t => (t.id as string) === selectedTemplateId);
+      if (tmpl) {
+        const templateItems = (tmpl.items as TemplateItem[]) || [];
+        return templateItems.map((item, idx) => ({
+          category: item.category,
+          item_name: item.item_name,
+          condition: 'good' as const,
+          sort_order: item.sort_order ?? idx,
+        }));
+      }
+    }
+
+    // Fall back to hardcoded default
+    const items: Array<{ category: string; item_name: string; condition: 'good' | 'fair' | 'poor'; sort_order: number }> = [];
+    let sortOrder = 0;
+    defaultInspectionTemplate.forEach(cat => {
+      cat.items.forEach(itemName => {
+        items.push({
+          category: cat.category,
+          item_name: itemName,
+          condition: 'good',
+          sort_order: sortOrder++,
+        });
+      });
+    });
+    return items;
   }
 
   async function handleCreate() {
@@ -54,24 +112,7 @@ export default function NewInspectionPage() {
 
       // Add template items
       if (useTemplate) {
-        const template = defaultInspectionTemplate;
-        const items: Array<{
-          category: string;
-          item_name: string;
-          condition: 'good' | 'fair' | 'poor';
-          sort_order: number;
-        }> = [];
-        let sortOrder = 0;
-        template.forEach(cat => {
-          cat.items.forEach(itemName => {
-            items.push({
-              category: cat.category,
-              item_name: itemName,
-              condition: 'good',
-              sort_order: sortOrder++,
-            });
-          });
-        });
+        const items = getSelectedTemplateItems();
         await bulkAddInspectionItems(inspection.id, items);
       }
 
@@ -101,13 +142,20 @@ export default function NewInspectionPage() {
         <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-lg">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <ClipboardCheck className="h-6 w-6 text-blue-600" />
             สร้างรายการตรวจสภาพใหม่
           </h1>
           <p className="text-sm text-gray-500">เลือกรถที่ต้องการตรวจสภาพ</p>
         </div>
+        <Link
+          href="/dashboard/inspections/templates"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+        >
+          <Settings className="h-4 w-4" />
+          <span className="hidden sm:inline">จัดการเทมเพลต</span>
+        </Link>
       </div>
 
       {/* Vehicle Selection */}
@@ -182,6 +230,8 @@ export default function NewInspectionPage() {
             rows={3}
           />
         </div>
+
+        {/* Template Selection */}
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -189,8 +239,38 @@ export default function NewInspectionPage() {
             onChange={(e) => setUseTemplate(e.target.checked)}
             className="rounded text-blue-600"
           />
-          <span className="text-sm text-gray-700">ใช้เทมเพลตรายการตรวจมาตรฐาน (40+ รายการ)</span>
+          <span className="text-sm text-gray-700">ใช้เทมเพลตรายการตรวจ</span>
         </label>
+
+        {useTemplate && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเทมเพลต</label>
+            {templates.length > 0 ? (
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                {templates.map(tmpl => {
+                  const itemCount = Array.isArray(tmpl.items) ? (tmpl.items as unknown[]).length : 0;
+                  return (
+                    <option key={tmpl.id as string} value={tmpl.id as string}>
+                      {tmpl.name as string} ({itemCount} รายการ){tmpl.is_default ? ' - ค่าเริ่มต้น' : ''}
+                    </option>
+                  );
+                })}
+                <option value="">ใช้รายการตรวจมาตรฐาน (40+ รายการ)</option>
+              </select>
+            ) : (
+              <p className="text-sm text-gray-500">
+                ยังไม่มีเทมเพลต - จะใช้รายการตรวจมาตรฐาน (40+ รายการ)
+                <Link href="/dashboard/inspections/templates" className="text-blue-600 hover:underline ml-1">
+                  สร้างเทมเพลต
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Create Button */}

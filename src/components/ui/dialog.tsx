@@ -80,7 +80,7 @@ function DialogContent({
             />
             <motion.div
               className={cn(
-                "relative z-50 grid w-full max-w-lg gap-4 rounded-lg border border-border bg-card p-6 shadow-lg",
+                "relative z-50 grid w-full max-w-[calc(100vw-2rem)] sm:max-w-lg gap-4 rounded-lg border border-border bg-card p-6 shadow-lg",
                 className
               )}
               initial={{ opacity: 0, scale: 0.95 }}

@@ -3,14 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { notifyExpenseDue } from '@/lib/notifications/triggers'
-
-async function getUserInfo() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase.from('users').select('id, tenant_id, role').eq('id', user.id).single()
-  return profile
-}
+import { getUserInfo, generateSequenceNumber } from '@/lib/actions/auth-helpers'
 
 export async function getInvoices(filters?: { status?: string; search?: string }) {
   const supabase = await createClient()
@@ -45,12 +38,7 @@ export async function createInvoice(formData: FormData) {
   const userInfo = await getUserInfo()
   if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
 
-  const { count } = await supabase
-    .from('invoices')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', userInfo.tenant_id)
-
-  const invoiceNumber = `INV-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`
+  const invoiceNumber = await generateSequenceNumber(supabase, 'invoices', 'INV', userInfo.tenant_id)
 
   const subtotal = Number(formData.get('subtotal')) || 0
   const discount = Number(formData.get('discount')) || 0
@@ -101,12 +89,7 @@ export async function createReceipt(formData: FormData) {
   const userInfo = await getUserInfo()
   if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
 
-  const { count } = await supabase
-    .from('receipts')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', userInfo.tenant_id)
-
-  const receiptNumber = `REC-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`
+  const receiptNumber = await generateSequenceNumber(supabase, 'receipts', 'REC', userInfo.tenant_id)
 
   const { error } = await supabase.from('receipts').insert({
     tenant_id: userInfo.tenant_id,

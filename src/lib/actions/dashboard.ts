@@ -1,20 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getTenantId, getUserInfo } from '@/lib/actions/auth-helpers'
 
 export async function getDashboardStats() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.tenant_id) return null
-  const tenantId = profile.tenant_id
+  const tenantId = await getTenantId()
+  if (!tenantId) return null
 
   // Get jobs stats
   const { data: jobs } = await supabase
@@ -77,16 +69,8 @@ export async function getDashboardStats() {
 
 export async function getRecentJobs(limit = 10) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.tenant_id) return []
+  const tenantId = await getTenantId()
+  if (!tenantId) return []
 
   const { data: jobs } = await supabase
     .from('jobs')
@@ -96,7 +80,7 @@ export async function getRecentJobs(limit = 10) {
       vehicles(license_plate, brand, model, color),
       assigned_user:users!jobs_assigned_to_fkey(full_name)
     `)
-    .eq('tenant_id', profile.tenant_id)
+    .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -105,13 +89,13 @@ export async function getRecentJobs(limit = 10) {
 
 export async function getTenantInfo() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  const userInfo = await getUserInfo()
+  if (!userInfo) return null
 
   const { data: profile } = await supabase
     .from('users')
     .select('*, tenants(*)')
-    .eq('id', user.id)
+    .eq('id', userInfo.id)
     .single()
 
   return profile

@@ -2,20 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function getUserInfo() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('id, tenant_id, role')
-    .eq('id', user.id)
-    .single()
-
-  return profile
-}
+import { getUserInfo, generateSequenceNumber } from '@/lib/actions/auth-helpers'
 
 export interface QuotationItem {
   type: 'part' | 'labor' | 'other'
@@ -73,12 +60,7 @@ export async function createQuotation(jobId: string, items: QuotationItem[], not
   if (!job) return { error: 'ไม่พบข้อมูล Job' }
 
   // Generate quotation number
-  const { count } = await supabase
-    .from('quotations')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', userInfo.tenant_id)
-
-  const quotationNumber = `QT-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`
+  const quotationNumber = await generateSequenceNumber(supabase, 'quotations', 'QT', userInfo.tenant_id)
 
   // Calculate totals
   const itemsWithTotal = items.map((item) => ({

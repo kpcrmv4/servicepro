@@ -54,7 +54,7 @@ export function PartDialog({ open, onOpenChange, categories, editPart }: PartDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'แก้ไขอะไหล่' : 'เพิ่มอะไหล่ใหม่'}</DialogTitle>
           <DialogDescription>{isEdit ? 'แก้ไขข้อมูลอะไหล่' : 'กรอกข้อมูลอะไหล่ที่ต้องการเพิ่ม'}</DialogDescription>

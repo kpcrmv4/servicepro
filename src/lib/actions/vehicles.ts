@@ -2,14 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function getTenantId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase.from('users').select('tenant_id').eq('id', user.id).single()
-  return profile?.tenant_id || null
-}
+import { getTenantId } from '@/lib/actions/auth-helpers'
 
 export async function getVehicles(search?: string) {
   const supabase = await createClient()

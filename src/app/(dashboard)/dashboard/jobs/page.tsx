@@ -5,7 +5,7 @@ import {
   User,
   Wrench,
   AlertTriangle,
-  Clock,
+  Inbox,
 } from "lucide-react"
 import { cn, formatDateShort, formatCurrency } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -20,34 +20,49 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { getJobs } from "@/lib/actions/jobs"
+import { createClient } from "@/lib/supabase/server"
+import { getUserInfo } from "@/lib/actions/auth-helpers"
 import Link from "next/link"
 import type { JobStatus, JobPriority, JobType } from "@/lib/types/database"
+import {
+  JOB_STATUS,
+  QUOTATION_STATUS,
+  JOB_PRIORITY,
+  JOB_TYPE_LABELS,
+  QUEUE_COLUMNS,
+} from "@/lib/constants/status-config"
 
-const statusConfig: Record<string, { label: string; className: string }> = {
-  pending: { label: "รอดำเนินการ", className: "bg-warning/10 text-warning border-warning/20" },
-  diagnosing: { label: "กำลังตรวจสอบ", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  quoted: { label: "รอลูกค้าอนุมัติ", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-  in_progress: { label: "กำลังซ่อม", className: "bg-info/10 text-info border-info/20" },
-  quality_check: { label: "รอตรวจ QC", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  waiting_pickup: { label: "รอลูกค้ารับ", className: "bg-info/10 text-info border-info/20" },
-  completed: { label: "เสร็จแล้ว", className: "bg-success/10 text-success border-success/20" },
-  cancelled: { label: "ยกเลิก", className: "bg-error/10 text-error border-error/20" },
-}
+// =============================================================================
+// Tab definitions
+// =============================================================================
 
-const priorityConfig: Record<JobPriority, { label: string; className: string }> = {
-  urgent: { label: "ด่วน", className: "bg-error/10 text-error border-error/20" },
-  normal: { label: "ปกติ", className: "bg-info/10 text-info border-info/20" },
-  low: { label: "รอได้", className: "bg-muted text-muted-foreground border-border" },
-}
+const TABS = [
+  { key: "reception", label: "รับรถ" },
+  { key: "queue", label: "คิว/Kanban" },
+  { key: "list", label: "รายการงาน" },
+  { key: "planning", label: "ตารางงาน" },
+  { key: "quotes", label: "ใบเสนอราคา" },
+]
 
-const jobTypeLabels: Record<JobType, string> = {
-  repair: "ซ่อม",
-  maintenance: "บำรุงรักษา",
-  inspection: "ตรวจเช็ค",
-  insurance: "ประกัน",
-  warranty: "รับประกัน",
-  other: "อื่นๆ",
-}
+// =============================================================================
+// Status filter sub-tabs for List view
+// =============================================================================
+
+const listStatusFilters = [
+  { value: "all", label: "ทั้งหมด" },
+  { value: "in_progress", label: "กำลังซ่อม" },
+  { value: "quality_check", label: "รอตรวจ QC" },
+  { value: "waiting_pickup", label: "รอลูกค้ารับ" },
+  { value: "completed", label: "เสร็จแล้ว" },
+  { value: "cancelled", label: "ยกเลิก" },
+]
+
+const repairPhaseStatuses = ["in_progress", "quality_check", "waiting_pickup", "completed", "cancelled"]
+const receptionStatuses = ["pending", "diagnosing", "quoted"]
+
+// =============================================================================
+// Status step dots
+// =============================================================================
 
 const statusSteps: string[] = ["in_progress", "quality_check", "waiting_pickup", "completed"]
 
@@ -68,35 +83,66 @@ function StatusDots({ currentStatus }: { currentStatus: string }) {
   )
 }
 
-const tabFilters = [
-  { value: "all", label: "ทั้งหมด" },
-  { value: "in_progress", label: "กำลังซ่อม" },
-  { value: "quality_check", label: "รอตรวจ QC" },
-  { value: "waiting_pickup", label: "รอลูกค้ารับ" },
-  { value: "completed", label: "เสร็จแล้ว" },
-  { value: "cancelled", label: "ยกเลิก" },
-]
+// =============================================================================
+// Empty state component
+// =============================================================================
 
-// Repair-phase statuses (excludes reception-phase: pending, diagnosing, quoted)
-const repairPhaseStatuses = ["in_progress", "quality_check", "waiting_pickup", "completed", "cancelled"]
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+      <Inbox className="mb-3 h-10 w-10" />
+      <p className="text-sm">{message}</p>
+    </div>
+  )
+}
+
+// =============================================================================
+// Main Page
+// =============================================================================
 
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; search?: string }>
+  searchParams: Promise<{ tab?: string; status?: string; search?: string }>
 }) {
   const params = await searchParams
-  const activeTab = params.status || "all"
-  const allJobsRaw = await getJobs({ search: params.search })
+  const activeTab = params.tab || "list"
+  const activeStatus = params.status || "all"
 
-  // Filter to only repair-phase jobs (exclude reception-phase: pending, diagnosing, quoted)
-  const repairJobs = allJobsRaw.filter((j: Record<string, unknown>) =>
+  // ─── Fetch jobs ───────────────────────────────────────────────────────────
+  const allJobs = await getJobs({ search: params.search })
+
+  // ─── Fetch quotations (for quotes tab) ────────────────────────────────────
+  let quotations: Record<string, unknown>[] = []
+  if (activeTab === "quotes") {
+    const supabase = await createClient()
+    const userInfo = await getUserInfo()
+    if (userInfo?.tenant_id) {
+      const { data } = await supabase
+        .from("quotations")
+        .select(`
+          *,
+          customers(id, name, phone),
+          vehicles(id, license_plate, brand, model)
+        `)
+        .eq("tenant_id", userInfo.tenant_id)
+        .order("created_at", { ascending: false })
+      quotations = (data || []) as Record<string, unknown>[]
+    }
+  }
+
+  // ─── Derived data ─────────────────────────────────────────────────────────
+  const receptionJobs = allJobs.filter((j: Record<string, unknown>) =>
+    receptionStatuses.includes(j.status as string)
+  )
+
+  const repairJobs = allJobs.filter((j: Record<string, unknown>) =>
     repairPhaseStatuses.includes(j.status as string)
   )
 
-  const jobs = activeTab === "all"
+  const listJobs = activeStatus === "all"
     ? repairJobs
-    : repairJobs.filter((j: Record<string, unknown>) => j.status === activeTab)
+    : repairJobs.filter((j: Record<string, unknown>) => j.status === activeStatus)
 
   const tabCounts: Record<string, number> = {
     all: repairJobs.length,
@@ -105,6 +151,36 @@ export default async function JobsPage({
     waiting_pickup: repairJobs.filter((j: Record<string, unknown>) => j.status === "waiting_pickup").length,
     completed: repairJobs.filter((j: Record<string, unknown>) => j.status === "completed").length,
     cancelled: repairJobs.filter((j: Record<string, unknown>) => j.status === "cancelled").length,
+  }
+
+  // Planning: group by estimated_completion date
+  const planningJobs = allJobs.filter(
+    (j: Record<string, unknown>) => j.status !== "completed" && j.status !== "cancelled"
+  )
+  const planningByDate = new Map<string, Record<string, unknown>[]>()
+  for (const job of planningJobs) {
+    const date = (job as Record<string, unknown>).estimated_completion as string | null
+    const key = date ? date.split("T")[0] : "ไม่ระบุ"
+    if (!planningByDate.has(key)) planningByDate.set(key, [])
+    planningByDate.get(key)!.push(job as Record<string, unknown>)
+  }
+  const planningDates = Array.from(planningByDate.keys()).sort((a, b) => {
+    if (a === "ไม่ระบุ") return 1
+    if (b === "ไม่ระบุ") return -1
+    return a.localeCompare(b)
+  })
+
+  const today = new Date().toISOString().split("T")[0]
+
+  // ─── Build search param helper ────────────────────────────────────────────
+  function tabHref(tabKey: string, extra?: Record<string, string>) {
+    const p = new URLSearchParams()
+    p.set("tab", tabKey)
+    if (params.search) p.set("search", params.search)
+    if (extra) {
+      for (const [k, v] of Object.entries(extra)) p.set(k, v)
+    }
+    return `/dashboard/jobs?${p.toString()}`
   }
 
   return (
@@ -122,137 +198,557 @@ export default async function JobsPage({
       />
 
       <div className="p-4 space-y-4 sm:p-6">
-        {/* Search */}
-        <form className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            name="search"
-            placeholder="ค้นหา Job, ลูกค้า, ทะเบียน..."
-            defaultValue={params.search || ""}
-            className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          {params.status && <input type="hidden" name="status" value={params.status} />}
-        </form>
-
-        {/* Tabs */}
-        <div className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1">
-          {tabFilters.map((tab) => (
+        {/* ================================================================= */}
+        {/* Main Tab Bar                                                      */}
+        {/* ================================================================= */}
+        <div className="flex gap-1 overflow-x-auto border-b border-border px-1 pb-px">
+          {TABS.map((tab) => (
             <Link
-              key={tab.value}
-              href={`/dashboard/jobs?status=${tab.value}${params.search ? `&search=${params.search}` : ""}`}
+              key={tab.key}
+              href={`/dashboard/jobs?tab=${tab.key}${params.search ? `&search=${params.search}` : ""}`}
               className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                activeTab === tab.value
-                  ? "bg-background text-foreground shadow-sm"
+                "shrink-0 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors",
+                activeTab === tab.key
+                  ? "border-b-2 border-primary bg-primary/5 text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}
-              <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">
-                {tabCounts[tab.value] || 0}
-              </span>
             </Link>
           ))}
         </div>
 
-        {/* Table */}
-        <div className="rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>เลขที่ Job</TableHead>
-                <TableHead>ลูกค้า</TableHead>
-                <TableHead>รถ</TableHead>
-                <TableHead>ประเภท</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>สถานะ</TableHead>
-                <TableHead>ช่าง</TableHead>
-                <TableHead>วันที่รับ</TableHead>
-                <TableHead className="text-right">ยอดรวม</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobs.map((job: Record<string, unknown>) => {
-                const customer = job.customers as Record<string, unknown> | null
-                const vehicle = job.vehicles as Record<string, unknown> | null
-                const tech = job.assigned_user as Record<string, unknown> | null
-                const status = job.status as JobStatus
-                const priority = job.priority as JobPriority
-                const jobType = job.type as JobType
+        {/* ================================================================= */}
+        {/* RECEPTION TAB                                                     */}
+        {/* ================================================================= */}
+        {activeTab === "reception" && (
+          <div className="space-y-4">
+            {/* Search */}
+            <form className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                name="search"
+                placeholder="ค้นหา Job, ลูกค้า, ทะเบียน..."
+                defaultValue={params.search || ""}
+                className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <input type="hidden" name="tab" value="reception" />
+            </form>
+
+            {receptionJobs.length === 0 ? (
+              <EmptyState message="ไม่มีรถรอรับเข้าอู่" />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {receptionJobs.map((job: Record<string, unknown>) => {
+                  const customer = job.customers as Record<string, unknown> | null
+                  const vehicle = job.vehicles as Record<string, unknown> | null
+                  const status = job.status as string
+                  const statusStyle = JOB_STATUS[status]
+
+                  return (
+                    <Link
+                      key={job.id as string}
+                      href={`/dashboard/jobs/${job.id}`}
+                      className="group rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-accent/50"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="font-medium text-primary">
+                          {job.job_number as string}
+                        </span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                            statusStyle?.className || "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {statusStyle?.label || status}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="truncate">
+                            {(customer?.name as string) || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {(vehicle?.license_plate as string) || "-"}
+                          </span>
+                          <span className="text-xs">
+                            {vehicle?.brand as string} {vehicle?.model as string}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span className="text-xs">
+                            {formatDateShort(job.created_at as string)}
+                          </span>
+                        </div>
+                        {typeof job.description === 'string' && job.description && (
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {job.description}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* QUEUE / KANBAN TAB                                                */}
+        {/* ================================================================= */}
+        {activeTab === "queue" && (
+          <div className="space-y-4">
+            <div className="overflow-x-auto pb-4">
+              <div className="flex min-w-[768px] gap-4">
+                {QUEUE_COLUMNS.map((col) => {
+                  const columnJobs = allJobs.filter(
+                    (j: Record<string, unknown>) => j.status === col.key
+                  )
+
+                  return (
+                    <div key={col.key} className="flex-1">
+                      {/* Column header */}
+                      <div
+                        className={cn(
+                          "mb-3 rounded-lg border-l-4 px-3 py-2",
+                          col.color,
+                          col.bg
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold">
+                            {col.label}
+                          </span>
+                          <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium">
+                            {columnJobs.length}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Column cards */}
+                      <div className="space-y-2">
+                        {columnJobs.length === 0 && (
+                          <div className="rounded-lg border border-dashed border-border py-8 text-center text-xs text-muted-foreground">
+                            ไม่มีรายการ
+                          </div>
+                        )}
+                        {columnJobs.map((job: Record<string, unknown>) => {
+                          const customer = job.customers as Record<string, unknown> | null
+                          const vehicle = job.vehicles as Record<string, unknown> | null
+                          const tech = job.assigned_user as Record<string, unknown> | null
+                          const priority = job.priority as string
+
+                          return (
+                            <Link
+                              key={job.id as string}
+                              href={`/dashboard/jobs/${job.id}`}
+                              className="block rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
+                            >
+                              <div className="mb-1.5 flex items-center justify-between">
+                                <span className="text-xs font-medium text-primary">
+                                  {job.job_number as string}
+                                </span>
+                                {priority === "urgent" && (
+                                  <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium bg-error/10 text-error border-error/20">
+                                    <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />
+                                    ด่วน
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm truncate">
+                                {(customer?.name as string) || "-"}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {(vehicle?.license_plate as string) || ""}{" "}
+                                {vehicle?.brand as string} {vehicle?.model as string}
+                              </p>
+                              {tech && (
+                                <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Wrench className="h-3 w-3" />
+                                  {tech.full_name as string}
+                                </div>
+                              )}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* LIST TAB (DEFAULT)                                                */}
+        {/* ================================================================= */}
+        {activeTab === "list" && (
+          <div className="space-y-4">
+            {/* Search */}
+            <form className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                name="search"
+                placeholder="ค้นหา Job, ลูกค้า, ทะเบียน..."
+                defaultValue={params.search || ""}
+                className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <input type="hidden" name="tab" value="list" />
+              {params.status && <input type="hidden" name="status" value={params.status} />}
+            </form>
+
+            {/* Status sub-filter tabs */}
+            <div className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1">
+              {listStatusFilters.map((tab) => (
+                <Link
+                  key={tab.value}
+                  href={tabHref("list", { status: tab.value })}
+                  className={cn(
+                    "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    activeStatus === tab.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                  <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">
+                    {tabCounts[tab.value] || 0}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Table */}
+            <div className="rounded-xl border border-border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>เลขที่ Job</TableHead>
+                    <TableHead>ลูกค้า</TableHead>
+                    <TableHead>รถ</TableHead>
+                    <TableHead>ประเภท</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>สถานะ</TableHead>
+                    <TableHead>ช่าง</TableHead>
+                    <TableHead>วันที่รับ</TableHead>
+                    <TableHead className="text-right">ยอดรวม</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {listJobs.map((job: Record<string, unknown>) => {
+                    const customer = job.customers as Record<string, unknown> | null
+                    const vehicle = job.vehicles as Record<string, unknown> | null
+                    const tech = job.assigned_user as Record<string, unknown> | null
+                    const status = job.status as JobStatus
+                    const priority = job.priority as JobPriority
+                    const jobType = job.type as JobType
+                    const statusStyle = JOB_STATUS[status]
+                    const priorityStyle = JOB_PRIORITY[priority]
+
+                    return (
+                      <TableRow key={job.id as string}>
+                        <TableCell>
+                          <Link
+                            href={`/dashboard/jobs/${job.id}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {job.job_number as string}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="max-w-[120px] truncate">
+                              {(customer?.name as string) || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="text-xs text-muted-foreground">
+                              {(vehicle?.license_plate as string) || "-"}
+                            </div>
+                            <div className="text-sm">
+                              {vehicle?.brand as string} {vehicle?.model as string}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className="rounded-md px-2 py-0.5 text-xs font-medium"
+                          >
+                            {JOB_TYPE_LABELS[jobType] || jobType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                              priorityStyle?.className
+                            )}
+                          >
+                            {priority === "urgent" && (
+                              <AlertTriangle className="mr-1 h-3 w-3" />
+                            )}
+                            {priorityStyle?.label || priority}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+                                statusStyle?.className
+                              )}
+                            >
+                              {statusStyle?.label || status}
+                            </span>
+                            <StatusDots currentStatus={status} />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm">
+                              {(tech?.full_name as string) || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {formatDateShort(job.created_at as string)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(Number(job.grand_total) || 0)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                  {listJobs.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={9}
+                        className="py-8 text-center text-muted-foreground"
+                      >
+                        {params.search
+                          ? "ไม่พบข้อมูลที่ค้นหา"
+                          : "ยังไม่มีงานซ่อม"}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* PLANNING TAB                                                      */}
+        {/* ================================================================= */}
+        {activeTab === "planning" && (
+          <div className="space-y-6">
+            {planningDates.length === 0 ? (
+              <EmptyState message="ไม่มีงานที่กำลังดำเนินการ" />
+            ) : (
+              planningDates.map((dateKey) => {
+                const dateJobs = planningByDate.get(dateKey)!
+                const isToday = dateKey === today
+                const isPast = dateKey !== "ไม่ระบุ" && dateKey < today
+                const isFuture = dateKey !== "ไม่ระบุ" && dateKey > today
 
                 return (
-                  <TableRow key={job.id as string}>
-                    <TableCell>
-                      <Link href={`/dashboard/jobs/${job.id}`} className="font-medium text-primary hover:underline">
-                        {job.job_number as string}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="max-w-[120px] truncate">{customer?.name as string || "-"}</span>
+                  <div key={dateKey} className="flex gap-4">
+                    {/* Date circle */}
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={cn(
+                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white",
+                          isToday
+                            ? "bg-blue-500"
+                            : isPast
+                              ? "bg-red-500"
+                              : isFuture
+                                ? "bg-gray-400"
+                                : "bg-gray-300"
+                        )}
+                      >
+                        {dateKey === "ไม่ระบุ"
+                          ? "?"
+                          : new Date(dateKey).getDate()}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="text-xs text-muted-foreground">{vehicle?.license_plate as string || "-"}</div>
-                        <div className="text-sm">{vehicle?.brand as string} {vehicle?.model as string}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs font-medium">
-                        {jobTypeLabels[jobType] || jobType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className={cn(
-                        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                        priorityConfig[priority]?.className
-                      )}>
-                        {priority === "urgent" && <AlertTriangle className="mr-1 h-3 w-3" />}
-                        {priorityConfig[priority]?.label || priority}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <span className={cn(
-                          "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                          statusConfig[status]?.className
-                        )}>
-                          {statusConfig[status]?.label || status}
+                      {dateKey !== "ไม่ระบุ" && (
+                        <span className="mt-1 text-[10px] text-muted-foreground">
+                          {formatDateShort(dateKey)}
                         </span>
-                        <StatusDots currentStatus={status} />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{tech?.full_name as string || "-"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDateShort(job.created_at as string)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(Number(job.grand_total) || 0)}
-                    </TableCell>
-                  </TableRow>
+                      )}
+                      {dateKey === "ไม่ระบุ" && (
+                        <span className="mt-1 text-[10px] text-muted-foreground">
+                          ไม่ระบุ
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Job cards */}
+                    <div className="flex-1 space-y-2">
+                      {dateJobs.map((job) => {
+                        const customer = job.customers as Record<string, unknown> | null
+                        const vehicle = job.vehicles as Record<string, unknown> | null
+                        const tech = job.assigned_user as Record<string, unknown> | null
+                        const status = job.status as string
+                        const statusStyle = JOB_STATUS[status]
+
+                        return (
+                          <Link
+                            key={job.id as string}
+                            href={`/dashboard/jobs/${job.id}`}
+                            className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-primary">
+                                  {job.job_number as string}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
+                                    statusStyle?.className
+                                  )}
+                                >
+                                  {statusStyle?.label || status}
+                                </span>
+                              </div>
+                              <p className="truncate text-sm">
+                                {(customer?.name as string) || "-"}
+                                {" / "}
+                                {(vehicle?.license_plate as string) || ""}{" "}
+                                {vehicle?.brand as string} {vehicle?.model as string}
+                              </p>
+                            </div>
+                            {tech && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Wrench className="h-3 w-3" />
+                                <span className="hidden sm:inline">
+                                  {tech.full_name as string}
+                                </span>
+                              </div>
+                            )}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )
-              })}
-              {jobs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    {params.search ? "ไม่พบข้อมูลที่ค้นหา" : "ยังไม่มีงานซ่อม"}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              })
+            )}
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* QUOTES TAB                                                        */}
+        {/* ================================================================= */}
+        {activeTab === "quotes" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>เลขที่</TableHead>
+                    <TableHead>ลูกค้า</TableHead>
+                    <TableHead>รถ</TableHead>
+                    <TableHead className="text-right">ยอดรวม</TableHead>
+                    <TableHead>สถานะ</TableHead>
+                    <TableHead>วันที่สร้าง</TableHead>
+                    <TableHead>ใช้ได้ถึง</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quotations.map((q) => {
+                    const customer = q.customers as Record<string, unknown> | null
+                    const vehicle = q.vehicles as Record<string, unknown> | null
+                    const status = q.status as string
+                    const statusStyle = QUOTATION_STATUS[status]
+
+                    return (
+                      <TableRow key={q.id as string}>
+                        <TableCell>
+                          <span className="font-medium text-primary">
+                            {q.quotation_number as string}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="max-w-[120px] truncate">
+                              {(customer?.name as string) || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="text-xs text-muted-foreground">
+                              {(vehicle?.license_plate as string) || "-"}
+                            </div>
+                            <div className="text-sm">
+                              {vehicle?.brand as string} {vehicle?.model as string}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(Number(q.total) || 0)}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+                              statusStyle?.color || "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {statusStyle?.label || status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDateShort(q.created_at as string)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {q.valid_until
+                              ? formatDateShort(q.valid_until as string)
+                              : "-"}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                  {quotations.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-8 text-center text-muted-foreground"
+                      >
+                        ยังไม่มีใบเสนอราคา
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

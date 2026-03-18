@@ -2,37 +2,50 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function getTenantId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  return profile?.tenant_id || null
-}
+import { getTenantId } from '@/lib/actions/auth-helpers'
 
 export async function getCustomers(search?: string) {
   const supabase = await createClient()
   const tenantId = await getTenantId()
   if (!tenantId) return []
 
-  let query = supabase
+  if (search) {
+    // Search by license plate in vehicles table to get matching customer IDs
+    const { data: vehicleMatches } = await supabase
+      .from('vehicles')
+      .select('customer_id')
+      .eq('tenant_id', tenantId)
+      .ilike('license_plate', `%${search}%`)
+
+    const customerIdsFromVehicles = (vehicleMatches || [])
+      .map((v) => v.customer_id)
+      .filter((id): id is string => !!id)
+
+    let query = supabase
+      .from('customers')
+      .select('*, vehicles(id, license_plate, brand, model)')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+
+    if (customerIdsFromVehicles.length > 0) {
+      // Search by name/phone/email OR by customer IDs matched from vehicle license plates
+      query = query.or(
+        `name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%,id.in.(${customerIdsFromVehicles.join(',')})`
+      )
+    } else {
+      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`)
+    }
+
+    const { data } = await query
+    return data || []
+  }
+
+  const { data } = await supabase
     .from('customers')
     .select('*, vehicles(id, license_plate, brand, model)')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
 
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`)
-  }
-
-  const { data } = await query
   return data || []
 }
 

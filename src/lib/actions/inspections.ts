@@ -1,6 +1,8 @@
 'use server';
 
+import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { getUserInfo } from '@/lib/actions/auth-helpers';
 
 export async function getInspections(filters?: { vehicleId?: string; jobId?: string; status?: string }) {
   const supabase = await createClient();
@@ -50,7 +52,8 @@ export async function getInspectionByShareToken(token: string) {
       *,
       vehicle:vehicles(id, license_plate, brand, model, year, color),
       inspector:users!vehicle_inspections_inspected_by_fkey(id, full_name),
-      items:inspection_items(*)
+      items:inspection_items(*),
+      created_job:jobs!vehicle_inspections_created_job_id_fkey(id, job_number)
     `)
     .eq('share_token', token)
     .single();
@@ -75,27 +78,20 @@ export async function createInspection(data: {
   notes?: string;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!userData) throw new Error('User not found');
+  const userInfo = await getUserInfo();
+  if (!userInfo) throw new Error('Unauthorized');
 
   const { data: inspection, error } = await supabase
     .from('vehicle_inspections')
     .insert({
-      tenant_id: userData.tenant_id,
+      tenant_id: userInfo.tenant_id,
       vehicle_id: data.vehicle_id,
       job_id: data.job_id || null,
-      inspected_by: user.id,
+      inspected_by: userInfo.id,
       mileage_at_inspection: data.mileage_at_inspection || null,
       notes: data.notes || null,
       status: 'draft',
+      share_token: crypto.randomUUID().slice(0, 12),
     })
     .select()
     .single();
