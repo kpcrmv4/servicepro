@@ -13,6 +13,17 @@ import {
   XCircle,
 } from "lucide-react"
 import { JobHoldButton } from "@/components/jobs/job-hold-button"
+import { CustomerNotifyModal } from "@/components/jobs/customer-notify-modal"
+import type { CustomerNotifyEvent } from "@/lib/notifications/customer-line"
+
+const STATUS_TO_EVENT: Partial<Record<string, CustomerNotifyEvent>> = {
+  in_progress: "in_progress",
+  ready_to_repair: "ready_to_repair",
+  quality_check: "quality_check",
+  waiting_pickup: "waiting_pickup",
+  completed: "completed",
+  cancelled: "cancelled",
+}
 
 type JobStatus =
   | "pending"
@@ -68,6 +79,7 @@ export function JobStatusActions({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
+  const [notifyEvent, setNotifyEvent] = useState<CustomerNotifyEvent | null>(null)
 
   const actions = statusFlow[currentStatus] || []
   const currentIndex = statusSteps.findIndex((s) => s.key === currentStatus)
@@ -78,10 +90,20 @@ export function JobStatusActions({
       const result = await updateJobStatus(jobId, nextStatus)
       if (result.error) {
         setError(result.error)
+        return
+      }
+      const event = STATUS_TO_EVENT[nextStatus]
+      if (event) {
+        setNotifyEvent(event)
       } else {
         router.refresh()
       }
     })
+  }
+
+  function handleNotifyClose() {
+    setNotifyEvent(null)
+    router.refresh()
   }
 
   if (currentStatus === "completed" || currentStatus === "cancelled") {
@@ -154,6 +176,14 @@ export function JobStatusActions({
           holdUntil={holdUntil}
         />
       </div>
+
+      {notifyEvent && (
+        <CustomerNotifyModal
+          jobId={jobId}
+          event={notifyEvent}
+          onClose={handleNotifyClose}
+        />
+      )}
     </div>
   )
 }

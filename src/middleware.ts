@@ -13,8 +13,11 @@ function isPublicRoute(pathname: string): boolean {
   // Exact match for public routes
   if (publicRoutes.includes(pathname)) return true
 
-  // Prefix match for customer portal, API routes, and auth callback
+  // Prefix match for customer portal, LIFF pages, public inspect/track,
+  // API routes, and auth callback
   if (pathname.startsWith('/c/')) return true
+  if (pathname.startsWith('/liff/')) return true
+  if (pathname.startsWith('/inspect/')) return true
   if (pathname.startsWith('/api/')) return true
   if (pathname.startsWith('/auth/')) return true
 

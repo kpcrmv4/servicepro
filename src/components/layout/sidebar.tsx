@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Bell,
   BookOpen,
+  CalendarCheck,
 } from "lucide-react"
 
 // =============================================================================
@@ -36,6 +37,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard },
   { title: "งานซ่อม", href: "/dashboard/jobs", icon: Wrench },
+  { title: "คิวจองล่วงหน้า", href: "/dashboard/bookings", icon: CalendarCheck },
   { title: "ตรวจสภาพรถ", href: "/dashboard/inspections", icon: ClipboardCheck },
   { title: "คลังอะไหล่", href: "/dashboard/inventory", icon: Package, dividerBefore: true },
   { title: "การเงิน", href: "/dashboard/finance", icon: DollarSign },

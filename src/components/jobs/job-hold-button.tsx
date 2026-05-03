@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { PauseCircle, PlayCircle, Package, Shield, X } from 'lucide-react';
 import { holdJob, resumeJob } from '@/lib/actions/jobs';
+import { CustomerNotifyModal } from '@/components/jobs/customer-notify-modal';
+import type { CustomerNotifyEvent } from '@/lib/notifications/customer-line';
 
 interface Props {
   jobId: string;
@@ -28,6 +30,11 @@ export function JobHoldButton({ jobId, currentStatus, holdReason, holdUntil }: P
   const [until, setUntil] = useState('');
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notifyEvent, setNotifyEvent] = useState<CustomerNotifyEvent | null>(null);
+  const [notifyContext, setNotifyContext] = useState<{
+    holdReason?: string;
+    holdUntil?: string;
+  } | null>(null);
 
   const isHeld = HOLD_STATES.includes(currentStatus);
 
@@ -48,10 +55,13 @@ export function JobHoldButton({ jobId, currentStatus, holdReason, holdUntil }: P
         setError(res.error);
         return;
       }
+      const event = type as CustomerNotifyEvent;
+      const ctx = { holdReason: reason.trim(), holdUntil: until || undefined };
       setOpen(false);
       setReason('');
       setUntil('');
-      router.refresh();
+      setNotifyContext(ctx);
+      setNotifyEvent(event);
     });
   };
 
@@ -63,13 +73,30 @@ export function JobHoldButton({ jobId, currentStatus, holdReason, holdUntil }: P
         alert(res.error);
         return;
       }
-      router.refresh();
+      setNotifyEvent('resumed');
     });
   };
 
+  const closeNotify = () => {
+    setNotifyEvent(null);
+    setNotifyContext(null);
+    router.refresh();
+  };
+
+  const notifyModal = notifyEvent ? (
+    <CustomerNotifyModal
+      jobId={jobId}
+      event={notifyEvent}
+      context={notifyContext ?? undefined}
+      onClose={closeNotify}
+    />
+  ) : null;
+
   if (isHeld) {
     return (
-      <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+      <>
+        {notifyModal}
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
         <div className="mb-2 flex items-center gap-2">
           <PauseCircle className="h-4 w-4 text-amber-700" />
           <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
@@ -95,7 +122,8 @@ export function JobHoldButton({ jobId, currentStatus, holdReason, holdUntil }: P
           <PlayCircle className="h-4 w-4" />
           {pending ? 'กำลังกลับมาทำต่อ...' : 'กลับมาทำต่อ'}
         </button>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -106,6 +134,7 @@ export function JobHoldButton({ jobId, currentStatus, holdReason, holdUntil }: P
 
   return (
     <>
+      {notifyModal}
       <button
         type="button"
         onClick={() => setOpen(true)}

@@ -4,6 +4,12 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { getUserInfo } from '@/lib/actions/auth-helpers';
+import {
+  parseBookingConfig,
+  hoursForDate,
+  isDateWithinWindow,
+  generateTimeSlots,
+} from '@/lib/booking/config';
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
   maintenance: 'เช็คระยะ/บำรุงรักษา',
@@ -59,27 +65,100 @@ export async function submitPublicBooking(input: CreateBookingInput) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Resolve tenant
+  // Resolve tenant + load booking config in one query
   let tenantId: string | null = null;
+  let tenantSettings: Record<string, unknown> | null = null;
   if (input.tenantSlug) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id')
+      .select('id, settings, subscription_status')
       .eq('slug', input.tenantSlug)
       .maybeSingle();
     if (!tenant) return { error: 'ไม่พบร้านค้านี้' };
+    if (tenant.subscription_status === 'cancelled') {
+      return { error: 'ร้านนี้ปิดให้บริการชั่วคราว' };
+    }
     tenantId = tenant.id as string;
+    tenantSettings = (tenant.settings as Record<string, unknown>) || {};
   } else {
-    // Single-tenant fallback
     const { data: tenants } = await supabase
       .from('tenants')
-      .select('id')
+      .select('id, settings')
       .eq('subscription_status', 'active')
       .limit(1);
     if (!tenants || tenants.length === 0) {
       return { error: 'ไม่สามารถเชื่อมต่อกับร้านค้าได้' };
     }
     tenantId = tenants[0].id as string;
+    tenantSettings = (tenants[0].settings as Record<string, unknown>) || {};
+  }
+
+  // Validate against shop's booking config
+  const config = parseBookingConfig(tenantSettings.booking);
+  if (!config.online_booking_enabled) {
+    return { error: 'ร้านนี้ปิดรับการจองออนไลน์' };
+  }
+
+  const targetDate = new Date(input.preferredDate);
+  const window = isDateWithinWindow(config, targetDate);
+  if (!window.ok) return { error: window.reason || 'วันที่ไม่อยู่ในช่วงที่จองได้' };
+
+  const dayInfo = hoursForDate(config, targetDate);
+  if (dayInfo.closed || !dayInfo.hours) {
+    return { error: dayInfo.reason || 'วันที่เลือกไม่เปิดให้จอง' };
+  }
+
+  // Validate time slot if shop uses slot-based booking
+  const hours = dayInfo.hours;
+  if (hours.slot_minutes > 0) {
+    if (!input.preferredTime) {
+      return { error: 'กรุณาเลือกเวลา' };
+    }
+    const allowed = generateTimeSlots(hours);
+    if (!allowed.includes(input.preferredTime)) {
+      return { error: 'เวลาที่เลือกไม่ตรงกับช่วงเวลาที่ร้านเปิด' };
+    }
+  }
+
+  // Capacity check (counts pending+confirmed bookings; optionally walk-in jobs)
+  const { count: dayBookings } = await supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .in('status', ['pending', 'confirmed'])
+    .eq('preferred_date', input.preferredDate);
+
+  let walkins = 0;
+  if (hours.include_walkins) {
+    const startOfDay = `${input.preferredDate}T00:00:00.000Z`;
+    const endOfDay = `${input.preferredDate}T23:59:59.999Z`;
+    const { count } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay);
+    walkins = count || 0;
+  }
+  const totalUsed = (dayBookings || 0) + walkins;
+  if (config.auto_close_when_full && totalUsed >= hours.max_bookings) {
+    return { error: 'วันนี้คิวเต็มแล้ว กรุณาเลือกวันอื่น' };
+  }
+
+  // Per-slot capacity check
+  if (hours.slot_minutes > 0 && input.preferredTime) {
+    const slotCount = generateTimeSlots(hours).length || 1;
+    const perSlotMax = Math.max(1, Math.floor(hours.max_bookings / slotCount));
+    const { count: slotBookings } = await supabase
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .in('status', ['pending', 'confirmed'])
+      .eq('preferred_date', input.preferredDate)
+      .eq('preferred_time', input.preferredTime);
+    if ((slotBookings || 0) >= perSlotMax) {
+      return { error: 'ช่วงเวลานี้คิวเต็มแล้ว กรุณาเลือกเวลาอื่น' };
+    }
   }
 
   // Try to match an existing customer by phone within the tenant

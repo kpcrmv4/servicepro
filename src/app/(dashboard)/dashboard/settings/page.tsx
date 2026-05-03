@@ -5,6 +5,8 @@ import {
   Bell,
   MessageSquare,
   CreditCard,
+  CalendarClock,
+  Send,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -35,7 +37,9 @@ export default async function SettingsPage({
   const sections = [
     { key: "shop", label: "ข้อมูลร้าน", icon: Building2 },
     { key: "team", label: "สมาชิกทีม", icon: Users },
-    { key: "notifications", label: "การแจ้งเตือน", icon: Bell, href: "/dashboard/settings/notifications" },
+    { key: "booking", label: "จองคิวออนไลน์", icon: CalendarClock, href: "/dashboard/settings/booking" },
+    { key: "customer-notifications", label: "แจ้งเตือนลูกค้า (LINE)", icon: Send, href: "/dashboard/settings/customer-notifications" },
+    { key: "notifications", label: "แจ้งเตือนทีมงาน", icon: Bell, href: "/dashboard/settings/notifications" },
     { key: "line", label: "LINE OA (ลูกค้า)", icon: MessageSquare, href: "/dashboard/settings/line" },
     { key: "subscription", label: "สมาชิก & ต่ออายุ", icon: CreditCard, href: "/dashboard/settings/subscription" },
   ]

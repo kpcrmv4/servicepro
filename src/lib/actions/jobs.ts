@@ -3,84 +3,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { getUserInfo, generateSequenceNumber } from '@/lib/actions/auth-helpers'
-import type { SupabaseClient } from '@supabase/supabase-js'
-
-// Best-effort send a LINE notification for a job status change. Uses
-// the tenant's own LINE OA channel and the customer's linked LINE
-// follower; silently no-ops if either is absent.
-async function notifyJobStatusViaLine(
-  supabase: SupabaseClient,
-  jobId: string,
-  options?: { holdReason?: string | null; holdUntil?: string | null },
-) {
-  try {
-    const { data: job } = await supabase
-      .from('jobs')
-      .select('id, tenant_id, customer_id, job_number, status, hold_reason, hold_until, vehicle:vehicles(license_plate, brand, model)')
-      .eq('id', jobId)
-      .single()
-    if (!job?.customer_id) return
-
-    const { data: cfg } = await supabase
-      .from('line_oa_configs')
-      .select('channel_access_token, is_active')
-      .eq('tenant_id', job.tenant_id)
-      .maybeSingle()
-    if (!cfg?.is_active || !cfg.channel_access_token) return
-
-    const { data: follower } = await supabase
-      .from('line_followers')
-      .select('line_user_id')
-      .eq('tenant_id', job.tenant_id)
-      .eq('customer_id', job.customer_id)
-      .eq('is_following', true)
-      .maybeSingle()
-    if (!follower?.line_user_id) return
-
-    const STATUS_LABELS: Record<string, string> = {
-      pending: 'รอดำเนินการ',
-      diagnosing: 'กำลังตรวจสอบ',
-      quoted: 'รออนุมัติใบเสนอราคา',
-      ready_to_repair: 'เข้าคิวพร้อมซ่อม',
-      in_progress: 'กำลังซ่อม',
-      waiting_parts: 'พักงาน — รออะไหล่',
-      waiting_insurance: 'พักงาน — รอประกัน',
-      on_hold: 'พักงาน',
-      quality_check: 'ตรวจ QC',
-      waiting_pickup: 'รอลูกค้ารับรถ',
-      completed: 'เสร็จสิ้น',
-      cancelled: 'ยกเลิก',
-    }
-
-    const v = job.vehicle as { license_plate?: string; brand?: string; model?: string } | null
-    const reason = options?.holdReason ?? (job.hold_reason as string | null)
-    const until = options?.holdUntil ?? (job.hold_until as string | null)
-
-    const lines = [
-      `🔔 อัปเดตสถานะงาน ${job.job_number}`,
-      `รถ: ${v?.brand ?? ''} ${v?.model ?? ''} (${v?.license_plate ?? '-'})`,
-      `สถานะ: ${STATUS_LABELS[job.status as string] || job.status}`,
-    ]
-    if (reason) lines.push(`สาเหตุ: ${reason}`)
-    if (until) lines.push(`คาดว่ากลับมาทำต่อ: ${new Date(until).toLocaleDateString('th-TH')}`)
-    lines.push('', `ติดตามรายละเอียด: ${process.env.NEXT_PUBLIC_APP_URL || ''}/c/track/${job.job_number}`)
-
-    await fetch('https://api.line.me/v2/bot/message/push', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cfg.channel_access_token}`,
-      },
-      body: JSON.stringify({
-        to: follower.line_user_id,
-        messages: [{ type: 'text', text: lines.join('\n') }],
-      }),
-    })
-  } catch (e) {
-    // Notification failures are non-fatal.
-    console.error('[notifyJobStatusViaLine] failed', e)
-  }
-}
 
 export async function getJobs(filters?: { status?: string; search?: string }) {
   const supabase = await createClient()
@@ -216,8 +138,9 @@ export async function updateJobStatus(id: string, status: string, notes?: string
     created_by: userInfo.id,
   })
 
-  // Best-effort LINE notification (non-blocking)
-  await notifyJobStatusViaLine(supabase, id)
+  // NOTE: Customer-facing LINE notification is no longer fired here.
+  // The UI calls sendCustomerLineForEvent() explicitly (with optional
+  // confirmation modal) so each shop can opt in/out per event.
 
   revalidatePath('/dashboard/jobs')
   revalidatePath('/dashboard')
@@ -295,10 +218,8 @@ export async function holdJob(input: {
     created_by: userInfo.id,
   })
 
-  await notifyJobStatusViaLine(supabase, input.jobId, {
-    holdReason: input.reason.trim(),
-    holdUntil: input.until,
-  })
+  // Customer LINE notification fires from the UI (confirmation modal
+  // or auto, per tenant settings).
 
   revalidatePath(`/dashboard/jobs/${input.jobId}`)
   revalidatePath('/dashboard/queue')
@@ -339,7 +260,7 @@ export async function resumeJob(jobId: string, note?: string) {
     created_by: userInfo.id,
   })
 
-  await notifyJobStatusViaLine(supabase, jobId)
+  // Customer LINE notification fires from the UI when needed.
 
   revalidatePath(`/dashboard/jobs/${jobId}`)
   revalidatePath('/dashboard/queue')
