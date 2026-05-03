@@ -17,6 +17,7 @@ function isPublicRoute(pathname: string): boolean {
   // API routes, and auth callback
   if (pathname.startsWith('/c/')) return true
   if (pathname.startsWith('/liff/')) return true
+  if (pathname.startsWith('/shop/')) return true
   if (pathname.startsWith('/inspect/')) return true
   if (pathname.startsWith('/api/')) return true
   if (pathname.startsWith('/auth/')) return true

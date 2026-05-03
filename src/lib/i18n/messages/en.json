@@ -1,0 +1,45 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "search": "Search",
+    "back": "Back",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "saved": "Saved"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "bookings": "Bookings",
+    "inspections": "Inspections",
+    "inventory": "Inventory",
+    "finance": "Finance",
+    "warranty": "Warranty",
+    "customers": "Customers",
+    "team": "Team",
+    "reminders": "Customer reminders",
+    "knowledge_base": "Knowledge Base",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "settings": {
+    "shop": "Shop info",
+    "team": "Team members",
+    "booking": "Online booking",
+    "customer_notifications": "Customer notifications (LINE)",
+    "team_notifications": "Team notifications",
+    "line_oa": "LINE OA (customers)",
+    "subscription": "Subscription"
+  },
+  "language": {
+    "label": "Language",
+    "th": "ไทย",
+    "en": "English"
+  }
+}

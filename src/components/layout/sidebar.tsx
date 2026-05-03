@@ -20,6 +20,8 @@ import {
   Bell,
   BookOpen,
   CalendarCheck,
+  Globe,
+  Store,
 } from "lucide-react"
 
 // =============================================================================
@@ -47,6 +49,8 @@ const navItems: NavItem[] = [
   { title: "แจ้งเตือนลูกค้า", href: "/dashboard/reminders", icon: Bell, dividerBefore: true },
   { title: "คลังความรู้", href: "/dashboard/knowledge-base", icon: BookOpen },
   { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3 },
+  { title: "Landing Page", href: "/dashboard/landing", icon: Globe, dividerBefore: true },
+  { title: "ร้านค้าออนไลน์", href: "/dashboard/shop-manage", icon: Store },
 ]
 
 const settingsItem: NavItem = { title: "ตั้งค่า", href: "/dashboard/settings", icon: Settings }

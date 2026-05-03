@@ -1,0 +1,45 @@
+{
+  "common": {
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "loading": "กำลังโหลด...",
+    "search": "ค้นหา",
+    "back": "กลับ",
+    "confirm": "ยืนยัน",
+    "yes": "ใช่",
+    "no": "ไม่",
+    "all": "ทั้งหมด",
+    "saved": "บันทึกแล้ว"
+  },
+  "nav": {
+    "dashboard": "แดชบอร์ด",
+    "jobs": "งานซ่อม",
+    "bookings": "คิวจองล่วงหน้า",
+    "inspections": "ตรวจสภาพรถ",
+    "inventory": "คลังอะไหล่",
+    "finance": "การเงิน",
+    "warranty": "รับประกัน",
+    "customers": "ลูกค้า",
+    "team": "ทีมงาน",
+    "reminders": "แจ้งเตือนลูกค้า",
+    "knowledge_base": "คลังความรู้",
+    "reports": "รายงาน",
+    "settings": "ตั้งค่า"
+  },
+  "settings": {
+    "shop": "ข้อมูลร้าน",
+    "team": "สมาชิกทีม",
+    "booking": "จองคิวออนไลน์",
+    "customer_notifications": "แจ้งเตือนลูกค้า (LINE)",
+    "team_notifications": "แจ้งเตือนทีมงาน",
+    "line_oa": "LINE OA (ลูกค้า)",
+    "subscription": "สมาชิก & ต่ออายุ"
+  },
+  "language": {
+    "label": "ภาษา",
+    "th": "ไทย",
+    "en": "English"
+  }
+}

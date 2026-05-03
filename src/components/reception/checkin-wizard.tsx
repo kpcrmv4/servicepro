@@ -30,6 +30,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { createCheckinJob, searchCustomers, searchVehicleByPlate } from "@/lib/actions/reception"
 import { uploadGenericPhoto } from "@/lib/actions/upload"
+import { SignaturePad, dataUrlToFile } from "@/components/ui/signature-pad"
 
 const carBrands = [
   "Toyota", "Honda", "Isuzu", "Mitsubishi", "Nissan", "Mazda", "Ford",
@@ -126,6 +127,7 @@ export function CheckinWizard() {
   const [notes, setNotes] = useState("")
   const [photos, setPhotos] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null)
 
   // Customer search
   async function handleCustomerSearch() {
@@ -259,6 +261,25 @@ export function CheckinWizard() {
           return
         }
         if (up.url) photoUrls.push(up.url)
+      }
+
+      // Upload signature if drawn — stored as a job-photo with a
+      // distinct filename so it can be retrieved separately for the
+      // PDF receipt.
+      let signatureUrl: string | undefined
+      if (signatureDataUrl) {
+        const sigFile = await dataUrlToFile(signatureDataUrl, `signature_${Date.now()}.png`)
+        const fd = new FormData()
+        fd.append("file", sigFile)
+        fd.append("bucket", "job-photos")
+        fd.append("folder", `${folder}/signature`)
+        const up = await uploadGenericPhoto(fd)
+        if ("error" in up && up.error) {
+          setError(`อัปโหลดลายเซ็นล้มเหลว: ${up.error}`)
+          return
+        }
+        signatureUrl = up.url
+        if (signatureUrl) photoUrls.push(signatureUrl)
       }
 
       const result = await createCheckinJob({
@@ -850,6 +871,14 @@ export function CheckinWizard() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
+          </div>
+
+          <div>
+            <div className="mb-2 text-sm font-semibold">ลายเซ็นรับรถ</div>
+            <p className="mb-2 text-xs text-muted-foreground">
+              ให้ลูกค้าเซ็นยืนยันสภาพรถและการรับงาน
+            </p>
+            <SignaturePad onChange={setSignatureDataUrl} />
           </div>
         </div>
       )}
