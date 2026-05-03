@@ -4,6 +4,7 @@ import {
   Save,
   Bell,
   MessageSquare,
+  CreditCard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -35,7 +36,8 @@ export default async function SettingsPage({
     { key: "shop", label: "ข้อมูลร้าน", icon: Building2 },
     { key: "team", label: "สมาชิกทีม", icon: Users },
     { key: "notifications", label: "การแจ้งเตือน", icon: Bell, href: "/dashboard/settings/notifications" },
-    { key: "line", label: "LINE OA", icon: MessageSquare, href: "/dashboard/settings/line" },
+    { key: "line", label: "LINE OA (ลูกค้า)", icon: MessageSquare, href: "/dashboard/settings/line" },
+    { key: "subscription", label: "สมาชิก & ต่ออายุ", icon: CreditCard, href: "/dashboard/settings/subscription" },
   ]
 
   return (

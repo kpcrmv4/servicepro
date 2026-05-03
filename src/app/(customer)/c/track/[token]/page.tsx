@@ -1,6 +1,8 @@
 import { ArrowLeft, Car, User, Wrench, Clock, Package, CheckCircle } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getJobByTrackingToken } from "@/lib/actions/customer-portal"
+import { listAdditionalWorkByJobToken } from "@/lib/actions/additional-work"
+import { CustomerAdditionalWorkList } from "@/components/jobs/customer-additional-work-list"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -24,7 +26,10 @@ export default async function TrackJobPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const job = await getJobByTrackingToken(token)
+  const [job, additionalWork] = await Promise.all([
+    getJobByTrackingToken(token),
+    listAdditionalWorkByJobToken(token),
+  ])
 
   if (!job) {
     notFound()
@@ -129,6 +134,20 @@ export default async function TrackJobPage({
           </div>
         )}
       </div>
+
+      {/* Additional Work Requests — customer can approve/reject */}
+      {additionalWork && additionalWork.length > 0 && (
+        <CustomerAdditionalWorkList
+          token={token}
+          items={additionalWork as Array<{
+            id: string;
+            description: string;
+            estimated_cost: number;
+            photo_url: string | null;
+            status: string;
+          }>}
+        />
+      )}
 
       {/* Parts */}
       {jobParts.length > 0 && (

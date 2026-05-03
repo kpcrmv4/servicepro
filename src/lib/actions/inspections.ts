@@ -25,7 +25,6 @@ export async function getInspections(filters?: { vehicleId?: string; jobId?: str
     console.error('[getInspections] error:', error.message, error.code, error.details);
     throw error;
   }
-  console.log('[getInspections] returned', data?.length ?? 0, 'rows');
   return data || [];
 }
 

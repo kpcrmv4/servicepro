@@ -1,0 +1,190 @@
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
+import { getUserInfo } from '@/lib/actions/auth-helpers';
+
+const SERVICE_TYPE_LABEL: Record<string, string> = {
+  maintenance: 'เช็คระยะ/บำรุงรักษา',
+  repair: 'ซ่อมทั่วไป',
+  body: 'ซ่อมตัวถัง/สี',
+  electrical: 'ระบบไฟฟ้า',
+  ac: 'แอร์',
+  tire: 'ยาง/ล้อ',
+  other: 'อื่นๆ',
+};
+
+export interface CreateBookingInput {
+  tenantSlug?: string;       // optional — for public form on tenant subdomain
+  customerName: string;
+  customerPhone: string;
+  licensePlate?: string;
+  serviceType: string;
+  preferredDate: string;     // 'YYYY-MM-DD'
+  preferredTime?: string;
+  notes?: string;
+}
+
+function validate(input: CreateBookingInput): string | null {
+  if (!input.customerName?.trim()) return 'กรุณากรอกชื่อ';
+  if (!input.customerPhone?.trim()) return 'กรุณากรอกเบอร์โทรศัพท์';
+  if (!/^[0-9+\-\s]{6,20}$/.test(input.customerPhone)) return 'รูปแบบเบอร์โทรไม่ถูกต้อง';
+  if (!input.serviceType) return 'กรุณาเลือกประเภทบริการ';
+  if (!SERVICE_TYPE_LABEL[input.serviceType]) return 'ประเภทบริการไม่ถูกต้อง';
+  if (!input.preferredDate) return 'กรุณาเลือกวันที่';
+  // Reject dates in the past beyond a 1-day buffer
+  const d = new Date(input.preferredDate);
+  if (Number.isNaN(d.getTime())) return 'วันที่ไม่ถูกต้อง';
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  if (d < todayMidnight) return 'ไม่สามารถจองคิวย้อนหลังได้';
+  return null;
+}
+
+/**
+ * Public booking action — no login required.
+ *
+ * Resolves the target tenant by slug (passed from a tenant subdomain).
+ * If no slug is given, falls back to the first active tenant — useful for
+ * single-tenant deployments. In production with custom domains, the slug
+ * should always be supplied by middleware.
+ */
+export async function submitPublicBooking(input: CreateBookingInput) {
+  const v = validate(input);
+  if (v) return { error: v };
+
+  const supabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  // Resolve tenant
+  let tenantId: string | null = null;
+  if (input.tenantSlug) {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('slug', input.tenantSlug)
+      .maybeSingle();
+    if (!tenant) return { error: 'ไม่พบร้านค้านี้' };
+    tenantId = tenant.id as string;
+  } else {
+    // Single-tenant fallback
+    const { data: tenants } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('subscription_status', 'active')
+      .limit(1);
+    if (!tenants || tenants.length === 0) {
+      return { error: 'ไม่สามารถเชื่อมต่อกับร้านค้าได้' };
+    }
+    tenantId = tenants[0].id as string;
+  }
+
+  // Try to match an existing customer by phone within the tenant
+  let customerId: string | null = null;
+  let vehicleId: string | null = null;
+  const { data: existingCustomer } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('phone', input.customerPhone)
+    .maybeSingle();
+  if (existingCustomer) {
+    customerId = existingCustomer.id as string;
+    if (input.licensePlate) {
+      const { data: existingVehicle } = await supabase
+        .from('vehicles')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('customer_id', customerId)
+        .eq('license_plate', input.licensePlate)
+        .maybeSingle();
+      if (existingVehicle) vehicleId = existingVehicle.id as string;
+    }
+  }
+
+  const { data: booking, error } = await supabase
+    .from('bookings')
+    .insert({
+      tenant_id: tenantId,
+      customer_id: customerId,
+      vehicle_id: vehicleId,
+      customer_name: input.customerName.trim(),
+      customer_phone: input.customerPhone.trim(),
+      license_plate: input.licensePlate?.trim() || null,
+      service_type: input.serviceType,
+      preferred_date: input.preferredDate,
+      preferred_time: input.preferredTime || null,
+      notes: input.notes?.trim() || null,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
+
+  if (error || !booking) {
+    return { error: error?.message || 'ไม่สามารถส่งคำขอจองได้' };
+  }
+
+  revalidatePath('/dashboard/queue');
+  return { success: true, bookingId: booking.id as string };
+}
+
+// ============================================================
+// Staff-side booking management
+// ============================================================
+
+export async function listBookings(filter?: { status?: string; from?: string; to?: string }) {
+  const supabase = await createClient();
+  const userInfo = await getUserInfo();
+  if (!userInfo?.tenant_id) return [];
+
+  let q = supabase
+    .from('bookings')
+    .select('*')
+    .eq('tenant_id', userInfo.tenant_id)
+    .order('preferred_date', { ascending: true })
+    .order('preferred_time', { ascending: true });
+
+  if (filter?.status) q = q.eq('status', filter.status);
+  if (filter?.from) q = q.gte('preferred_date', filter.from);
+  if (filter?.to) q = q.lte('preferred_date', filter.to);
+
+  const { data } = await q;
+  return data || [];
+}
+
+export async function confirmBooking(bookingId: string) {
+  const supabase = await createClient();
+  const userInfo = await getUserInfo();
+  if (!userInfo?.tenant_id) return { error: 'ไม่มีสิทธิ์' };
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+    .eq('id', bookingId)
+    .eq('tenant_id', userInfo.tenant_id);
+  if (error) return { error: error.message };
+  revalidatePath('/dashboard/queue');
+  return { success: true };
+}
+
+export async function cancelBooking(bookingId: string, reason?: string) {
+  const supabase = await createClient();
+  const userInfo = await getUserInfo();
+  if (!userInfo?.tenant_id) return { error: 'ไม่มีสิทธิ์' };
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_reason: reason || null,
+    })
+    .eq('id', bookingId)
+    .eq('tenant_id', userInfo.tenant_id);
+  if (error) return { error: error.message };
+  revalidatePath('/dashboard/queue');
+  return { success: true };
+}
