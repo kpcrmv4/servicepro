@@ -10,6 +10,7 @@ import {
 import { cn, formatCurrency } from "@/lib/utils"
 import { getDashboardStats, getRecentJobs } from "@/lib/actions/dashboard"
 import { getParts } from "@/lib/actions/parts"
+import { StatCard } from "@/components/ui/stat-card"
 import Link from "next/link"
 
 const statusLabels: Record<string, string> = {
@@ -49,38 +50,40 @@ export default async function DashboardPage() {
     day: "numeric",
   })
 
-  const kpiCards = [
+  const kpiCards: Array<{
+    title: string
+    value: string
+    subtitle: string
+    icon: typeof DollarSign
+    tone: "mint" | "purple" | "amber" | "pink"
+  }> = [
     {
       title: "รายรับเดือนนี้",
       value: formatCurrency(stats?.monthlyRevenue || 0),
       subtitle: `${stats?.pendingInvoicesCount || 0} ใบแจ้งหนี้ค้าง`,
       icon: DollarSign,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      tone: "mint",
     },
     {
       title: "งานที่กำลังดำเนินการ",
       value: String(stats?.activeJobs || 0),
       subtitle: `${stats?.completedToday || 0} เสร็จวันนี้`,
       icon: Wrench,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      tone: "purple",
     },
     {
       title: "งานรอดำเนินการ",
       value: String(stats?.jobsByStatus?.pending || 0),
       subtitle: `${stats?.totalJobs || 0} งานทั้งหมด`,
       icon: Clock,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      tone: "amber",
     },
     {
       title: "ลูกค้าทั้งหมด",
       value: String(stats?.customersCount || 0),
       subtitle: `${stats?.lowStockCount || 0} อะไหล่ใกล้หมด`,
       icon: Users,
-      color: "text-violet-600",
-      bg: "bg-violet-50",
+      tone: "pink",
     },
   ]
 
@@ -94,25 +97,18 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted-foreground">{today}</p>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards — pastel toned */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((card) => {
-          const Icon = card.icon
-          return (
-            <div key={card.title} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{card.title}</p>
-                  <p className="mt-1 text-2xl font-bold">{card.value}</p>
-                </div>
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", card.bg)}>
-                  <Icon className={cn("h-6 w-6", card.color)} />
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">{card.subtitle}</p>
-            </div>
-          )
-        })}
+        {kpiCards.map((card) => (
+          <StatCard
+            key={card.title}
+            title={card.title}
+            value={card.value}
+            subtitle={card.subtitle}
+            icon={card.icon}
+            tone={card.tone}
+          />
+        ))}
       </div>
 
       {/* Charts Section */}

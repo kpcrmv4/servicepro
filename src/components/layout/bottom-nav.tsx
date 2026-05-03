@@ -294,9 +294,9 @@ export function BottomNav() {
         </div>
       )}
 
-      {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
-        <div className="border-t border-border bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
+      {/* Bottom Navigation Bar — floating pill style */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
+        <div className="rounded-full border border-border bg-card/95 shadow-2xl backdrop-blur-lg">
           <div className="relative flex items-end justify-around px-2 pt-1">
             {/* Left items (positions 1 & 2) */}
             {leftItems.map((item) => {
@@ -323,13 +323,9 @@ export function BottomNav() {
             <div className="flex flex-1 items-center justify-center">
               <Link
                 href={center.href}
-                className={cn(
-                  "relative -mt-5 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95",
-                  center.color,
-                  "text-white"
-                )}
+                className="relative -mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/40 transition-transform active:scale-95"
               >
-                <div className={cn("absolute inset-0 rounded-full opacity-30 blur-md", center.color)} />
+                <div className="absolute inset-0 rounded-full bg-primary opacity-40 blur-lg" />
                 <center.icon className="relative h-6 w-6 stroke-[2.5]" />
               </Link>
               <span className={cn(
