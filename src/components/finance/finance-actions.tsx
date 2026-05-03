@@ -12,6 +12,8 @@ interface FinanceActionsProps {
   jobs: Array<Record<string, unknown>>
   customers: Array<Record<string, unknown>>
   pendingInvoices: Array<Record<string, unknown>>
+  shopPromptPayId?: string | null
+  shopPromptPayName?: string | null
 }
 
 export function CreateInvoiceButton({ jobs, customers }: { jobs: Array<Record<string, unknown>>; customers: Array<Record<string, unknown>> }) {
@@ -30,7 +32,15 @@ export function CreateInvoiceButton({ jobs, customers }: { jobs: Array<Record<st
   )
 }
 
-export function CreateReceiptButton({ pendingInvoices }: { pendingInvoices: Array<Record<string, unknown>> }) {
+export function CreateReceiptButton({
+  pendingInvoices,
+  shopPromptPayId,
+  shopPromptPayName,
+}: {
+  pendingInvoices: Array<Record<string, unknown>>
+  shopPromptPayId?: string | null
+  shopPromptPayName?: string | null
+}) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -41,7 +51,13 @@ export function CreateReceiptButton({ pendingInvoices }: { pendingInvoices: Arra
       >
         <Receipt className="h-4 w-4" /> สร้างใบเสร็จ
       </button>
-      <CreateReceiptDialog open={open} onOpenChange={setOpen} pendingInvoices={pendingInvoices} />
+      <CreateReceiptDialog
+        open={open}
+        onOpenChange={setOpen}
+        pendingInvoices={pendingInvoices}
+        shopPromptPayId={shopPromptPayId}
+        shopPromptPayName={shopPromptPayName}
+      />
     </>
   )
 }
@@ -62,11 +78,21 @@ export function CreateExpenseButton() {
   )
 }
 
-export function FinanceActionButtons({ jobs, customers, pendingInvoices }: FinanceActionsProps) {
+export function FinanceActionButtons({
+  jobs,
+  customers,
+  pendingInvoices,
+  shopPromptPayId,
+  shopPromptPayName,
+}: FinanceActionsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <CreateInvoiceButton jobs={jobs} customers={customers} />
-      <CreateReceiptButton pendingInvoices={pendingInvoices} />
+      <CreateReceiptButton
+        pendingInvoices={pendingInvoices}
+        shopPromptPayId={shopPromptPayId}
+        shopPromptPayName={shopPromptPayName}
+      />
       <CreateExpenseButton />
     </div>
   )

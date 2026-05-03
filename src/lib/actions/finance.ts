@@ -98,6 +98,7 @@ export async function createReceipt(formData: FormData) {
     amount: Number(formData.get('amount')) || 0,
     payment_method: (formData.get('payment_method') as string) || 'cash',
     reference: formData.get('reference') as string || null,
+    payment_slip_url: (formData.get('payment_slip_url') as string) || null,
     created_by: userInfo.id,
   })
 

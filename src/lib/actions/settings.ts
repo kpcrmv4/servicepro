@@ -67,6 +67,30 @@ export async function updateShopSettings(formData: FormData) {
   if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
   if (!['owner', 'admin'].includes(userInfo.role)) return { error: 'ไม่มีสิทธิ์' }
 
+  // Merge PromptPay/bank fields into the existing settings JSONB so we
+  // don't clobber other settings keys.
+  const { data: existing } = await supabase
+    .from('tenants')
+    .select('settings')
+    .eq('id', userInfo.tenant_id)
+    .single()
+  const prevSettings = (existing?.settings as Record<string, unknown>) || {}
+
+  const promptpayId = (formData.get('promptpay_id') as string)?.trim() || null
+  const bankName = (formData.get('bank_name') as string)?.trim() || null
+  const bankAccount = (formData.get('bank_account') as string)?.trim() || null
+  const bankAccountName = (formData.get('bank_account_name') as string)?.trim() || null
+
+  const nextSettings = {
+    ...prevSettings,
+    promptpay_id: promptpayId,
+    bank_account: bankAccount || bankName || bankAccountName ? {
+      bank_name: bankName,
+      account_number: bankAccount,
+      account_name: bankAccountName,
+    } : null,
+  }
+
   const { error } = await supabase
     .from('tenants')
     .update({
@@ -74,6 +98,7 @@ export async function updateShopSettings(formData: FormData) {
       address: formData.get('address') as string,
       phone: formData.get('phone') as string,
       tax_id: formData.get('tax_id') as string || null,
+      settings: nextSettings,
     })
     .eq('id', userInfo.tenant_id)
 

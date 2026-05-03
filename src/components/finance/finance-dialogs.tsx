@@ -23,7 +23,10 @@ import {
   createReceipt,
   createExpense,
 } from '@/lib/actions/finance'
+import { uploadGenericPhoto } from '@/lib/actions/upload'
+import { getPromptPayQrUrl, isValidPromptPayId } from '@/lib/payment/promptpay'
 import { formatCurrency } from '@/lib/utils'
+import { Camera } from 'lucide-react'
 
 // =============================================================================
 // Create Invoice Dialog
@@ -202,19 +205,40 @@ interface CreateReceiptDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   pendingInvoices: Array<Record<string, unknown>>
+  shopPromptPayId?: string | null
+  shopPromptPayName?: string | null
 }
 
 export function CreateReceiptDialog({
   open,
   onOpenChange,
   pendingInvoices,
+  shopPromptPayId,
+  shopPromptPayName,
 }: CreateReceiptDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [selectedInvoiceId, setSelectedInvoiceId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [slipFile, setSlipFile] = useState<File | null>(null)
+  const [slipPreview, setSlipPreview] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   const selectedInvoice = pendingInvoices.find((inv) => inv.id === selectedInvoiceId)
+  const promptPayValid = shopPromptPayId ? isValidPromptPayId(shopPromptPayId) : false
+  const showPromptPayQr = paymentMethod === 'promptpay' && promptPayValid && selectedInvoice
+  const requiresSlip = paymentMethod === 'transfer' || paymentMethod === 'promptpay' || paymentMethod === 'credit_card'
+
+  function handleSlip(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (f.size > 5 * 1024 * 1024) {
+      setError('ไฟล์ใหญ่เกิน 5MB')
+      return
+    }
+    setSlipFile(f)
+    setSlipPreview(URL.createObjectURL(f))
+    setError('')
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -224,6 +248,20 @@ export function CreateReceiptDialog({
     formData.set('payment_method', paymentMethod)
 
     startTransition(async () => {
+      // Upload slip first if present
+      if (slipFile) {
+        const fd = new FormData()
+        fd.append('file', slipFile)
+        fd.append('bucket', 'payment-slips')
+        fd.append('folder', `receipts/${selectedInvoiceId || 'misc'}`)
+        const up = await uploadGenericPhoto(fd)
+        if ('error' in up && up.error) {
+          setError(up.error)
+          return
+        }
+        if (up.url) formData.set('payment_slip_url', up.url)
+      }
+
       const result = await createReceipt(formData)
       if (result?.error) {
         setError(result.error)
@@ -231,6 +269,8 @@ export function CreateReceiptDialog({
         onOpenChange(false)
         setSelectedInvoiceId('')
         setPaymentMethod('cash')
+        setSlipFile(null)
+        setSlipPreview(null)
       }
     })
   }
@@ -296,10 +336,47 @@ export function CreateReceiptDialog({
             </Select>
           </div>
 
+          {showPromptPayQr && (
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-center">
+              <div className="text-xs text-muted-foreground">QR PromptPay สำหรับลูกค้า</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getPromptPayQrUrl(shopPromptPayId!, Number(selectedInvoice!.total))}
+                alt="PromptPay QR"
+                className="mx-auto h-44 w-44 rounded-lg border border-border bg-white p-2"
+              />
+              <div className="text-xs">
+                <div className="font-medium">{shopPromptPayName || shopPromptPayId}</div>
+                <div className="text-primary font-bold">฿{Number(selectedInvoice!.total).toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="reference">เลขอ้างอิง / Transaction ID</Label>
             <Input id="reference" name="reference" placeholder="เลขอ้างอิง (ถ้ามี)" />
           </div>
+
+          {requiresSlip && (
+            <div className="space-y-2">
+              <Label>แนบรูปสลิป {paymentMethod === 'credit_card' ? '(ถ้ามี)' : ''}</Label>
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 p-3 hover:bg-muted/40">
+                <Camera className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  {slipFile ? slipFile.name : 'เลือกรูปสลิป (สูงสุด 5MB)'}
+                </span>
+                <input type="file" accept="image/*" onChange={handleSlip} className="hidden" />
+              </label>
+              {slipPreview && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={slipPreview}
+                  alt="slip preview"
+                  className="max-h-40 w-auto rounded-lg border border-border"
+                />
+              )}
+            </div>
+          )}
 
           {error && <p className="text-sm text-error">{error}</p>}
 

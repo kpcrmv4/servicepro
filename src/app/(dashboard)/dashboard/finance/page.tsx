@@ -54,6 +54,30 @@ export default async function FinancePage({
     getCustomers(),
   ])
 
+  // Read shop's PromptPay info from tenant settings (used to render
+  // QR code in the receipt dialog so customers can scan to pay).
+  const settingsClient = await createServerClient()
+  const { data: { user: currentUser } } = await settingsClient.auth.getUser()
+  let shopPromptPayId: string | null = null
+  let shopPromptPayName: string | null = null
+  if (currentUser) {
+    const { data: userProfile } = await settingsClient
+      .from('users')
+      .select('tenant_id')
+      .eq('id', currentUser.id)
+      .single()
+    if (userProfile?.tenant_id) {
+      const { data: tenant } = await settingsClient
+        .from('tenants')
+        .select('name, settings')
+        .eq('id', userProfile.tenant_id)
+        .single()
+      const settings = (tenant?.settings as Record<string, unknown>) || {}
+      shopPromptPayId = (settings.promptpay_id as string) || null
+      shopPromptPayName = (tenant?.name as string) || null
+    }
+  }
+
   // Fetch insurance claims
   let insuranceClaims: Record<string, unknown>[] = []
   if (activeTab === "insurance") {
@@ -130,6 +154,8 @@ export default async function FinancePage({
             jobs={jobs}
             customers={customers}
             pendingInvoices={pendingInvoices}
+            shopPromptPayId={shopPromptPayId}
+            shopPromptPayName={shopPromptPayName}
           />
         }
       />

@@ -27,6 +27,7 @@ interface Invoice {
   status: string;
   payment_method: string | null;
   payment_reference: string | null;
+  payment_slip_url: string | null;
   paid_at: string | null;
   notes: string | null;
   notified_via_line_at: string | null;
@@ -49,12 +50,19 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 const formatDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
 
+const methodLabel: Record<string, string> = {
+  transfer: 'โอนธนาคาร',
+  promptpay: 'PromptPay',
+  credit_card: 'บัตรเครดิต',
+};
+
 export function InvoicesTable({ initialInvoices }: Props) {
   const [invoices, setInvoices] = useState(initialInvoices);
   const [filter, setFilter] = useState<string>('open');
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [slipPreview, setSlipPreview] = useState<string | null>(null);
 
   const filtered = invoices.filter((i) => {
     if (filter === 'open') return ['pending', 'sent', 'overdue'].includes(i.status);
@@ -171,6 +179,20 @@ export function InvoicesTable({ initialInvoices }: Props) {
         <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
 
+      {slipPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setSlipPreview(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={slipPreview}
+            alt="payment slip"
+            className="max-h-full max-w-full rounded-lg"
+          />
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full min-w-[960px]">
           <thead>
@@ -222,6 +244,20 @@ export function InvoicesTable({ initialInvoices }: Props) {
                       <Icon className="h-3 w-3" />
                       {s.label}
                     </span>
+                    {inv.payment_method && (
+                      <div className="mt-1 text-[11px] text-foreground">
+                        {methodLabel[inv.payment_method] || inv.payment_method}
+                      </div>
+                    )}
+                    {inv.payment_slip_url && (
+                      <button
+                        type="button"
+                        onClick={() => setSlipPreview(inv.payment_slip_url)}
+                        className="mt-1 text-[11px] text-primary underline"
+                      >
+                        ดูสลิป
+                      </button>
+                    )}
                     {inv.status === 'paid' && inv.paid_at && (
                       <div className="mt-1 text-[11px] text-muted-foreground">
                         {formatDate(inv.paid_at)}

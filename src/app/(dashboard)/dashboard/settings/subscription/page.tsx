@@ -5,6 +5,7 @@ import {
   listOwnSubscriptionInvoices,
   getOwnerLineLink,
 } from '@/lib/actions/subscription';
+import { getPlatformPaymentInfo } from '@/lib/payment/promptpay';
 import { OwnerLineLinkCard } from '@/components/subscription/owner-line-link-card';
 import { TransferClaimButton } from '@/components/subscription/transfer-claim-button';
 
@@ -45,6 +46,15 @@ export default async function SubscriptionSettingsPage() {
     listOwnSubscriptionInvoices(),
     getOwnerLineLink(),
   ]);
+
+  const platformPayment = getPlatformPaymentInfo();
+  const paymentForButton = {
+    promptpayId: platformPayment?.id ?? null,
+    promptpayName: platformPayment?.accountName ?? null,
+    bankName: platformPayment?.bankName ?? null,
+    bankAccount: platformPayment?.bankAccount ?? null,
+    acceptCreditCard: platformPayment?.acceptCreditCard ?? false,
+  };
 
   const expiry = tenant?.current_period_end || tenant?.trial_ends_at;
   const daysLeft = expiry
@@ -155,7 +165,12 @@ export default async function SubscriptionSettingsPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {canClaim && (
-                          <TransferClaimButton invoiceId={inv.id as string} />
+                          <TransferClaimButton
+                            invoiceId={inv.id as string}
+                            invoiceNumber={inv.invoice_number as string}
+                            amount={Number(inv.amount)}
+                            payment={paymentForButton}
+                          />
                         )}
                         {inv.status === 'paid' && (
                           <span className="text-xs text-muted-foreground">
@@ -173,11 +188,30 @@ export default async function SubscriptionSettingsPage() {
 
         {/* Payment instructions */}
         <section className="rounded-xl border border-border bg-muted/30 p-6">
-          <h3 className="mb-2 font-semibold">ช่องทางชำระเงิน</h3>
-          <div className="space-y-1 text-sm text-muted-foreground">
-            <div>• โอนเข้าบัญชีธนาคาร / PromptPay (รายละเอียดอยู่ในข้อความ LINE หรือใบแจ้งหนี้)</div>
-            <div>• เมื่อโอนเสร็จ กดปุ่ม &quot;แจ้งโอนแล้ว&quot; ที่ใบแจ้งหนี้ หรือกดในแชท LINE</div>
-            <div>• ทีมงานจะตรวจสอบและยืนยันภายใน 24 ชั่วโมง</div>
+          <h3 className="mb-3 font-semibold">ช่องทางชำระเงิน</h3>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            {platformPayment?.id ? (
+              <div className="flex items-start gap-2">
+                <span className="font-medium text-foreground">PromptPay:</span>
+                <div>
+                  <div>{platformPayment.id} ({platformPayment.accountName})</div>
+                  <div className="text-xs">QR สร้างอัตโนมัติพร้อมยอดเงินเมื่อกดปุ่ม &quot;ชำระเงิน&quot;</div>
+                </div>
+              </div>
+            ) : null}
+            {platformPayment?.bankAccount ? (
+              <div className="flex items-start gap-2">
+                <span className="font-medium text-foreground">ธนาคาร:</span>
+                <div>{platformPayment.bankName} {platformPayment.bankAccount}</div>
+              </div>
+            ) : null}
+            {platformPayment?.acceptCreditCard ? (
+              <div className="flex items-start gap-2">
+                <span className="font-medium text-foreground">บัตรเครดิต:</span>
+                <div>ติดต่อทีมงานเพื่อรูดบัตรและส่งสลิป</div>
+              </div>
+            ) : null}
+            <div className="pt-1">• โอนเสร็จแล้ว กดปุ่ม &quot;ชำระเงิน&quot; → แนบรูปสลิป → ทีมงานตรวจสอบและยืนยันภายใน 24 ชั่วโมง</div>
           </div>
         </section>
       </div>

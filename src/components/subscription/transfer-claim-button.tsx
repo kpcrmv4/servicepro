@@ -1,66 +1,51 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { markInvoiceTransferClaimed } from '@/lib/actions/subscription';
+import { useState } from 'react';
+import { PaymentMethodModal } from './payment-method-modal';
+
+interface PlatformPayment {
+  promptpayId: string | null;
+  promptpayName: string | null;
+  bankName: string | null;
+  bankAccount: string | null;
+  acceptCreditCard: boolean;
+}
 
 interface Props {
   invoiceId: string;
+  invoiceNumber: string;
+  amount: number;
+  payment: PlatformPayment;
 }
 
-export function TransferClaimButton({ invoiceId }: Props) {
-  const [pending, startTransition] = useTransition();
+export function TransferClaimButton({ invoiceId, invoiceNumber, amount, payment }: Props) {
+  const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
-  const [reference, setReference] = useState('');
-  const [showInput, setShowInput] = useState(false);
-
-  const submit = () => {
-    startTransition(async () => {
-      const res = await markInvoiceTransferClaimed(invoiceId, reference || undefined);
-      if (!('error' in res)) setDone(true);
-    });
-  };
 
   if (done) {
     return <span className="text-xs text-green-600">รอตรวจสอบ</span>;
   }
 
-  if (!showInput) {
-    return (
+  return (
+    <>
       <button
         type="button"
-        onClick={() => setShowInput(true)}
+        onClick={() => setOpen(true)}
         className="rounded border border-primary px-2 py-1 text-xs text-primary hover:bg-primary/10"
       >
-        แจ้งโอนแล้ว
+        ชำระเงิน
       </button>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-stretch gap-1">
-      <input
-        value={reference}
-        onChange={(e) => setReference(e.target.value)}
-        placeholder="เลขอ้างอิง (ถ้ามี)"
-        className="rounded border border-border bg-background px-2 py-1 text-xs"
-      />
-      <div className="flex gap-1">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={pending}
-          className="flex-1 rounded bg-primary px-2 py-1 text-xs text-primary-foreground"
-        >
-          {pending ? '...' : 'ส่ง'}
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowInput(false)}
-          className="rounded border border-border px-2 py-1 text-xs"
-        >
-          ยกเลิก
-        </button>
-      </div>
-    </div>
+      {open && (
+        <PaymentMethodModal
+          invoice={{ id: invoiceId, invoice_number: invoiceNumber, amount }}
+          payment={payment}
+          onClose={() => setOpen(false)}
+          onSubmitted={() => {
+            setOpen(false);
+            setDone(true);
+          }}
+        />
+      )}
+    </>
   );
 }

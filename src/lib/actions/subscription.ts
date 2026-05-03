@@ -334,32 +334,46 @@ export async function listOwnSubscriptionInvoices() {
   return data || [];
 }
 
-// Owner marks "I've transferred" — flips invoice status to a
-// "claimed" state via reminder_count bump and notes; super_admin
+// Owner marks "I've transferred" — flips invoice into a pending-review
+// state with payment method, reference and slip image. Super_admin
 // then verifies and marks paid.
-export async function markInvoiceTransferClaimed(
-  invoiceId: string,
-  paymentReference?: string,
-) {
+export async function markInvoiceTransferClaimed(input: {
+  invoiceId: string;
+  paymentMethod: 'transfer' | 'promptpay' | 'credit_card';
+  paymentReference?: string;
+  paymentSlipUrl?: string;
+}) {
   const ctx = await requireOwner();
   if (!ctx) return { error: 'ไม่มีสิทธิ์' };
+  if (!['transfer', 'promptpay', 'credit_card'].includes(input.paymentMethod)) {
+    return { error: 'ช่องทางชำระเงินไม่ถูกต้อง' };
+  }
+
   const { data: inv } = await ctx.supabase
     .from('subscription_invoices')
     .select('id, tenant_id, status')
-    .eq('id', invoiceId)
+    .eq('id', input.invoiceId)
     .single();
   if (!inv || inv.tenant_id !== ctx.tenantId) return { error: 'ไม่พบใบแจ้งหนี้' };
   if (inv.status === 'paid' || inv.status === 'cancelled') {
     return { error: 'ใบแจ้งหนี้นี้ปิดแล้ว' };
   }
+
+  const methodLabel: Record<string, string> = {
+    transfer: 'โอนผ่านธนาคาร',
+    promptpay: 'PromptPay',
+    credit_card: 'บัตรเครดิต (รูดที่ร้าน)',
+  };
+
   await ctx.supabase
     .from('subscription_invoices')
     .update({
-      payment_reference: paymentReference || 'owner-claimed-transfer',
-      payment_method: 'transfer',
-      notes: 'ลูกค้าแจ้งโอนแล้ว — รอ super_admin ตรวจสอบ',
+      payment_method: input.paymentMethod,
+      payment_reference: input.paymentReference || `owner-claimed-${input.paymentMethod}`,
+      payment_slip_url: input.paymentSlipUrl || null,
+      notes: `ลูกค้าแจ้งชำระแล้ว (${methodLabel[input.paymentMethod]}) — รอ super_admin ตรวจสอบ`,
     })
-    .eq('id', invoiceId);
+    .eq('id', input.invoiceId);
   revalidatePath('/dashboard/settings/subscription');
   return { success: true };
 }
