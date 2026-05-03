@@ -8,6 +8,7 @@ import {
   CreditCard,
   Settings,
   Shield,
+  Building2,
 } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
@@ -18,6 +19,9 @@ import { createServerClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { FinanceActionButtons } from "@/components/finance/finance-actions"
 import { RecurringExpenseManager } from "@/components/finance/recurring-expense-manager"
+import { ApPanel } from "@/components/finance/ap-panel"
+import { listSupplierInvoices, getApAgingReport } from "@/lib/actions/accounts-payable"
+import { getSuppliers } from "@/lib/actions/parts"
 
 type InvoiceStatus = "paid" | "pending" | "overdue" | "cancelled"
 
@@ -29,8 +33,9 @@ const invoiceStatusConfig: Record<InvoiceStatus, { label: string; color: string 
 }
 
 const tabs = [
-  { key: "invoices", label: "ใบแจ้งหนี้", icon: FileText },
+  { key: "invoices", label: "ใบแจ้งหนี้ (ลูกค้า)", icon: FileText },
   { key: "receipts", label: "ใบเสร็จ", icon: Receipt },
+  { key: "ap", label: "เจ้าหนี้ (AP)", icon: Building2 },
   { key: "expenses", label: "ค่าใช้จ่าย", icon: CreditCard },
   { key: "recurring", label: "ค่าใช้จ่ายประจำ", icon: Settings },
   { key: "insurance", label: "เคลมประกัน", icon: Shield },
@@ -44,7 +49,18 @@ export default async function FinancePage({
   const params = await searchParams
   const activeTab = params.tab || "invoices"
 
-  const [invoices, receipts, expenses, recurringExpenses, pendingInvoices, jobs, customers] = await Promise.all([
+  const [
+    invoices,
+    receipts,
+    expenses,
+    recurringExpenses,
+    pendingInvoices,
+    jobs,
+    customers,
+    supplierInvoices,
+    apAging,
+    suppliers,
+  ] = await Promise.all([
     getInvoices(),
     getReceipts(),
     getExpenses(),
@@ -52,6 +68,9 @@ export default async function FinancePage({
     getPendingInvoices(),
     getJobs(),
     getCustomers(),
+    activeTab === "ap" ? listSupplierInvoices() : Promise.resolve([]),
+    activeTab === "ap" ? getApAgingReport() : Promise.resolve(null),
+    activeTab === "ap" ? getSuppliers() : Promise.resolve([]),
   ])
 
   // Read shop's PromptPay info from tenant settings (used to render
@@ -348,6 +367,16 @@ export default async function FinancePage({
         {activeTab === "recurring" && (
           <div className="rounded-xl border border-border bg-card p-4">
             <RecurringExpenseManager recurringExpenses={recurringExpenses} />
+          </div>
+        )}
+
+        {activeTab === "ap" && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <ApPanel
+              invoices={supplierInvoices as never[]}
+              suppliers={(suppliers as { id: string; name: string }[]).map((s) => ({ id: s.id, name: s.name }))}
+              aging={apAging}
+            />
           </div>
         )}
 

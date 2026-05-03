@@ -56,6 +56,9 @@ interface CheckinData {
   description?: string
   priority: string
   notes?: string
+
+  // Photos uploaded by the wizard (already saved to Storage; we receive URLs)
+  photoUrls?: string[]
 }
 
 export async function createCheckinJob(data: CheckinData) {
@@ -134,13 +137,28 @@ export async function createCheckinJob(data: CheckinData) {
 
   if (jobError) return { error: `สร้าง Job ไม่สำเร็จ: ${jobError.message}` }
 
-  // Step 5: Create timeline entry
+  // Step 5: Create timeline entry (mention photo count)
+  const photoCount = data.photoUrls?.length || 0
   await supabase.from('job_timeline').insert({
     job_id: job.id,
     status: 'pending',
-    notes: 'รับรถเข้าอู่',
+    notes: photoCount > 0 ? `รับรถเข้าอู่ (แนบรูป ${photoCount} รูป)` : 'รับรถเข้าอู่',
     created_by: userInfo.id,
   })
+
+  // Step 6: Persist check-in photos as job_timeline entries with
+  // photo_url so the timeline view can render images inline. (No
+  // separate job_photos table is needed.)
+  if (data.photoUrls && data.photoUrls.length > 0) {
+    const rows = data.photoUrls.map((url) => ({
+      job_id: job.id as string,
+      status: 'pending',
+      notes: 'รูปสภาพรถตอนรับเข้า',
+      photo_url: url,
+      created_by: userInfo.id,
+    }))
+    await supabase.from('job_timeline').insert(rows)
+  }
 
   revalidatePath('/dashboard/reception')
   revalidatePath('/dashboard/jobs')

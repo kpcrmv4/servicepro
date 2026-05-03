@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { createCheckinJob, searchCustomers, searchVehicleByPlate } from "@/lib/actions/reception"
+import { uploadGenericPhoto } from "@/lib/actions/upload"
 
 const carBrands = [
   "Toyota", "Honda", "Isuzu", "Mitsubishi", "Nissan", "Mazda", "Ford",
@@ -244,6 +245,22 @@ export function CheckinWizard() {
   function handleSubmit() {
     setError("")
     startTransition(async () => {
+      // Upload photos sequentially to job-photos/checkins/<plate>
+      const photoUrls: string[] = []
+      const folder = `checkins/${licensePlate.replace(/[^A-Za-z0-9ก-๙]/g, "_")}_${Date.now()}`
+      for (const file of photos) {
+        const fd = new FormData()
+        fd.append("file", file)
+        fd.append("bucket", "job-photos")
+        fd.append("folder", folder)
+        const up = await uploadGenericPhoto(fd)
+        if ("error" in up && up.error) {
+          setError(`อัปโหลดรูปล้มเหลว: ${up.error}`)
+          return
+        }
+        if (up.url) photoUrls.push(up.url)
+      }
+
       const result = await createCheckinJob({
         customerId: selectedCustomer?.id,
         customerName,
@@ -261,6 +278,7 @@ export function CheckinWizard() {
         description,
         priority,
         notes,
+        photoUrls,
       })
 
       if (result.error) {

@@ -17,6 +17,8 @@ import {
   X,
   ClipboardCheck,
   ShieldCheck,
+  Bell,
+  BookOpen,
 } from "lucide-react"
 
 // =============================================================================
@@ -40,7 +42,9 @@ const navItems: NavItem[] = [
   { title: "รับประกัน", href: "/dashboard/warranty", icon: ShieldCheck },
   { title: "ลูกค้า", href: "/dashboard/customers", icon: Users, dividerBefore: true },
   { title: "ทีมงาน", href: "/dashboard/team", icon: UserCog },
-  { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3, dividerBefore: true },
+  { title: "แจ้งเตือนลูกค้า", href: "/dashboard/reminders", icon: Bell, dividerBefore: true },
+  { title: "คลังความรู้", href: "/dashboard/knowledge-base", icon: BookOpen },
+  { title: "รายงาน", href: "/dashboard/reports", icon: BarChart3 },
 ]
 
 const settingsItem: NavItem = { title: "ตั้งค่า", href: "/dashboard/settings", icon: Settings }
