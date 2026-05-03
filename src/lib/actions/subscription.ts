@@ -121,8 +121,8 @@ export async function scanAndCreateRenewals(noticeDays = 14) {
     const plan = (t.plan as string) || 'basic';
     if (plan === 'free') continue;
     const cycle = ((t.billing_cycle as string) || 'yearly') as 'monthly' | 'yearly';
-    const { amount } = await getPlanPricing(plan, cycle);
-    if (amount <= 0) continue;
+    const { amount: planAmount } = await getPlanPricing(plan, cycle);
+    if (planAmount <= 0) continue;
 
     // Skip if an open invoice for this tenant already exists
     const { data: existing } = await supabase
@@ -133,6 +133,18 @@ export async function scanAndCreateRenewals(noticeDays = 14) {
       .limit(1)
       .maybeSingle();
     if (existing) continue;
+
+    // Sum addon prices for this tenant (custom_domain etc).
+    // We pull all pending+active addons; pending ones get bundled into
+    // this invoice and flipped to active when super_admin marks paid.
+    const { data: addons } = await supabase
+      .from('tenant_addons')
+      .select('id, addon_type, status, price, billing_cycle')
+      .eq('tenant_id', tenantId)
+      .in('status', ['pending', 'active']);
+    const addonRows = addons || [];
+    const addonSum = addonRows.reduce((s, a) => s + Number(a.price), 0);
+    const amount = planAmount + addonSum;
 
     const periodStart = new Date(t.periodAnchor);
     const periodEnd = new Date(periodStart);
@@ -150,6 +162,11 @@ export async function scanAndCreateRenewals(noticeDays = 14) {
       .like('invoice_number', `${prefix}%`);
     const invoiceNumber = `${prefix}${String((count || 0) + 1 + created.length).padStart(4, '0')}`;
 
+    const breakdown: string[] = [
+      `แพลน ${plan}: ฿${planAmount.toLocaleString()}`,
+      ...addonRows.map((a) => `${a.addon_type}: ฿${Number(a.price).toLocaleString()}`),
+    ];
+
     const { data: inv, error } = await supabase
       .from('subscription_invoices')
       .insert({
@@ -163,6 +180,7 @@ export async function scanAndCreateRenewals(noticeDays = 14) {
         period_end: periodEnd.toISOString().slice(0, 10),
         due_date: periodStart.toISOString().slice(0, 10),
         status: 'pending',
+        notes: addonRows.length > 0 ? breakdown.join(' | ') : null,
       })
       .select('id, invoice_number')
       .single();
@@ -569,6 +587,18 @@ export async function markInvoicePaid(input: {
     amount: Number(inv.amount),
     payment_reference: input.paymentReference || inv.payment_reference,
   });
+
+  // 3b. Activate pending addons for this tenant — match the invoice
+  // period so the addon expires alongside the subscription.
+  await ctx.supabase
+    .from('tenant_addons')
+    .update({
+      status: 'active',
+      period_start: inv.period_start,
+      period_end: inv.period_end,
+    })
+    .eq('tenant_id', inv.tenant_id)
+    .eq('status', 'pending');
 
   // 4. Notify owner via LINE if linked (best effort, non-blocking)
   try {

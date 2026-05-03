@@ -36,9 +36,12 @@ export async function GET(
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('name, address, phone, tax_id')
+    .select('name, address, phone, tax_id, settings')
     .eq('id', profile.tenant_id)
     .single();
+  const brand = (tenant?.settings as Record<string, unknown> | null)?.brand as
+    | { primary_color?: string; logo_url?: string | null }
+    | undefined;
 
   const jobRaw = quotation.job as unknown;
   const job = (Array.isArray(jobRaw) ? jobRaw[0] : jobRaw) as
@@ -64,6 +67,8 @@ export async function GET(
   const buffer = await renderToBuffer(
     createElement(QuotationPdf, {
       shop: {
+        logo_url: brand?.logo_url ?? null,
+        primary_color: brand?.primary_color ?? null,
         name: tenant?.name || 'Shop',
         address: tenant?.address ?? null,
         phone: tenant?.phone ?? null,

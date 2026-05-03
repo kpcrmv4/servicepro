@@ -1,12 +1,45 @@
 import { StyleSheet } from '@react-pdf/renderer';
 
 /**
- * Shared PDF styles. We rely on @react-pdf/renderer's default Helvetica
- * to avoid bundling Thai fonts (which are large). Thai text renders
- * correctly when the Helvetica fallback hits the system Thai stack on
- * the platform that opens the PDF; in production you can register
+ * Shared PDF styles. The accent color (header underline, totals,
+ * footer) is themable per-tenant via brandedStyles(primaryColor).
+ *
+ * We rely on @react-pdf/renderer's default Helvetica to avoid
+ * bundling Thai fonts (which are large). Thai text renders correctly
+ * when the Helvetica fallback hits the system Thai stack on the
+ * platform that opens the PDF; in production you can register
  * Sarabun / Noto Sans Thai with `Font.register({...})`.
  */
+export const DEFAULT_PRIMARY = '#7C5BFB';
+
+export const brandedStyles = (primaryColor = DEFAULT_PRIMARY) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+      borderBottomWidth: 2,
+      borderBottomColor: primaryColor,
+      paddingBottom: 6,
+    },
+    shopName: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: primaryColor,
+    },
+    grandTotal: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 6,
+      borderTopWidth: 1,
+      borderColor: primaryColor,
+      marginTop: 4,
+      fontSize: 12,
+      fontWeight: 700,
+      color: primaryColor,
+    },
+  });
+
 export const styles = StyleSheet.create({
   page: {
     padding: 32,

@@ -1,5 +1,5 @@
-import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { styles, formatTHB, formatDate } from './styles';
+import { Document, Image as PdfImage, Page, Text, View } from '@react-pdf/renderer';
+import { styles, brandedStyles, formatTHB, formatDate, DEFAULT_PRIMARY } from './styles';
 
 export interface QuotationPdfProps {
   shop: {
@@ -7,6 +7,8 @@ export interface QuotationPdfProps {
     address?: string | null;
     phone?: string | null;
     tax_id?: string | null;
+    logo_url?: string | null;
+    primary_color?: string | null;
   };
   quotation: {
     quotation_number: string;
@@ -33,17 +35,24 @@ export interface QuotationPdfProps {
 }
 
 export function QuotationPdf({ shop, quotation, customer, vehicle }: QuotationPdfProps) {
+  const accent = shop.primary_color || DEFAULT_PRIMARY;
+  const branded = brandedStyles(accent);
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.shopName}>{shop.name}</Text>
-            {shop.address && <Text style={styles.meta}>{shop.address}</Text>}
-            <Text style={styles.meta}>
-              {shop.phone && `Tel: ${shop.phone}`}
-              {shop.tax_id && `   Tax ID: ${shop.tax_id}`}
-            </Text>
+        <View style={branded.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+            {shop.logo_url ? (
+              <PdfImage src={shop.logo_url} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+            ) : null}
+            <View>
+              <Text style={branded.shopName}>{shop.name}</Text>
+              {shop.address && <Text style={styles.meta}>{shop.address}</Text>}
+              <Text style={styles.meta}>
+                {shop.phone && `Tel: ${shop.phone}`}
+                {shop.tax_id && `   Tax ID: ${shop.tax_id}`}
+              </Text>
+            </View>
           </View>
           <View>
             <Text style={styles.docType}>QUOTATION / ใบเสนอราคา</Text>
@@ -105,7 +114,7 @@ export function QuotationPdf({ shop, quotation, customer, vehicle }: QuotationPd
             <Text>VAT 7%</Text>
             <Text>{formatTHB(quotation.vat)}</Text>
           </View>
-          <View style={styles.grandTotal}>
+          <View style={branded.grandTotal}>
             <Text>Total / ยอดรวม</Text>
             <Text>THB {formatTHB(quotation.total)}</Text>
           </View>

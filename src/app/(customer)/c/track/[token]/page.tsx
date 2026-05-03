@@ -15,7 +15,9 @@ import {
   getJobTimelineByToken,
 } from "@/lib/actions/customer-portal"
 import { listAdditionalWorkByJobToken } from "@/lib/actions/additional-work"
+import { getBrandByJobNumber } from "@/lib/actions/branding"
 import { CustomerAdditionalWorkList } from "@/components/jobs/customer-additional-work-list"
+import { BrandProvider } from "@/components/branding/brand-provider"
 import { JOB_STATUS } from "@/lib/constants/status-config"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -55,10 +57,11 @@ export default async function TrackJobPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const [job, additionalWork, timeline] = await Promise.all([
+  const [job, additionalWork, timeline, brand] = await Promise.all([
     getJobByTrackingToken(token),
     listAdditionalWorkByJobToken(token),
     getJobTimelineByToken(token),
+    getBrandByJobNumber(token),
   ])
 
   if (!job) notFound()
@@ -74,7 +77,7 @@ export default async function TrackJobPage({
   const currentStep = getCustomerStepIndex(status)
 
   return (
-    <div className="space-y-5 p-4">
+    <BrandProvider brand={brand} className="space-y-5 p-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
@@ -363,6 +366,6 @@ export default async function TrackJobPage({
           </div>
         </div>
       </div>
-    </div>
+    </BrandProvider>
   )
 }

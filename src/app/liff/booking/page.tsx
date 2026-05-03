@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { submitPublicBooking } from '@/lib/actions/bookings';
 import type { DayAvailability } from '@/lib/actions/booking-config';
+import { useBrand, brandStyle } from '@/components/branding/use-brand';
 
 /**
  * LIFF booking page — opened from inside a tenant's LINE OA chat or
@@ -43,6 +44,7 @@ type AvailabilityResponse = {
 
 export default function LiffBookingPage() {
   const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+  const brand = useBrand(tenantSlug);
   const [liffId, setLiffId] = useState<string | null>(null);
   const [liffReady, setLiffReady] = useState(false);
   const [liffError, setLiffError] = useState<string | null>(null);
@@ -179,7 +181,7 @@ export default function LiffBookingPage() {
   }
 
   return (
-    <div className="space-y-5 p-4">
+    <div className="space-y-5 p-4" style={brandStyle(brand)}>
       {liffId && (
         <Script
           src="https://static.line-scdn.net/liff/edge/2/sdk.js"

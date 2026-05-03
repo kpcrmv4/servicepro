@@ -37,9 +37,12 @@ export async function GET(
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('name, address, phone, tax_id')
+    .select('name, address, phone, tax_id, settings')
     .eq('id', profile.tenant_id)
     .single();
+  const brand = (tenant?.settings as Record<string, unknown> | null)?.brand as
+    | { primary_color?: string; logo_url?: string | null }
+    | undefined;
 
   const customerRaw = invoice.customer as unknown;
   const customer = (Array.isArray(customerRaw) ? customerRaw[0] : customerRaw) as
@@ -68,6 +71,8 @@ export async function GET(
         address: tenant?.address ?? null,
         phone: tenant?.phone ?? null,
         tax_id: tenant?.tax_id ?? null,
+        logo_url: brand?.logo_url ?? null,
+        primary_color: brand?.primary_color ?? null,
       },
       invoice: {
         invoice_number: invoice.invoice_number as string,
