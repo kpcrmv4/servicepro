@@ -12,10 +12,25 @@ import {
   Flag,
   XCircle,
 } from "lucide-react"
+import { JobHoldButton } from "@/components/jobs/job-hold-button"
 
-type JobStatus = "pending" | "in_progress" | "quality_check" | "waiting_pickup" | "completed" | "cancelled"
+type JobStatus =
+  | "pending"
+  | "ready_to_repair"
+  | "in_progress"
+  | "waiting_parts"
+  | "waiting_insurance"
+  | "on_hold"
+  | "quality_check"
+  | "waiting_pickup"
+  | "completed"
+  | "cancelled"
 
 const statusFlow: Record<string, { next: JobStatus; label: string; icon: React.ElementType; color: string }[]> = {
+  ready_to_repair: [
+    { next: "in_progress", label: "เริ่มซ่อม", icon: Play, color: "bg-info text-white hover:bg-info/90" },
+    { next: "cancelled", label: "ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
+  ],
   in_progress: [
     { next: "quality_check", label: "ส่งตรวจ QC", icon: CheckCircle, color: "bg-purple-600 text-white hover:bg-purple-700" },
     { next: "cancelled", label: "ยกเลิก", icon: XCircle, color: "bg-error/10 text-error hover:bg-error/20" },
@@ -32,13 +47,24 @@ const statusFlow: Record<string, { next: JobStatus; label: string; icon: React.E
 }
 
 const statusSteps: { key: JobStatus; label: string }[] = [
+  { key: "ready_to_repair", label: "พร้อมซ่อม" },
   { key: "in_progress", label: "กำลังซ่อม" },
   { key: "quality_check", label: "ตรวจ QC" },
   { key: "waiting_pickup", label: "รอลูกค้ารับ" },
   { key: "completed", label: "เสร็จสิ้น" },
 ]
 
-export function JobStatusActions({ jobId, currentStatus }: { jobId: string; currentStatus: string }) {
+export function JobStatusActions({
+  jobId,
+  currentStatus,
+  holdReason,
+  holdUntil,
+}: {
+  jobId: string
+  currentStatus: string
+  holdReason?: string | null
+  holdUntil?: string | null
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState("")
@@ -119,6 +145,14 @@ export function JobStatusActions({ jobId, currentStatus }: { jobId: string; curr
             </button>
           )
         })}
+
+        {/* Hold / resume — handles waiting_parts, waiting_insurance, on_hold */}
+        <JobHoldButton
+          jobId={jobId}
+          currentStatus={currentStatus}
+          holdReason={holdReason}
+          holdUntil={holdUntil}
+        />
       </div>
     </div>
   )

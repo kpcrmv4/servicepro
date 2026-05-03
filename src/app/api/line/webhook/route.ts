@@ -270,7 +270,7 @@ async function handlePostback(tenantId: string, lineUserId: string, event: Recor
           await getSupabase()
             .from('jobs')
             .update({
-              status: 'in_progress',
+              status: 'ready_to_repair',
               total_parts_cost: totalPartsCost,
               total_labor_cost: totalLaborCost,
               total_amount: qt.subtotal,
@@ -281,8 +281,8 @@ async function handlePostback(tenantId: string, lineUserId: string, event: Recor
 
           await getSupabase().from('job_timeline').insert({
             job_id: jobId,
-            status: 'in_progress',
-            notes: 'ลูกค้าอนุมัติใบเสนอราคาผ่าน LINE',
+            status: 'ready_to_repair',
+            notes: 'ลูกค้าอนุมัติใบเสนอราคาผ่าน LINE — เข้าคิวพร้อมซ่อม',
           });
         }
 

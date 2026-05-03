@@ -31,7 +31,7 @@ export async function createAdditionalWorkRequest(input: AdditionalWorkInput) {
   // Verify job belongs to this tenant
   const { data: job } = await supabase
     .from('jobs')
-    .select('id, customer_id, vehicle_id, job_number, tenant_id')
+    .select('id, customer_id, vehicle_id, job_number, tenant_id, status')
     .eq('id', input.jobId)
     .eq('tenant_id', userInfo.tenant_id)
     .single();
@@ -87,11 +87,11 @@ export async function createAdditionalWorkRequest(input: AdditionalWorkInput) {
     console.error('[additional-work] LINE notify failed', e);
   }
 
-  // Job timeline entry
+  // Job timeline entry — keep job's current status, just add a note row
   await supabase.from('job_timeline').insert({
     job_id: input.jobId,
-    status: null,
-    note: `ช่างพบปัญหาเพิ่มเติม: ${input.description} (ประมาณ ฿${input.estimatedCost.toLocaleString()}) — รอลูกค้าอนุมัติ`,
+    status: job.status,
+    notes: `ช่างพบปัญหาเพิ่มเติม: ${input.description} (ประมาณ ฿${input.estimatedCost.toLocaleString()}) — รอลูกค้าอนุมัติ`,
     created_by: userInfo.id,
   });
 
@@ -152,7 +152,7 @@ export async function respondAdditionalWork(input: {
   );
   const { data: job } = await supabase
     .from('jobs')
-    .select('id, tenant_id')
+    .select('id, tenant_id, status')
     .eq('job_number', input.trackingToken)
     .maybeSingle();
   if (!job) return { error: 'invalid token' };
@@ -187,8 +187,8 @@ export async function respondAdditionalWork(input: {
 
   await supabase.from('job_timeline').insert({
     job_id: job.id,
-    status: null,
-    note:
+    status: job.status,
+    notes:
       input.decision === 'approved'
         ? `ลูกค้าอนุมัติงานเพิ่ม: ${req.description}`
         : `ลูกค้าปฏิเสธงานเพิ่ม: ${req.description}`,

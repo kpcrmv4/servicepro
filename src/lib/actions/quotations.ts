@@ -215,11 +215,12 @@ export async function approveQuotation(quotationId: string, jobId: string) {
 
   if (qtError) return { error: qtError.message }
 
-  // Update job: status → in_progress, copy totals
+  // Update job: status → ready_to_repair (in queue, not yet started),
+  // copy totals so finance/QC can use them.
   const { error: jobError } = await supabase
     .from('jobs')
     .update({
-      status: 'in_progress',
+      status: 'ready_to_repair',
       total_parts_cost: totalPartsCost,
       total_labor_cost: totalLaborCost,
       total_amount: quotation.subtotal,
@@ -234,8 +235,8 @@ export async function approveQuotation(quotationId: string, jobId: string) {
   // Add timeline entry
   await supabase.from('job_timeline').insert({
     job_id: jobId,
-    status: 'in_progress',
-    notes: `ลูกค้าอนุมัติใบเสนอราคา - เริ่มดำเนินการซ่อม`,
+    status: 'ready_to_repair',
+    notes: `ลูกค้าอนุมัติใบเสนอราคา — เข้าคิวพร้อมซ่อม`,
     created_by: userInfo.id,
   })
 

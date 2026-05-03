@@ -42,6 +42,26 @@ export async function getJobByTrackingToken(token: string) {
   return data
 }
 
+// Full timeline events for the public tracking page. Returns rows in
+// chronological order (oldest first).
+export async function getJobTimelineByToken(token: string) {
+  const supabase = await createServerClient()
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("id")
+    .eq("job_number", token)
+    .single()
+  if (!job) return []
+  const { data } = await supabase
+    .from("job_timeline")
+    .select(
+      "id, status, notes, photo_url, created_at, created_by_user:users!job_timeline_created_by_fkey(full_name)",
+    )
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: true })
+  return data || []
+}
+
 export async function getVehicleWithHistory(vehicleId: string) {
   const supabase = await createServerClient()
   const { data: vehicle } = await supabase

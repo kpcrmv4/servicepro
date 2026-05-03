@@ -152,7 +152,12 @@ export default async function JobDetailPage({
           {receptionPhaseStatuses.includes(status) ? (
             <ReceptionStatusActions jobId={job.id as string} currentStatus={status} quotationId={quotationId} />
           ) : (
-            <JobStatusActions jobId={job.id as string} currentStatus={status} />
+            <JobStatusActions
+              jobId={job.id as string}
+              currentStatus={status}
+              holdReason={(job.hold_reason as string) || null}
+              holdUntil={(job.hold_until as string) || null}
+            />
           )}
 
           {/* Additional Work Requests */}
