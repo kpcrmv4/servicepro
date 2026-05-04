@@ -40,15 +40,15 @@ export function ShelfInspector({
   )
 
   return (
-    <div className={cn("rounded-2xl border border-border bg-card p-4 sm:p-5", className)}>
+    <div className={cn("rounded-2xl border border-border bg-card p-3 sm:p-5", className)}>
       {/* Breadcrumb header */}
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-2 sm:items-center sm:gap-3">
         <div className="min-w-0 flex-1">
           <Breadcrumb path={node.path_labels} />
-          <h3 className="mt-1 truncate text-base font-bold sm:text-lg">
+          <h3 className="mt-1 truncate text-sm font-bold sm:text-lg">
             {node.label}
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground sm:text-xs">
             {nodeTypeLabel(node.type)}
             {node.code && ` • ${node.code}`}
           </p>
@@ -57,7 +57,7 @@ export function ShelfInspector({
           <button
             type="button"
             onClick={onBack}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+            className="shrink-0 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted sm:px-3 sm:py-1.5 sm:text-xs"
           >
             ← กลับ
           </button>

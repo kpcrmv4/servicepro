@@ -74,10 +74,10 @@ export function StorageSearch({ onLocationSelected, className }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="ค้นหารหัสหรือชื่ออะไหล่... แสดงตำแหน่งที่จัดเก็บทันที"
-          className="h-8 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          placeholder="ค้นหารหัส/ชื่ออะไหล่..."
+          className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
-        {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />}
       </div>
 
       <AnimatePresence>

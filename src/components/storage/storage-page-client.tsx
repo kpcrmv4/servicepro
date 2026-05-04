@@ -164,11 +164,13 @@ export function StoragePageClient({ buildings, rooms }: Props) {
       {/* Search */}
       <StorageSearch onLocationSelected={handleLocationSelected} />
 
-      {/* Building/Room selectors */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Building/Room selectors — stacked on mobile, side-by-side on desktop */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {buildings.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="mr-1 text-xs text-muted-foreground">อาคาร:</span>
+          <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="shrink-0 pr-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+              อาคาร
+            </span>
             <PillButton
               active={selectedBuildingId === null}
               onClick={() => setSelectedBuildingId(null)}
@@ -182,22 +184,25 @@ export function StoragePageClient({ buildings, rooms }: Props) {
                 onClick={() => setSelectedBuildingId(b.id)}
               >
                 <Building2 className="h-3 w-3" />
-                {b.name}
+                <span className="max-w-[120px] truncate">{b.name}</span>
               </PillButton>
             ))}
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setBuildingDialogOpen(true)}
-              className="h-7 px-2"
+              className="h-7 shrink-0 px-2"
+              aria-label="เพิ่มอาคาร"
             >
               <Plus className="h-3 w-3" />
             </Button>
           </div>
         )}
 
-        <div className="ml-auto flex flex-wrap items-center gap-1">
-          <span className="mr-1 text-xs text-muted-foreground">ห้อง:</span>
+        <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 sm:ml-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 pr-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+            ห้อง
+          </span>
           {visibleRooms.map((r) => (
             <PillButton
               key={r.id}
@@ -208,16 +213,18 @@ export function StoragePageClient({ buildings, rooms }: Props) {
               }}
             >
               <DoorOpen className="h-3 w-3" />
-              {r.name}
+              <span className="max-w-[140px] truncate">{r.name}</span>
             </PillButton>
           ))}
           <Button
             size="sm"
             variant="outline"
             onClick={() => setRoomDialogOpen(true)}
-            className="h-7 px-2"
+            className="h-7 shrink-0 px-2 text-xs"
           >
-            <Plus className="h-3 w-3" /> เพิ่มห้อง
+            <Plus className="h-3 w-3" />
+            <span className="hidden sm:inline">เพิ่มห้อง</span>
+            <span className="sm:hidden">เพิ่ม</span>
           </Button>
         </div>
       </div>
@@ -226,23 +233,32 @@ export function StoragePageClient({ buildings, rooms }: Props) {
         <EmptyRoomState onCreate={() => setRoomDialogOpen(true)} />
       ) : (
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-          <TabsList>
-            <TabsTrigger value="door">
-              <Box className="mr-1.5 h-3.5 w-3.5" /> มุมมอง 3D
+          <TabsList className="w-full overflow-x-auto sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsTrigger value="door" className="shrink-0">
+              <Box className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">มุมมอง 3D</span>
+              <span className="sm:hidden">3D</span>
             </TabsTrigger>
-            <TabsTrigger value="floor">
-              <Map className="mr-1.5 h-3.5 w-3.5" /> ผังพื้น
+            <TabsTrigger value="floor" className="shrink-0">
+              <Map className="mr-1.5 h-3.5 w-3.5" />
+              ผังพื้น
             </TabsTrigger>
-            <TabsTrigger value="audit">
-              <Box className="mr-1.5 h-3.5 w-3.5" /> ประวัติเคลื่อนย้าย
+            <TabsTrigger value="audit" className="shrink-0">
+              <Box className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">ประวัติเคลื่อนย้าย</span>
+              <span className="sm:hidden">ประวัติ</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="door" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{selectedRoom.name}</h3>
-              <Button size="sm" onClick={() => setShelfDialogOpen(true)}>
-                <Plus className="h-4 w-4" /> เพิ่มเชลฟ์
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">
+                {selectedRoom.name}
+              </h3>
+              <Button size="sm" onClick={() => setShelfDialogOpen(true)} className="shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">เพิ่มเชลฟ์</span>
+                <span className="sm:hidden">เพิ่ม</span>
               </Button>
             </div>
 
@@ -282,10 +298,14 @@ export function StoragePageClient({ buildings, rooms }: Props) {
           </TabsContent>
 
           <TabsContent value="floor" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{selectedRoom.name} — ผังพื้น</h3>
-              <Button size="sm" onClick={() => setShelfDialogOpen(true)}>
-                <Plus className="h-4 w-4" /> เพิ่มเชลฟ์
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">
+                {selectedRoom.name} — ผังพื้น
+              </h3>
+              <Button size="sm" onClick={() => setShelfDialogOpen(true)} className="shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">เพิ่มเชลฟ์</span>
+                <span className="sm:hidden">เพิ่ม</span>
               </Button>
             </div>
             <FloorPlanEditor
@@ -363,13 +383,13 @@ function PillButton({
 
 function EmptyRoomState({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/20 px-4 py-16 text-center">
-      <DoorOpen className="mb-3 h-12 w-12 text-muted-foreground/40" />
+    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/20 px-4 py-10 text-center sm:py-16">
+      <DoorOpen className="mb-3 h-10 w-10 text-muted-foreground/40 sm:h-12 sm:w-12" />
       <h3 className="text-base font-semibold">ยังไม่มีห้องเก็บ</h3>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">
+      <p className="mt-1 max-w-md text-xs text-muted-foreground sm:text-sm">
         เริ่มสร้างห้องแรก แล้วเพิ่มเชลฟ์ ตู้ ลิ้นชัก ภายในเพื่อจัดการตำแหน่งสินค้าแบบ 3D
       </p>
-      <Button className="mt-4" onClick={onCreate}>
+      <Button size="lg" className="mt-4 w-full sm:w-auto" onClick={onCreate}>
         <Plus className="h-4 w-4" /> สร้างห้องแรก
       </Button>
     </div>

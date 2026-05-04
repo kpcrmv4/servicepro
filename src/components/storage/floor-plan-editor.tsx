@@ -39,27 +39,28 @@ export function FloorPlanEditor({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-card p-4",
+        "relative overflow-hidden rounded-2xl border border-border bg-card p-3 sm:p-4",
         className,
       )}
     >
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          ผังพื้น (มองจากด้านบน) · {room.width_cm} × {room.depth_cm} cm
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5">
+        <span className="text-[11px] text-muted-foreground sm:text-xs">
+          ผังพื้น (จากด้านบน) · {room.width_cm} × {room.depth_cm} cm
         </span>
         {!readOnly && (
           <span className="text-[11px] text-muted-foreground">
-            🖱️ ลากเชลฟ์เพื่อย้ายตำแหน่ง
+            ลากเชลฟ์เพื่อย้าย
           </span>
         )}
       </div>
 
-      <div className="overflow-auto">
+      <div className="-mx-3 overflow-x-auto px-3 sm:-mx-4 sm:px-4">
         <svg
           width={w + 20}
           height={d + 20}
           viewBox={`-10 -10 ${w + 20} ${d + 20}`}
-          className="block"
+          className="block max-w-full touch-none"
+          style={{ minWidth: w + 20 }}
         >
           {/* Room outline + grid */}
           <defs>

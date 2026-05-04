@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { useIsTabletUp } from "@/hooks/use-media-query"
 import type { StorageRoom, StorageNode, NodePosition } from "@/lib/actions/storage"
 
 // =============================================================================
@@ -45,6 +46,11 @@ export function DoorView({
   const [yaw, setYaw] = React.useState(0) // ±20° rotation around Y
   const [zoom, setZoom] = React.useState(1)
   const dragRef = React.useRef<{ x: number; yaw: number } | null>(null)
+  const isTabletUp = useIsTabletUp()
+
+  // Compute responsive scale: rooms in cm need to fit phone screens (~340px content)
+  // For a 600cm room: desktop 0.5 → 300px; mobile 0.32 → 192px (fits 340px content)
+  const responsiveScale = isTabletUp ? 1 : 0.65
 
   const w = room.width_cm * SCALE
   const d = room.depth_cm * SCALE
@@ -86,8 +92,7 @@ export function DoorView({
   return (
     <div
       className={cn(
-        "relative h-[60vh] min-h-[400px] w-full overflow-hidden rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950",
-        "select-none",
+        "relative h-[50vh] min-h-[320px] w-full touch-none select-none overflow-hidden rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 sm:h-[60vh] sm:min-h-[400px]",
         className,
       )}
       style={{ perspective: "1500px" }}
@@ -97,12 +102,12 @@ export function DoorView({
       onPointerCancel={handlePointerUp}
     >
       {/* Help overlay */}
-      <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-sm">
-        🖱️ ลากซ้าย-ขวาเพื่อหมุนมุมมอง
+      <div className="pointer-events-none absolute left-2 top-2 z-10 rounded-lg bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur-sm sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[11px]">
+        ลากซ้าย-ขวาเพื่อหมุน
       </div>
 
       {/* Yaw indicator */}
-      <div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-sm">
+      <div className="pointer-events-none absolute right-2 top-2 z-10 rounded-lg bg-black/40 px-2 py-0.5 text-[10px] text-white backdrop-blur-sm sm:right-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[11px]">
         {yaw.toFixed(0)}°
       </div>
 
@@ -113,8 +118,8 @@ export function DoorView({
         }}
         animate={{
           // Camera sits at front-center, looking in. Move scene back (translateZ negative)
-          // so it appears we're standing inside.
-          transform: `translate(-50%, -50%) translateZ(${-d / 2}px) rotateY(${yaw}deg) scale(${zoom})`,
+          // so it appears we're standing inside. responsiveScale shrinks for small viewports.
+          transform: `translate(-50%, -50%) translateZ(${-d / 2}px) rotateY(${yaw}deg) scale(${zoom * responsiveScale})`,
         }}
         transition={{ type: "spring", damping: 22, stiffness: 180 }}
       >
