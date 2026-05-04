@@ -121,15 +121,15 @@ function DialogContent({
               "grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-raised)] sm:p-6",
               className,
             )}
+            {...(props as React.ComponentProps<typeof motion.div>)}
             style={{
-              width: "calc(100vw - 2rem)",
+              width: "min(calc(100vw - 2rem), 32rem)",
               ...style,
             }}
             initial={{ opacity: 0, scale: 0.96, x: "-50%", y: "-50%" }}
             animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
             exit={{ opacity: 0, scale: 0.96, x: "-50%", y: "-50%" }}
             transition={{ duration: 0.15 }}
-            {...(props as React.ComponentProps<typeof motion.div>)}
           >
             {children}
             <button
