@@ -1,41 +1,69 @@
 import {
-  DollarSign,
   Wrench,
-  Clock,
   Users,
+  CheckCircle2,
   AlertTriangle,
   Car,
+  Package,
   FileText,
 } from "lucide-react"
 import { cn, formatCurrency } from "@/lib/utils"
-import { getDashboardStats, getRecentJobs } from "@/lib/actions/dashboard"
+import {
+  getDashboardStats,
+  getRecentJobs,
+  getMonthlyJobChart,
+  getTenantInfo,
+} from "@/lib/actions/dashboard"
 import { getParts } from "@/lib/actions/parts"
-import { StatCard } from "@/components/ui/stat-card"
+import { HeroCard } from "@/components/dashboard/hero-card"
+import { QuickStatRow } from "@/components/dashboard/quick-stat-row"
+import { MonthlyJobsChart } from "@/components/dashboard/monthly-jobs-chart"
+import { JobStatusDonut } from "@/components/dashboard/job-status-donut"
 import Link from "next/link"
 
 const statusLabels: Record<string, string> = {
   pending: "รอดำเนินการ",
+  diagnosing: "ตรวจสอบ",
+  quoted: "รออนุมัติ",
+  ready_to_repair: "พร้อมซ่อม",
   in_progress: "กำลังซ่อม",
-  quality_check: "ตรวจสอบ QC",
+  waiting_parts: "รออะไหล่",
+  waiting_insurance: "รอประกัน",
+  on_hold: "พักงาน",
+  quality_check: "ตรวจ QC",
   waiting_pickup: "รอลูกค้ารับ",
   completed: "เสร็จแล้ว",
   cancelled: "ยกเลิก",
 }
 
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-500",
-  in_progress: "bg-blue-500",
+const statusDots: Record<string, string> = {
+  pending: "bg-amber-400",
+  diagnosing: "bg-purple-400",
+  quoted: "bg-blue-400",
+  ready_to_repair: "bg-emerald-400",
+  in_progress: "bg-violet-500",
+  waiting_parts: "bg-orange-400",
+  waiting_insurance: "bg-amber-500",
+  on_hold: "bg-slate-400",
   quality_check: "bg-purple-500",
-  waiting_pickup: "bg-green-500",
-  completed: "bg-emerald-600",
-  cancelled: "bg-red-500",
+  waiting_pickup: "bg-cyan-400",
+  completed: "bg-emerald-500",
+  cancelled: "bg-red-400",
+}
+
+function greetingByHour(h: number): string {
+  if (h < 12) return "อรุณสวัสดิ์"
+  if (h < 17) return "สวัสดีตอนบ่าย"
+  return "สวัสดีตอนเย็น"
 }
 
 export default async function DashboardPage() {
-  const [stats, recentJobs, allParts] = await Promise.all([
+  const [stats, recentJobs, allParts, monthlyChart, tenantInfo] = await Promise.all([
     getDashboardStats(),
-    getRecentJobs(5),
+    getRecentJobs(6),
     getParts(),
+    getMonthlyJobChart(),
+    getTenantInfo(),
   ])
 
   const lowStockParts = allParts.filter(
@@ -43,235 +71,244 @@ export default async function DashboardPage() {
       Number(p.stock_quantity) <= Number(p.min_stock)
   )
 
-  const today = new Date().toLocaleDateString("th-TH", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+  const monthlyJobsCount = monthlyChart.reduce((s, d) => s + d.created, 0)
+  const lastMonthAvg = monthlyJobsCount > 0 ? monthlyJobsCount / new Date().getDate() : 0
+  // Naive trend: compare today's daily run-rate vs the running average.
+  // Real "vs last month" comparison would need historical data — keep
+  // it simple for now so the badge feels alive.
+  const today = new Date().getDate()
+  const todayCount = monthlyChart[today - 1]?.created || 0
+  const trendPercent = lastMonthAvg > 0
+    ? ((todayCount - lastMonthAvg) / lastMonthAvg) * 100
+    : 0
 
-  const kpiCards: Array<{
-    title: string
-    value: string
-    subtitle: string
-    icon: typeof DollarSign
-    tone: "mint" | "purple" | "amber" | "pink"
-  }> = [
-    {
-      title: "รายรับเดือนนี้",
-      value: formatCurrency(stats?.monthlyRevenue || 0),
-      subtitle: `${stats?.pendingInvoicesCount || 0} ใบแจ้งหนี้ค้าง`,
-      icon: DollarSign,
-      tone: "mint",
-    },
-    {
-      title: "งานที่กำลังดำเนินการ",
-      value: String(stats?.activeJobs || 0),
-      subtitle: `${stats?.completedToday || 0} เสร็จวันนี้`,
-      icon: Wrench,
-      tone: "purple",
-    },
-    {
-      title: "งานรอดำเนินการ",
-      value: String(stats?.jobsByStatus?.pending || 0),
-      subtitle: `${stats?.totalJobs || 0} งานทั้งหมด`,
-      icon: Clock,
-      tone: "amber",
-    },
-    {
-      title: "ลูกค้าทั้งหมด",
-      value: String(stats?.customersCount || 0),
-      subtitle: `${stats?.lowStockCount || 0} อะไหล่ใกล้หมด`,
-      icon: Users,
-      tone: "pink",
-    },
-  ]
-
-  const totalJobs = stats?.totalJobs || 0
+  const profile = tenantInfo as
+    | {
+        full_name?: string
+        tenants?: { name?: string; settings?: Record<string, unknown> }
+      }
+    | null
+  const greeting = greetingByHour(new Date().getHours())
+  const userName = profile?.full_name || ""
+  const initials = userName ? userName.charAt(0).toUpperCase() : "?"
+  const shopName =
+    (profile?.tenants?.settings as { brand?: { display_name?: string } })?.brand
+      ?.display_name || profile?.tenants?.name || null
 
   return (
-    <div className="space-y-6">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-2xl font-bold">แดชบอร์ด</h1>
-        <p className="text-sm text-muted-foreground">{today}</p>
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      {/* Hero card */}
+      <HeroCard
+        greeting={`${greeting}${userName ? `, ${userName.split(" ")[0]}` : ""}`}
+        shopName={shopName}
+        monthlyRevenue={stats?.monthlyRevenue || 0}
+        monthlyJobsCount={monthlyJobsCount}
+        trendPercent={trendPercent}
+        initials={initials}
+      />
 
-      {/* KPI Cards — pastel toned */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((card) => (
-          <StatCard
-            key={card.title}
-            title={card.title}
-            value={card.value}
-            subtitle={card.subtitle}
-            icon={card.icon}
-            tone={card.tone}
-          />
-        ))}
-      </div>
+      {/* Quick stats */}
+      <QuickStatRow
+        stats={[
+          {
+            label: "งานที่ดำเนินการ",
+            value: stats?.activeJobs || 0,
+            hint: `เสร็จวันนี้ ${stats?.completedToday || 0}`,
+            icon: Wrench,
+            tone: "purple",
+          },
+          {
+            label: "ลูกค้าทั้งหมด",
+            value: stats?.customersCount || 0,
+            hint: "ในระบบ",
+            icon: Users,
+            tone: "pink",
+          },
+          {
+            label: "งานเสร็จเดือนนี้",
+            value: stats?.jobsByStatus?.completed || 0,
+            hint: `${stats?.totalJobs || 0} งานทั้งหมด`,
+            icon: CheckCircle2,
+            tone: "mint",
+          },
+        ]}
+      />
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Job Status */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="text-lg font-semibold">สถานะงาน</h2>
-          <div className="mt-4 flex items-center justify-center gap-8">
-            <div className="relative flex h-40 w-40 items-center justify-center">
-              <svg viewBox="0 0 36 36" className="h-40 w-40 -rotate-90">
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" className="text-muted" strokeWidth="3" />
-                {totalJobs > 0 && (
-                  <>
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" className="text-blue-500" strokeWidth="3"
-                      strokeDasharray={`${((stats?.jobsByStatus?.in_progress || 0) / totalJobs) * 100} ${100 - ((stats?.jobsByStatus?.in_progress || 0) / totalJobs) * 100}`}
-                      strokeDashoffset="0" />
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" className="text-yellow-500" strokeWidth="3"
-                      strokeDasharray={`${((stats?.jobsByStatus?.pending || 0) / totalJobs) * 100} ${100 - ((stats?.jobsByStatus?.pending || 0) / totalJobs) * 100}`}
-                      strokeDashoffset={`-${((stats?.jobsByStatus?.in_progress || 0) / totalJobs) * 100}`} />
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" className="text-emerald-500" strokeWidth="3"
-                      strokeDasharray={`${((stats?.jobsByStatus?.completed || 0) / totalJobs) * 100} ${100 - ((stats?.jobsByStatus?.completed || 0) / totalJobs) * 100}`}
-                      strokeDashoffset={`-${(((stats?.jobsByStatus?.in_progress || 0) + (stats?.jobsByStatus?.pending || 0)) / totalJobs) * 100}`} />
-                  </>
-                )}
-              </svg>
-              <div className="absolute text-center">
-                <p className="text-3xl font-bold">{totalJobs}</p>
-                <p className="text-xs text-muted-foreground">งานทั้งหมด</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {Object.entries(stats?.jobsByStatus || {}).map(([key, count]) => (
-                <div key={key} className="flex items-center gap-2 text-sm">
-                  <div className={cn("h-3 w-3 rounded-full", statusColors[key] || "bg-gray-400")} />
-                  <span className="text-muted-foreground">{statusLabels[key] || key}</span>
-                  <span className="font-semibold ml-auto">{count as number}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Monthly chart */}
+      <MonthlyJobsChart data={monthlyChart} />
 
-        {/* Finance Summary */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="text-lg font-semibold">สรุปการเงินเดือนนี้</h2>
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between rounded-lg bg-emerald-50 p-4">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
-                <span className="text-sm font-medium">รายรับ</span>
-              </div>
-              <span className="text-lg font-bold text-emerald-600">
-                {formatCurrency(stats?.monthlyRevenue || 0)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg bg-amber-50 p-4">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-amber-600" />
-                <span className="text-sm font-medium">ค้างชำระ</span>
-              </div>
-              <span className="text-lg font-bold text-amber-600">
-                {formatCurrency(stats?.pendingAmount || 0)}
-              </span>
-            </div>
+      {/* Donut + Pending invoices */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+        <JobStatusDonut jobsByStatus={stats?.jobsByStatus || {}} />
+
+        {/* Finance summary */}
+        <div className="rounded-3xl bg-card p-4 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold sm:text-lg">การเงิน</h2>
             <Link
               href="/dashboard/finance"
-              className="block text-center text-sm text-primary hover:underline"
+              className="text-xs text-primary hover:underline"
             >
-              ดูรายละเอียดการเงิน →
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Recent Jobs */}
-        <div className="rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 className="text-lg font-semibold">งานล่าสุด</h2>
-            <Link href="/dashboard/jobs" className="text-sm text-primary hover:underline">
               ดูทั้งหมด →
             </Link>
           </div>
-          <div className="divide-y divide-border">
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between rounded-2xl bg-pastel-mint p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/70 dark:bg-black/30">
+                  <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">รายรับเดือนนี้</p>
+                  <p className="text-base font-bold">{formatCurrency(stats?.monthlyRevenue || 0)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-2xl bg-pastel-amber p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/70 dark:bg-black/30">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">ค้างชำระ</p>
+                  <p className="text-base font-bold">{formatCurrency(stats?.pendingAmount || 0)}</p>
+                </div>
+              </div>
+              <span className="rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-semibold dark:bg-black/30">
+                {stats?.pendingInvoicesCount || 0} ใบ
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent jobs + Low stock */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+        {/* Recent Jobs */}
+        <div className="rounded-3xl bg-card p-4 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold sm:text-lg">งานล่าสุด</h2>
+            <Link
+              href="/dashboard/jobs"
+              className="text-xs text-primary hover:underline"
+            >
+              ดูทั้งหมด →
+            </Link>
+          </div>
+          <div className="mt-3 space-y-2">
             {recentJobs.length === 0 ? (
-              <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+              <div className="py-6 text-center text-sm text-muted-foreground">
                 ยังไม่มีงาน
               </div>
             ) : (
-              recentJobs.map((job: Record<string, unknown>) => (
-                <Link
-                  key={job.id as string}
-                  href={`/dashboard/jobs/${job.id}`}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <div className={cn("h-2 w-2 rounded-full shrink-0", statusColors[job.status as string] || "bg-gray-400")} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-muted-foreground">{job.job_number as string}</span>
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-                        {job.type === 'maintenance' ? 'เช็คระยะ' : job.type === 'repair' ? 'ซ่อม' : job.type === 'insurance' ? 'ประกัน' : job.type as string}
-                      </span>
+              recentJobs.map((job: Record<string, unknown>) => {
+                const customer = job.customers as Record<string, unknown> | null
+                const vehicle = job.vehicles as Record<string, unknown> | null
+                const technician = job.assigned_user as Record<string, unknown> | null
+                const status = job.status as string
+                return (
+                  <Link
+                    key={job.id as string}
+                    href={`/dashboard/jobs/${job.id}`}
+                    className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-muted/60"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-purple text-violet-600 dark:bg-pastel-purple dark:text-violet-300">
+                      <Car className="h-5 w-5" />
                     </div>
-                    <p className="text-sm font-medium truncate">
-                      {(job.customers as Record<string, unknown>)?.name as string || '-'}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Car className="h-3 w-3" />
-                      <span className="truncate">
-                        {(job.vehicles as Record<string, unknown>)?.license_plate as string}{' '}
-                        {(job.vehicles as Record<string, unknown>)?.brand as string}{' '}
-                        {(job.vehicles as Record<string, unknown>)?.model as string}
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                          {job.job_number as string}
+                        </span>
+                        <span
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            statusDots[status] || "bg-muted-foreground",
+                          )}
+                        />
+                      </div>
+                      <p className="truncate text-sm font-semibold">
+                        {(customer?.name as string) || "-"}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {(vehicle?.license_plate as string) || ""}{" "}
+                        {(vehicle?.brand as string) || ""}{" "}
+                        {(vehicle?.model as string) || ""}
+                      </p>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-medium">{statusLabels[job.status as string] || job.status as string}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {(job.assigned_user as Record<string, unknown>)?.full_name as string || 'ยังไม่กำหนด'}
-                    </p>
-                  </div>
-                </Link>
-              ))
+                    <div className="shrink-0 text-right">
+                      <p className="text-[11px] font-medium">
+                        {statusLabels[status] || status}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {(technician?.full_name as string) || "ยังไม่กำหนด"}
+                      </p>
+                    </div>
+                  </Link>
+                )
+              })
             )}
           </div>
         </div>
 
-        {/* Low Stock Parts */}
-        <div className="rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 className="text-lg font-semibold">อะไหล่ใกล้หมด</h2>
-            <AlertTriangle className="h-5 w-5 text-warning" />
+        {/* Low stock */}
+        <div className="rounded-3xl bg-card p-4 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
+              อะไหล่ใกล้หมด
+              {lowStockParts.length > 0 && (
+                <span className="rounded-full bg-pastel-rose px-2 py-0.5 text-[11px] font-semibold text-red-600">
+                  {lowStockParts.length}
+                </span>
+              )}
+            </h2>
+            <Link
+              href="/dashboard/inventory"
+              className="text-xs text-primary hover:underline"
+            >
+              ดูทั้งหมด →
+            </Link>
           </div>
-          <div className="divide-y divide-border">
+          <div className="mt-3 space-y-2">
             {lowStockParts.length === 0 ? (
-              <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+              <div className="py-6 text-center text-sm text-muted-foreground">
                 ไม่มีอะไหล่ใกล้หมด
               </div>
             ) : (
               lowStockParts.slice(0, 5).map((part: Record<string, unknown>) => (
-                <div key={part.id as string} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium">{part.name as string}</p>
-                    <p className="text-xs text-muted-foreground">{part.part_number as string}</p>
+                <div
+                  key={part.id as string}
+                  className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-muted/60"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-amber text-amber-600 dark:text-amber-300">
+                    <Package className="h-5 w-5" />
                   </div>
-                  <div className="text-right">
-                    <p className={cn(
-                      "text-sm font-bold",
-                      Number(part.stock_quantity) <= 2 ? "text-error" : "text-warning"
-                    )}>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">
+                      {part.name as string}
+                    </p>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {(part.part_number as string) || "-"}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p
+                      className={cn(
+                        "text-sm font-bold",
+                        Number(part.stock_quantity) <= 2
+                          ? "text-red-600"
+                          : "text-amber-600",
+                      )}
+                    >
                       เหลือ {part.stock_quantity as number}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">ขั้นต่ำ {part.min_stock as number}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      ขั้นต่ำ {part.min_stock as number}
+                    </p>
                   </div>
                 </div>
               ))
             )}
-          </div>
-          <div className="border-t border-border px-5 py-3">
-            <Link href="/dashboard/inventory" className="text-sm text-primary hover:underline">
-              ดูทั้งหมด →
-            </Link>
           </div>
         </div>
       </div>
