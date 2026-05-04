@@ -168,7 +168,7 @@ export function CreateRoomDialog({
             </FormField>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="ชื่อห้อง" required htmlFor="room-name">
               <Input id="room-name" name="name" placeholder="ห้องอะไหล่หลัก" required />
             </FormField>
@@ -178,7 +178,7 @@ export function CreateRoomDialog({
           </div>
 
           <FormSection title="ขนาดห้อง" description="หน่วย cm — ใช้คำนวณมุมมอง 3D" variant="plain">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <FormField label="กว้าง" htmlFor="w">
                 <Input id="w" name="width_cm" type="number" defaultValue={600} />
               </FormField>
@@ -305,7 +305,7 @@ export function CreateShelfDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="รหัส" required htmlFor="code">
               <Input id="code" name="code" placeholder="S1, A, R-01" required />
             </FormField>
@@ -330,7 +330,7 @@ export function CreateShelfDialog({
           </FormField>
 
           <FormSection title="ขนาด (cm)" description="สำหรับ render 3D" variant="plain">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <FormField label="กว้าง" htmlFor="w">
                 <Input id="w" name="width_cm" type="number" defaultValue={100} />
               </FormField>
@@ -359,7 +359,7 @@ export function CreateShelfDialog({
             </label>
 
             {createGrid && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <FormField label="ชั้น (rows)" htmlFor="rows">
                   <Input id="rows" name="rows" type="number" defaultValue={4} min={1} />
                 </FormField>
