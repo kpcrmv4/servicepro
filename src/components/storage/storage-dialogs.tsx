@@ -22,7 +22,6 @@ import {
   createNode,
   generateChildren,
   type StorageBuilding,
-  type StorageRoom,
   type StorageNode,
   type NodeType,
   type ChildLayout,

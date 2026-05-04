@@ -45,11 +45,8 @@
   --color-pastel-amber: var(--pastel-amber);
   --color-pastel-rose: var(--pastel-rose);
 
-  /* Kanit covers Latin + Thai with matched glyph metrics — no font mixing,
-     no fallback to Inter rendering Thai. Includes ฿ glyph so currency
-     formatting reads cleanly. var(--font-kanit) is bound by next/font
-     in layout.tsx; fallbacks only used if Google Fonts is unreachable. */
-  --font-sans: var(--font-kanit), "Kanit", system-ui, sans-serif;
+  /* Bound by next/font in layout.tsx; fallbacks only used if Google Fonts is unreachable. */
+  --font-sans: var(--font-noto-sans-thai), "Noto Sans Thai", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
   /* Radius — 4-step deterministic scale + back-compat 2xl/3xl */

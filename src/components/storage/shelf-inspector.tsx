@@ -1,13 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { ChevronRight, Package, Layers, Boxes } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { ChevronRight, Package, Boxes } from "lucide-react"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { StorageNode } from "@/lib/actions/storage"
-import { listPlacementsForNode, listNodesForRoom } from "@/lib/actions/storage"
+import { listPlacementsForNode } from "@/lib/actions/storage"
 
 // =============================================================================
 // ShelfInspector — front-on grid view of one node + drill-down to descendants.
@@ -70,7 +70,7 @@ export function ShelfInspector({
       ) : (
         <ChildrenGrid
           parent={node}
-          children={directChildren}
+          nodes={directChildren}
           highlightNodeIds={highlightNodeIds}
           onDrillDown={onDrillDown}
         />
@@ -101,19 +101,19 @@ function Breadcrumb({ path }: { path: string[] }) {
 
 interface ChildrenGridProps {
   parent: StorageNode
-  children: StorageNode[]
+  nodes: StorageNode[]
   highlightNodeIds?: Set<string>
   onDrillDown?: (n: StorageNode) => void
 }
 
-function ChildrenGrid({ parent, children, highlightNodeIds, onDrillDown }: ChildrenGridProps) {
+function ChildrenGrid({ parent, nodes, highlightNodeIds, onDrillDown }: ChildrenGridProps) {
   const layout = parent.child_layout
 
   if (layout?.mode === "grid") {
     return (
       <GridView
         layout={layout}
-        children={children}
+        nodes={nodes}
         highlightNodeIds={highlightNodeIds}
         onDrillDown={onDrillDown}
       />
@@ -123,7 +123,7 @@ function ChildrenGrid({ parent, children, highlightNodeIds, onDrillDown }: Child
   // Free-form / no layout: render as card grid
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-      {children.map((child) => (
+      {nodes.map((child) => (
         <button
           key={child.id}
           type="button"
@@ -144,12 +144,12 @@ function ChildrenGrid({ parent, children, highlightNodeIds, onDrillDown }: Child
 
 interface GridViewProps {
   layout: NonNullable<StorageNode["child_layout"]>
-  children: StorageNode[]
+  nodes: StorageNode[]
   highlightNodeIds?: Set<string>
   onDrillDown?: (n: StorageNode) => void
 }
 
-function GridView({ layout, children, highlightNodeIds, onDrillDown }: GridViewProps) {
+function GridView({ layout, nodes, highlightNodeIds, onDrillDown }: GridViewProps) {
   const rows = layout.rows ?? 1
   const cols = layout.cols ?? 1
   const layers = layout.layers ?? 1
@@ -157,13 +157,13 @@ function GridView({ layout, children, highlightNodeIds, onDrillDown }: GridViewP
 
   const cellMap = React.useMemo(() => {
     const m = new Map<string, StorageNode>()
-    for (const c of children) {
+    for (const c of nodes) {
       const p = c.position as { row?: number; col?: number; layer?: number }
       const key = `${p.layer ?? 1}:${p.row ?? 1}:${p.col ?? 1}`
       m.set(key, c)
     }
     return m
-  }, [children])
+  }, [nodes])
 
   return (
     <div className="space-y-3">

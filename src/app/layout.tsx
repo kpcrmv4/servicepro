@@ -1,17 +1,14 @@
 import type { Metadata, Viewport } from "next"
-import { Kanit } from "next/font/google"
+import { Noto_Sans_Thai } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { I18nProvider } from "@/components/i18n-provider"
 import { getServerLocale, loadMessages } from "@/lib/i18n/locale"
 import "./globals.css"
 
-// Kanit — Thai-first geometric sans with matched Latin design.
-// Single font for both scripts so weight/x-height/glyph metrics line
-// up everywhere (no more Inter-renders-Thai-while-Figtree-renders-Latin).
-// Includes ฿ glyph natively so currency formatting reads cleanly.
-const kanit = Kanit({
+// Noto Sans Thai keeps Thai text readable across dense dashboard screens.
+const notoSansThai = Noto_Sans_Thai({
   subsets: ["latin", "thai"],
-  variable: "--font-kanit",
+  variable: "--font-noto-sans-thai",
   display: "swap",
   weight: ["300", "400", "500", "600", "700"],
 })
@@ -56,7 +53,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
-      <body className={`${kanit.variable} antialiased`}>
+      <body className={`${notoSansThai.variable} antialiased`}>
         <I18nProvider locale={locale} messages={messages}>
           <Providers>{children}</Providers>
         </I18nProvider>

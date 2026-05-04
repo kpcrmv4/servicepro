@@ -66,7 +66,11 @@ export function StorageSearch({ onLocationSelected, className }: Props) {
   }, [])
 
   return (
-    <div ref={containerRef} className={cn("relative w-full max-w-xl", className)}>
+    <div
+      ref={containerRef}
+      className={cn("relative w-full max-w-xl", className)}
+      style={{ width: "min(100%, 36rem)" }}
+    >
       <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-[var(--shadow-resting)]">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input

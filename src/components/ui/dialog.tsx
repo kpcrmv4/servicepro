@@ -38,10 +38,11 @@ function Dialog({
 
 function DialogTrigger({
   children,
-  asChild,
+  asChild: _asChild,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {
   const { setOpen } = React.useContext(DialogContext)
+  void _asChild
   return (
     <button type="button" onClick={() => setOpen(true)} {...props}>
       {children}
@@ -59,6 +60,7 @@ function DialogPortal({ children }: { children: React.ReactNode }) {
 function DialogContent({
   children,
   className,
+  style,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   const { open, setOpen } = React.useContext(DialogContext)
@@ -114,11 +116,15 @@ function DialogContent({
             aria-modal="true"
             className={cn(
               "fixed left-1/2 top-1/2 z-50",
-              "w-[calc(100vw-2rem)] max-w-lg",
+              "min-w-0 max-w-lg",
               "max-h-[calc(100vh-2rem)] overflow-y-auto",
               "grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-raised)] sm:p-6",
               className,
             )}
+            style={{
+              width: "calc(100vw - 2rem)",
+              ...style,
+            }}
             initial={{ opacity: 0, scale: 0.96, x: "-50%", y: "-50%" }}
             animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
             exit={{ opacity: 0, scale: 0.96, x: "-50%", y: "-50%" }}

@@ -176,6 +176,7 @@ function DraggableShelf({
     start: { x: number; y: number }
     origin: { x: number; y: number }
   } | null>(null)
+  const didDragRef = React.useRef(false)
 
   function handlePointerDown(e: React.PointerEvent<SVGGElement>) {
     if (readOnly) return
@@ -188,6 +189,7 @@ function DraggableShelf({
       start: { x: e.clientX, y: e.clientY },
       origin: { x: cx, y: cz },
     }
+    didDragRef.current = false
     ;(e.target as SVGGElement).setPointerCapture(e.pointerId)
   }
 
@@ -196,6 +198,9 @@ function DraggableShelf({
     e.stopPropagation()
     const dx = e.clientX - dragRef.current.start.x
     const dy = e.clientY - dragRef.current.start.y
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      didDragRef.current = true
+    }
     const newX = Math.max(sw / 2, Math.min(roomWidth - sw / 2, dragRef.current.origin.x + dx))
     const newZ = Math.max(sd / 2, Math.min(roomDepth - sd / 2, dragRef.current.origin.y + dy))
     onDragEnd(newX, newZ)
@@ -205,10 +210,6 @@ function DraggableShelf({
     dragRef.current = null
   }
 
-  const justClick =
-    dragRef.current === null ||
-    (Math.abs((dragPos?.x ?? cx) - cx) < 2 && Math.abs((dragPos?.z ?? cz) - cz) < 2)
-
   return (
     <g
       onPointerDown={handlePointerDown}
@@ -216,10 +217,11 @@ function DraggableShelf({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onClick={(e) => {
-        if (justClick) {
+        if (!didDragRef.current) {
           e.stopPropagation()
           onClick()
         }
+        didDragRef.current = false
       }}
       style={{ cursor: readOnly ? "pointer" : "grab" }}
     >
