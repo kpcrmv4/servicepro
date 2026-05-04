@@ -13,6 +13,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { toast } from '@/components/ui/toast'
 import { createPart, updatePart, deletePart } from '@/lib/actions/parts'
 import { formatCurrency } from '@/lib/utils'
+import { PartPlacementsTab } from '@/components/storage/part-placements-tab'
 import { Trash2, Hash, Tag, MapPin, Barcode, Image as ImageIcon } from 'lucide-react'
 
 interface PartDialogProps {
@@ -241,6 +242,16 @@ export function PartDialog({
               </FormField>
             </div>
           </FormSection>
+
+          {isEdit && editPart?.id ? (
+            <FormSection
+              title="ตำแหน่งจัดเก็บ (3D)"
+              description="กำหนดเชลฟ์/ช่องหลายตำแหน่งได้ — ระบบบันทึกการเคลื่อนย้ายอัตโนมัติ"
+              variant="plain"
+            >
+              <PartPlacementsTab partId={editPart.id as string} />
+            </FormSection>
+          ) : null}
 
           <FormSection title="อื่นๆ" variant="plain" collapsible defaultOpen={false}>
             <div className="grid gap-3 sm:grid-cols-2">

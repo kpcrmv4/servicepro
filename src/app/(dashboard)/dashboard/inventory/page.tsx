@@ -119,14 +119,26 @@ export default async function InventoryPage({
     <div className="space-y-6">
       <PageHeader
         title="คลังอะไหล่"
+        breadcrumb={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "คลังอะไหล่" },
+        ]}
         action={
-          <InventoryActions
-            parts={parts}
-            categories={categories}
-            suppliers={suppliers}
-            jobs={jobs}
-            expiringBatches={expiringBatches}
-          />
+          <div className="flex items-center gap-2">
+            <a
+              href="/dashboard/inventory/storage"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+            >
+              📦 คลังจัดเก็บ 3D
+            </a>
+            <InventoryActions
+              parts={parts}
+              categories={categories}
+              suppliers={suppliers}
+              jobs={jobs}
+              expiringBatches={expiringBatches}
+            />
+          </div>
         }
       />
 
