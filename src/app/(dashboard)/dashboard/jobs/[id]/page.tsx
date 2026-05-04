@@ -8,6 +8,8 @@ import { notFound } from "next/navigation"
 import { JobStatusActions } from "@/components/jobs/job-status-actions"
 import { ReceptionStatusActions } from "@/components/reception/reception-status-actions"
 import { LineLinkCard } from "@/components/reception/line-link-card"
+import { AdditionalWorkPanel } from "@/components/jobs/additional-work-panel"
+import { listAdditionalWorkForJob } from "@/lib/actions/additional-work"
 
 const receptionPhaseStatuses = ["pending", "diagnosing", "quoted"]
 
@@ -28,9 +30,10 @@ export default async function JobDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [job, quotation] = await Promise.all([
+  const [job, quotation, additionalWork] = await Promise.all([
     getJob(id),
     getQuotationByJobId(id),
+    listAdditionalWorkForJob(id),
   ])
 
   const customerId = job?.customer_id as string | undefined
@@ -149,8 +152,29 @@ export default async function JobDetailPage({
           {receptionPhaseStatuses.includes(status) ? (
             <ReceptionStatusActions jobId={job.id as string} currentStatus={status} quotationId={quotationId} />
           ) : (
-            <JobStatusActions jobId={job.id as string} currentStatus={status} />
+            <JobStatusActions
+              jobId={job.id as string}
+              currentStatus={status}
+              holdReason={(job.hold_reason as string) || null}
+              holdUntil={(job.hold_until as string) || null}
+            />
           )}
+
+          {/* Additional Work Requests */}
+          <AdditionalWorkPanel
+            jobId={job.id as string}
+            jobNumber={job.job_number as string}
+            initialItems={additionalWork as Array<{
+              id: string;
+              description: string;
+              estimated_cost: number;
+              photo_url: string | null;
+              status: string;
+              customer_notified_at: string | null;
+              customer_responded_at: string | null;
+              created_at: string;
+            }>}
+          />
 
           {/* Quotation Info */}
           {quotation && (

@@ -185,7 +185,7 @@ export async function approveInspectionItems(
     await supabase.from('job_timeline').insert({
       job_id: jobId,
       status: 'pending',
-      note: `สร้างจากการอนุมัติรายงานตรวจสภาพโดยลูกค้า (${approvedCount} รายการอนุมัติ${declinedItems.length > 0 ? `, ${declinedItems.length} รายการปฏิเสธ` : ''})`,
+      notes: `สร้างจากการอนุมัติรายงานตรวจสภาพโดยลูกค้า (${approvedCount} รายการอนุมัติ${declinedItems.length > 0 ? `, ${declinedItems.length} รายการปฏิเสธ` : ''})`,
       created_by: inspectedBy,
     })
 

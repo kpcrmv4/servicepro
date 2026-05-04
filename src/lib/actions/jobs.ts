@@ -119,7 +119,11 @@ export async function updateJobStatus(id: string, status: string, notes?: string
   const statusNotesMap: Record<string, string> = {
     diagnosing: 'เริ่มตรวจสอบสภาพรถ',
     quoted: 'เสนอราคาลูกค้า',
+    ready_to_repair: 'พร้อมเข้าคิวซ่อม',
     in_progress: 'เริ่มดำเนินการซ่อม',
+    waiting_parts: 'พักงาน — รออะไหล่',
+    waiting_insurance: 'พักงาน — รอประกันอนุมัติ',
+    on_hold: 'พักงาน — รอข้อมูลเพิ่มเติม',
     quality_check: 'ส่งตรวจสอบคุณภาพ',
     waiting_pickup: 'ซ่อมเสร็จ - รอลูกค้ารับ',
     completed: 'ลูกค้ารับรถแล้ว - เสร็จสิ้น',
@@ -129,13 +133,137 @@ export async function updateJobStatus(id: string, status: string, notes?: string
   // Add timeline entry
   await supabase.from('job_timeline').insert({
     job_id: id,
-    status: status as 'pending' | 'diagnosing' | 'quoted' | 'in_progress' | 'quality_check' | 'waiting_pickup' | 'completed' | 'cancelled',
+    status,
     notes: notes || statusNotesMap[status] || `เปลี่ยนสถานะเป็น ${status}`,
     created_by: userInfo.id,
   })
 
+  // NOTE: Customer-facing LINE notification is no longer fired here.
+  // The UI calls sendCustomerLineForEvent() explicitly (with optional
+  // confirmation modal) so each shop can opt in/out per event.
+
   revalidatePath('/dashboard/jobs')
   revalidatePath('/dashboard')
+  return { success: true }
+}
+
+// ============================================================
+// Hold / resume actions
+// ============================================================
+
+const HOLD_STATUSES = ['waiting_parts', 'waiting_insurance', 'on_hold'] as const
+type HoldStatus = (typeof HOLD_STATUSES)[number]
+
+const HOLD_LABELS: Record<HoldStatus, string> = {
+  waiting_parts: 'รออะไหล่',
+  waiting_insurance: 'รอประกันอนุมัติ',
+  on_hold: 'พักงาน',
+}
+
+/**
+ * Pause a job and remember what status to come back to.
+ * - reason: short customer-facing reason ("รออะไหล่ Brake Pad MK-101")
+ * - until:  expected resume date (parts ETA, insurance approval target)
+ *
+ * Stores status_before_hold so resumeJob can restore the previous state
+ * (e.g. in_progress) instead of guessing.
+ */
+export async function holdJob(input: {
+  jobId: string
+  status: HoldStatus
+  reason: string
+  until?: string  // 'YYYY-MM-DD'
+}) {
+  if (!HOLD_STATUSES.includes(input.status)) {
+    return { error: 'invalid hold status' }
+  }
+  if (!input.reason?.trim()) return { error: 'กรุณากรอกเหตุผล' }
+
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('id, status, tenant_id, status_before_hold')
+    .eq('id', input.jobId)
+    .eq('tenant_id', userInfo.tenant_id)
+    .single()
+  if (!job) return { error: 'ไม่พบงานซ่อม' }
+
+  // Don't overwrite status_before_hold if we're already in a hold state.
+  const statusBefore =
+    HOLD_STATUSES.includes(job.status as HoldStatus)
+      ? job.status_before_hold
+      : job.status
+
+  const { error } = await supabase
+    .from('jobs')
+    .update({
+      status: input.status,
+      hold_reason: input.reason.trim(),
+      hold_until: input.until || null,
+      status_before_hold: statusBefore,
+    })
+    .eq('id', input.jobId)
+    .eq('tenant_id', userInfo.tenant_id)
+  if (error) return { error: error.message }
+
+  await supabase.from('job_timeline').insert({
+    job_id: input.jobId,
+    status: input.status,
+    notes:
+      `${HOLD_LABELS[input.status]} — ${input.reason.trim()}` +
+      (input.until ? ` (คาดว่ากลับมาทำต่อ ${input.until})` : ''),
+    created_by: userInfo.id,
+  })
+
+  // Customer LINE notification fires from the UI (confirmation modal
+  // or auto, per tenant settings).
+
+  revalidatePath(`/dashboard/jobs/${input.jobId}`)
+  revalidatePath('/dashboard/queue')
+  return { success: true }
+}
+
+/** Resume a held job back to its previous status (or in_progress as fallback). */
+export async function resumeJob(jobId: string, note?: string) {
+  const supabase = await createClient()
+  const userInfo = await getUserInfo()
+  if (!userInfo?.tenant_id) return { error: 'ไม่พบข้อมูลร้าน' }
+
+  const { data: job } = await supabase
+    .from('jobs')
+    .select('id, status, status_before_hold')
+    .eq('id', jobId)
+    .eq('tenant_id', userInfo.tenant_id)
+    .single()
+  if (!job) return { error: 'ไม่พบงานซ่อม' }
+
+  const next = (job.status_before_hold as string) || 'in_progress'
+  const { error } = await supabase
+    .from('jobs')
+    .update({
+      status: next,
+      hold_reason: null,
+      hold_until: null,
+      status_before_hold: null,
+    })
+    .eq('id', jobId)
+    .eq('tenant_id', userInfo.tenant_id)
+  if (error) return { error: error.message }
+
+  await supabase.from('job_timeline').insert({
+    job_id: jobId,
+    status: next,
+    notes: note || `กลับมาทำต่อ — สถานะ: ${next}`,
+    created_by: userInfo.id,
+  })
+
+  // Customer LINE notification fires from the UI when needed.
+
+  revalidatePath(`/dashboard/jobs/${jobId}`)
+  revalidatePath('/dashboard/queue')
   return { success: true }
 }
 

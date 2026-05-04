@@ -73,6 +73,45 @@ export async function uploadInspectionPhoto(
   }
 }
 
+/**
+ * Generic photo upload to a configurable storage bucket. Returns the
+ * public URL on success. Used by additional-work, reception check-in,
+ * and any other ad-hoc photo capture that doesn't have its own
+ * specialized handler.
+ */
+export async function uploadGenericPhoto(
+  formData: FormData,
+): Promise<{ url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File | null;
+    const bucket = (formData.get('bucket') as string | null) || 'job-photos';
+    const folder = (formData.get('folder') as string | null) || 'misc';
+
+    if (!file) return { error: 'ไม่พบไฟล์' };
+    if (file.size > MAX_FILE_SIZE) return { error: 'ไฟล์ใหญ่เกิน 5MB' };
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return { error: 'รองรับเฉพาะไฟล์ JPG, PNG, WebP, HEIC เท่านั้น' };
+    }
+
+    const supabase = await createClient();
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, { cacheControl: '3600', upsert: false });
+    if (upErr) {
+      console.error('Storage upload error:', upErr);
+      return { error: 'อัปโหลดรูปล้มเหลว กรุณาลองใหม่' };
+    }
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+    return { url: urlData.publicUrl };
+  } catch (err) {
+    console.error('uploadGenericPhoto error:', err);
+    return { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' };
+  }
+}
+
 export async function deleteInspectionPhoto(
   itemId: string
 ): Promise<{ error?: string }> {

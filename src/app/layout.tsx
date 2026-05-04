@@ -1,20 +1,17 @@
 import type { Metadata, Viewport } from "next"
-import localFont from "next/font/local"
-import { Noto_Sans_Thai } from "next/font/google"
+import { Figtree, Noto_Sans_Thai } from "next/font/google"
 import { Providers } from "@/components/providers"
+import { I18nProvider } from "@/components/i18n-provider"
+import { getServerLocale, loadMessages } from "@/lib/i18n/locale"
 import "./globals.css"
 
-const sans = localFont({
-  src: [
-    {
-      path: "../fonts/Inter-Variable.woff2",
-      style: "normal",
-    },
-  ],
+// Figtree — primary sans for Latin text. Modern, friendly, slightly
+// rounded — matches the reference design.
+const figtree = Figtree({
+  subsets: ["latin"],
   variable: "--font-sans",
-  fallback: ["system-ui", "Segoe UI", "sans-serif"],
   display: "swap",
-  preload: true,
+  weight: ["300", "400", "500", "600", "700", "800"],
 })
 
 const notoSansThai = Noto_Sans_Thai({
@@ -50,20 +47,24 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getServerLocale()
+  const messages = await loadMessages(locale)
   return (
-    <html lang="th" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
-      <body className={`${sans.variable} ${notoSansThai.variable} antialiased`}>
-        <Providers>{children}</Providers>
+      <body className={`${figtree.variable} ${notoSansThai.variable} antialiased`}>
+        <I18nProvider locale={locale} messages={messages}>
+          <Providers>{children}</Providers>
+        </I18nProvider>
       </body>
     </html>
   )

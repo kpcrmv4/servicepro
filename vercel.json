@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/subscription-renewals",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/smart-recall",
+      "schedule": "0 10 * * *"
+    }
+  ]
+}

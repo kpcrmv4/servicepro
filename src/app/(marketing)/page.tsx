@@ -224,8 +224,7 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* Dashboard preview - Screenshot placeholder
-              TODO: เปลี่ยน SCREENSHOT_IMAGES.heroDashboard เป็น URL จริงจาก Supabase Storage */}
+          {/* Dashboard preview */}
           <div className="hidden lg:block">
             <div className="relative">
               {/* Glow effect */}
@@ -446,7 +445,6 @@ function ScreenshotShowcase() {
       id: "dashboard",
       title: "Dashboard สรุปภาพรวม",
       desc: "ดูยอดรายรับ งานซ่อม สถานะสต็อก และประสิทธิภาพอู่ในหน้าเดียว",
-      // TODO: เปลี่ยนเป็น URL รูปจริงจาก Supabase Storage
       image: SCREENSHOT_IMAGES.dashboard,
       icon: Monitor,
     },
@@ -532,7 +530,7 @@ function ScreenshotShowcase() {
                 <span className="text-xs text-muted-foreground">app.kpservicepro.com/{screenshots[current].id}</span>
               </div>
             </div>
-            {/* Screenshot image container - TODO: เปลี่ยนรูปจริงใน SCREENSHOT_IMAGES */}
+            {/* Screenshot image container */}
             <div
               className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-background"
               onMouseEnter={() => setIsAutoPlaying(false)}
@@ -784,12 +782,10 @@ function DVISection() {
                   </div>
                 ))}
               </div>
-              {/* DVI photo grid - TODO: เปลี่ยนเป็นรูปจริงจาก Supabase Storage */}
+              {/* DVI photo grid */}
               <div className="mt-4 grid grid-cols-3 gap-2">
                 {["ยางสึก", "ผ้าเบรค", "ไฟหน้า"].map((label) => (
                   <div key={label} className="aspect-square rounded-lg bg-muted flex items-center justify-center relative overflow-hidden">
-                    {/* TODO: เปลี่ยนเป็น Image component เมื่อมีรูปจริง
-                    <Image src="URL_รูปจริง" alt={label} fill className="object-cover" /> */}
                     <div className="text-center">
                       <Camera className="h-5 w-5 mx-auto text-muted-foreground" />
                       <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -1023,7 +1019,6 @@ function TestimonialsSection() {
       role: "เจ้าของอู่ช่างเก่ง Auto Service",
       text: "ก่อนใช้ KPServicePro จดทุกอย่างในสมุด หาข้อมูลลำบากมาก ตอนนี้ทุกอย่างอยู่ในระบบ ลูกค้าก็ชอบที่ได้รับแจ้งเตือนผ่าน LINE",
       rating: 5,
-      // TODO: เปลี่ยนเป็น URL รูปโปรไฟล์จริงจาก Supabase Storage
       image: SCREENSHOT_IMAGES.testimonial1,
     },
     {
@@ -1064,7 +1059,7 @@ function TestimonialsSection() {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{t.text}&rdquo;</p>
               <div className="mt-4 flex items-center gap-3">
-                {/* Profile image - TODO: เปลี่ยน SCREENSHOT_IMAGES.testimonialN เป็น URL รูปจริง */}
+                {/* Profile image */}
                 {t.image ? (
                   <div className="relative h-10 w-10 rounded-full overflow-hidden">
                     <Image

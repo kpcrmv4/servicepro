@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { getServiceReminders, createServiceReminder, updateServiceReminder, deleteServiceReminder, getReminderStats } from '@/lib/actions/reminders';
-import { Bell, Plus, Send, Trash2, Calendar, AlertTriangle, CheckCircle, Clock, X, MessageCircle } from 'lucide-react';
+import { scanSmartRecall, sendPendingReminders } from '@/lib/actions/smart-recall';
+import { Bell, Plus, Send, Trash2, Calendar, AlertTriangle, CheckCircle, Clock, X, MessageCircle, Sparkles } from 'lucide-react';
 
 export default function RemindersPage() {
   const [reminders, setReminders] = useState<Record<string, unknown>[]>([]);
@@ -96,13 +97,26 @@ export default function RemindersPage() {
           </h1>
           <p className="text-gray-500 mt-1">Smart Service Reminders - แจ้งเตือนลูกค้าเมื่อถึงรอบบริการ</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2.5 rounded-lg hover:bg-orange-700 transition-colors font-medium"
-        >
-          <Plus className="h-5 w-5" />
-          สร้างแจ้งเตือนใหม่
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={async () => {
+              const r = await scanSmartRecall();
+              const s = await sendPendingReminders();
+              alert(`Smart Recall: สร้างใหม่ ${r.created} รายการ, ส่ง LINE ${s.sent} รายการ`);
+              loadData();
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+          >
+            <Sparkles className="h-4 w-4" /> รัน Smart Recall
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2.5 rounded-lg hover:bg-orange-700 transition-colors font-medium"
+          >
+            <Plus className="h-5 w-5" />
+            สร้างแจ้งเตือนใหม่
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

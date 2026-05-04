@@ -6,6 +6,7 @@ import {
   Building2,
   Users,
   CreditCard,
+  Receipt,
   LogOut,
   Shield,
 } from "lucide-react"
@@ -15,6 +16,7 @@ const navItems = [
   { href: "/super-admin/tenants", label: "ร้านค้า (Tenants)", icon: Building2 },
   { href: "/super-admin/users", label: "ผู้ใช้ทั้งหมด", icon: Users },
   { href: "/super-admin/subscriptions", label: "Subscriptions", icon: CreditCard },
+  { href: "/super-admin/subscriptions/invoices", label: "ใบแจ้งหนี้สมาชิก", icon: Receipt },
 ]
 
 export default async function SuperAdminLayout({

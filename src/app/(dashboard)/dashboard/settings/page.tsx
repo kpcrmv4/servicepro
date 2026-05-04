@@ -4,10 +4,15 @@ import {
   Save,
   Bell,
   MessageSquare,
+  CreditCard,
+  CalendarClock,
+  Send,
+  Palette,
+  Globe,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/layout/page-header"
-import { getShopSettings, getTeamMembers } from "@/lib/actions/settings"
+import { getShopSettings, getTeamMembers, updateShopSettings } from "@/lib/actions/settings"
 import Link from "next/link"
 
 const roleLabels: Record<string, string> = {
@@ -34,8 +39,13 @@ export default async function SettingsPage({
   const sections = [
     { key: "shop", label: "ข้อมูลร้าน", icon: Building2 },
     { key: "team", label: "สมาชิกทีม", icon: Users },
-    { key: "notifications", label: "การแจ้งเตือน", icon: Bell, href: "/dashboard/settings/notifications" },
-    { key: "line", label: "LINE OA", icon: MessageSquare, href: "/dashboard/settings/line" },
+    { key: "branding", label: "Brand & สีของร้าน", icon: Palette, href: "/dashboard/settings/branding" },
+    { key: "booking", label: "จองคิวออนไลน์", icon: CalendarClock, href: "/dashboard/settings/booking" },
+    { key: "customer-notifications", label: "แจ้งเตือนลูกค้า (LINE)", icon: Send, href: "/dashboard/settings/customer-notifications" },
+    { key: "notifications", label: "แจ้งเตือนทีมงาน", icon: Bell, href: "/dashboard/settings/notifications" },
+    { key: "line", label: "LINE OA (ลูกค้า)", icon: MessageSquare, href: "/dashboard/settings/line" },
+    { key: "domain", label: "Custom Domain", icon: Globe, href: "/dashboard/settings/domain" },
+    { key: "subscription", label: "สมาชิก & ต่ออายุ", icon: CreditCard, href: "/dashboard/settings/subscription" },
   ]
 
   return (
@@ -68,77 +78,139 @@ export default async function SettingsPage({
 
         {/* Content */}
         <div className="flex-1">
-          {activeSection === "shop" && (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-lg font-semibold mb-4">ข้อมูลร้าน</h2>
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">ชื่อร้าน</label>
-                  <input
-                    type="text"
-                    name="name"
-                    defaultValue={shop?.name || ""}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">ที่อยู่</label>
-                  <textarea
-                    name="address"
-                    defaultValue={shop?.address || ""}
-                    rows={3}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">เบอร์โทร</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      defaultValue={shop?.phone || ""}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">เลขประจำตัวผู้เสียภาษี</label>
-                    <input
-                      type="text"
-                      name="tax_id"
-                      defaultValue={shop?.tax_id || ""}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">แผน</label>
-                    <input
-                      type="text"
-                      value={shop?.plan || "free"}
-                      disabled
-                      className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">สถานะ</label>
-                    <input
-                      type="text"
-                      value={shop?.subscription_status || "-"}
-                      disabled
-                      className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 text-sm"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          {activeSection === "shop" && (() => {
+            const shopSettings = (shop?.settings as Record<string, unknown>) || {}
+            const bankAccount = (shopSettings.bank_account as Record<string, unknown>) || {}
+            return (
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold mb-4">ข้อมูลร้าน</h2>
+                <form
+                  action={async (formData) => {
+                    'use server'
+                    await updateShopSettings(formData)
+                  }}
+                  className="space-y-4"
                 >
-                  <Save className="h-4 w-4" /> บันทึก
-                </button>
-              </form>
-            </div>
-          )}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">ชื่อร้าน</label>
+                    <input
+                      type="text"
+                      name="name"
+                      defaultValue={shop?.name || ""}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">ที่อยู่</label>
+                    <textarea
+                      name="address"
+                      defaultValue={shop?.address || ""}
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">เบอร์โทร</label>
+                      <input
+                        type="text"
+                        name="phone"
+                        defaultValue={shop?.phone || ""}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">เลขประจำตัวผู้เสียภาษี</label>
+                      <input
+                        type="text"
+                        name="tax_id"
+                        defaultValue={shop?.tax_id || ""}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">รับชำระเงินจากลูกค้า</h3>
+                      <p className="text-xs text-muted-foreground">
+                        ใช้สำหรับสร้าง QR PromptPay บนใบเสร็จ และแจ้งเลขบัญชีให้ลูกค้าโอน
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">PromptPay (เบอร์โทร 10 หลัก หรือ ID 13 หลัก)</label>
+                      <input
+                        type="text"
+                        name="promptpay_id"
+                        defaultValue={(shopSettings.promptpay_id as string) || ""}
+                        placeholder="0812345678"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">ชื่อธนาคาร</label>
+                        <input
+                          type="text"
+                          name="bank_name"
+                          defaultValue={(bankAccount.bank_name as string) || ""}
+                          placeholder="SCB / KTB / BBL"
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">เลขบัญชี</label>
+                        <input
+                          type="text"
+                          name="bank_account"
+                          defaultValue={(bankAccount.account_number as string) || ""}
+                          placeholder="123-4-56789-0"
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">ชื่อบัญชี</label>
+                        <input
+                          type="text"
+                          name="bank_account_name"
+                          defaultValue={(bankAccount.account_name as string) || ""}
+                          placeholder="บจก. ..."
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">แผน</label>
+                      <input
+                        type="text"
+                        value={shop?.plan || "free"}
+                        disabled
+                        className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">สถานะ</label>
+                      <input
+                        type="text"
+                        value={shop?.subscription_status || "-"}
+                        disabled
+                        className="w-full rounded-lg border border-border bg-muted px-3 py-2.5 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Save className="h-4 w-4" /> บันทึก
+                  </button>
+                </form>
+              </div>
+            )
+          })()}
 
           {activeSection === "team" && (
             <div className="rounded-xl border border-border bg-card">
