@@ -87,6 +87,52 @@ export async function getRecentJobs(limit = 10) {
   return jobs || []
 }
 
+/**
+ * Returns daily job counts for the current month — one row per day,
+ * with separate counts for jobs created and jobs completed. Used by
+ * the dashboard line chart.
+ */
+export async function getMonthlyJobChart() {
+  const supabase = await createClient()
+  const tenantId = await getTenantId()
+  if (!tenantId) return []
+
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const monthStart = new Date(year, month, 1)
+  const monthEnd = new Date(year, month + 1, 1)
+
+  const { data: jobs } = await supabase
+    .from('jobs')
+    .select('id, status, created_at, actual_completion')
+    .eq('tenant_id', tenantId)
+    .or(
+      `created_at.gte.${monthStart.toISOString()},actual_completion.gte.${monthStart.toISOString()}`,
+    )
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const buckets: Array<{ day: number; created: number; completed: number; label: string }> = []
+  for (let d = 1; d <= daysInMonth; d++) {
+    buckets.push({ day: d, created: 0, completed: 0, label: String(d) })
+  }
+
+  for (const j of jobs || []) {
+    const createdAt = j.created_at ? new Date(j.created_at as string) : null
+    if (createdAt && createdAt >= monthStart && createdAt < monthEnd) {
+      const idx = createdAt.getDate() - 1
+      if (idx >= 0 && idx < buckets.length) buckets[idx].created++
+    }
+    const completedAt = j.actual_completion ? new Date(j.actual_completion as string) : null
+    if (completedAt && completedAt >= monthStart && completedAt < monthEnd) {
+      const idx = completedAt.getDate() - 1
+      if (idx >= 0 && idx < buckets.length) buckets[idx].completed++
+    }
+  }
+
+  return buckets
+}
+
 export async function getTenantInfo() {
   const supabase = await createClient()
   const userInfo = await getUserInfo()
