@@ -67,21 +67,36 @@ function DialogContent({
     <AnimatePresence>
       {open && (
         <DialogPortal>
+          {/* Backdrop — separate fixed layer so the centering wrapper isn't
+              forced into flex/grid that can shrink the dialog on mobile. */}
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            onClick={() => setOpen(false)}
+          />
+
+          {/* Centering wrapper — grid place-items-center is more reliable
+              than flex for centered children that need w-full. p-4 guarantees
+              the dialog never touches viewport edges. overflow-y-auto allows
+              long forms to scroll on small screens. */}
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setOpen(false)}
           >
-            <div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setOpen(false)}
-            />
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
               className={cn(
-                "relative z-50 grid w-full max-w-[calc(100vw-2rem)] sm:max-w-lg gap-4 rounded-lg border border-border bg-card p-6 shadow-lg",
-                className
+                "relative z-50 grid w-full max-w-lg gap-4 rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-raised)] sm:p-6",
+                className,
               )}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -91,8 +106,10 @@ function DialogContent({
             >
               {children}
               <button
-                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                type="button"
+                className="absolute right-3 top-3 rounded-md p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:right-4 sm:top-4"
                 onClick={() => setOpen(false)}
+                aria-label="ปิด"
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>

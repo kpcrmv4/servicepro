@@ -382,14 +382,19 @@ function PillButton({
 }
 
 function EmptyRoomState({ onCreate }: { onCreate: () => void }) {
+  // NOTE: avoid `flex flex-col items-center` here. items-center makes flex
+  // children shrink to their content width, which causes Thai paragraphs
+  // (with spaces between phrases) to wrap one phrase per line — looking
+  // like a vertical word column. Use plain block layout + text-center +
+  // mx-auto on width-constrained children instead.
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/20 px-4 py-10 text-center sm:py-16">
-      <DoorOpen className="mb-3 h-10 w-10 text-muted-foreground/40 sm:h-12 sm:w-12" />
+    <div className="rounded-2xl border-2 border-dashed border-border bg-muted/20 px-4 py-10 text-center sm:py-16">
+      <DoorOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40 sm:h-12 sm:w-12" />
       <h3 className="text-base font-semibold">ยังไม่มีห้องเก็บ</h3>
-      <p className="mt-1 max-w-md text-xs text-muted-foreground sm:text-sm">
+      <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground sm:text-sm">
         เริ่มสร้างห้องแรก แล้วเพิ่มเชลฟ์ ตู้ ลิ้นชัก ภายในเพื่อจัดการตำแหน่งสินค้าแบบ 3D
       </p>
-      <Button size="lg" className="mt-4 w-full sm:w-auto" onClick={onCreate}>
+      <Button size="lg" className="mt-4 w-full sm:mt-5 sm:w-auto" onClick={onCreate}>
         <Plus className="h-4 w-4" /> สร้างห้องแรก
       </Button>
     </div>
