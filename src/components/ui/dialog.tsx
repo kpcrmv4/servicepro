@@ -100,23 +100,28 @@ function DialogContent({
           {/*
             Dialog — absolute-positioned with translate centering (Radix
             pattern). Independent of any flex/grid parent so it never
-            shrinks unexpectedly on mobile. Width = (100vw - 2rem) capped
-            at max-w-lg. max-h with internal scroll keeps tall forms
-            usable on short viewports.
+            shrinks unexpectedly on mobile.
+
+            ⚠️ Translate must come from framer-motion's `x`/`y` props,
+            NOT Tailwind utility classes. framer-motion writes
+            `transform: none` (or its own transform string) to inline
+            style and that overrides any Tailwind `-translate-x-*` /
+            `-translate-y-*` utilities, which would leave the dialog
+            anchored at left:50%/top:50% with no offset back to center.
           */}
           <motion.div
             role="dialog"
             aria-modal="true"
             className={cn(
-              "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+              "fixed left-1/2 top-1/2 z-50",
               "w-[calc(100vw-2rem)] max-w-lg",
               "max-h-[calc(100vh-2rem)] overflow-y-auto",
               "grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-raised)] sm:p-6",
               className,
             )}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.96, x: "-50%", y: "-50%" }}
+            animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+            exit={{ opacity: 0, scale: 0.96, x: "-50%", y: "-50%" }}
             transition={{ duration: 0.15 }}
             {...(props as React.ComponentProps<typeof motion.div>)}
           >
