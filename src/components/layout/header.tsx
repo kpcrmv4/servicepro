@@ -14,7 +14,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { NotificationBell } from "@/components/notifications/notification-bell"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle, ThemeToggleCompact } from "@/components/theme-toggle"
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -96,19 +96,20 @@ export function Header({ onMenuClick }: HeaderProps) {
     : "?"
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 px-4 lg:px-6 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 px-3 lg:h-16 lg:gap-3 lg:px-6 bg-background/80 backdrop-blur-md">
       {/* Mobile menu */}
       <button
         onClick={onMenuClick}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-card border border-border text-muted-foreground hover:text-foreground lg:hidden"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card border border-border text-muted-foreground hover:text-foreground lg:hidden"
         aria-label="เมนู"
       >
         <Menu className="h-4 w-4" />
       </button>
 
-      {/* Search — pill input */}
+      {/* Search — pill on desktop, icon-only on mobile */}
       <div className="flex-1 max-w-md">
-        <div className="relative">
+        {/* Desktop search input */}
+        <div className="relative hidden sm:block">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
@@ -118,9 +119,23 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {/* Theme toggle (light / system / dark) */}
-        <ThemeToggle />
+      <div className="flex items-center gap-1.5 lg:gap-2">
+        {/* Mobile search icon — placeholder for future expandable search */}
+        <button
+          type="button"
+          aria-label="ค้นหา"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground sm:hidden"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+
+        {/* Theme toggle: compact icon on mobile, 3-state pill on desktop */}
+        <div className="lg:hidden">
+          <ThemeToggleCompact />
+        </div>
+        <div className="hidden lg:block">
+          <ThemeToggle />
+        </div>
 
         {/* Notifications */}
         <NotificationBell />
@@ -129,7 +144,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div ref={userMenuRef} className="relative">
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 rounded-full bg-card border border-border pl-1 pr-3 py-1 hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-2 rounded-full bg-card border border-border p-1 md:pr-3 hover:bg-muted/50 transition-colors"
           >
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
               {initials}
