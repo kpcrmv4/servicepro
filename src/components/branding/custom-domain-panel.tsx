@@ -17,8 +17,8 @@ import {
   requestCustomDomain,
   verifyMyDomain,
   removeCustomDomain,
-  type DomainStatus,
 } from '@/lib/actions/custom-domain';
+import type { DomainStatus } from '@/lib/actions/custom-domain-pricing';
 
 interface Props {
   initialAddon: { id: string; status: string; price: number; created_at: string } | null;

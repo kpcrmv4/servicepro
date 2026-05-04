@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { getUserInfo } from '@/lib/actions/auth-helpers';
+import { rateLimit } from '@/lib/security/rate-limit';
 
 function service() {
   return createServiceClient(
@@ -238,6 +239,17 @@ export async function createPublicOrder(input: PublicOrderInput) {
   if (!input.customerName?.trim()) return { error: 'กรุณากรอกชื่อ' };
   if (!input.customerPhone?.trim()) return { error: 'กรุณากรอกเบอร์โทร' };
   if (!input.items || input.items.length === 0) return { error: 'ตะกร้าสินค้าว่าง' };
+
+  // Per-phone rate limit: 10 orders per hour
+  const rl = await rateLimit(
+    'shop_order:phone',
+    `${input.tenantSlug}:${input.customerPhone}`,
+    10,
+    '1h',
+  );
+  if (!rl.ok) {
+    return { error: `สั่งซื้อบ่อยเกินไป กรุณาลองใหม่ในอีก ${rl.retryAfter ?? 60} วินาที` };
+  }
 
   const supabase = service();
   const { data: tenant } = await supabase

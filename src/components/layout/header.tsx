@@ -44,7 +44,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadProfile()
+    void loadProfile()
+    // loadProfile is declared below — hoisted by `function`, safe here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadProfile() {

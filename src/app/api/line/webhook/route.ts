@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit';
 
 // Use service role key for webhook (no user context)
 function getSupabase() {
@@ -12,6 +13,16 @@ function getSupabase() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Per-IP throttling — LINE retries on 5xx so we want to absorb a
+    // moderate burst without blocking legitimate webhook deliveries.
+    const rl = await rateLimit('line_webhook:ip', getClientIp(request.headers), 120, '1m');
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'rate_limited' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      );
+    }
+
     const body = await request.text();
     const signature = request.headers.get('x-line-signature');
 

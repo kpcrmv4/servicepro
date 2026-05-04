@@ -1,10 +1,7 @@
 import { Globe } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
-import {
-  getActiveDomainAddon,
-  getDomainStatus,
-  CUSTOM_DOMAIN_PRICE_YEARLY,
-} from '@/lib/actions/custom-domain';
+import { getActiveDomainAddon, getDomainStatus } from '@/lib/actions/custom-domain';
+import { CUSTOM_DOMAIN_PRICE_YEARLY } from '@/lib/actions/custom-domain-pricing';
 import { CustomDomainPanel } from '@/components/branding/custom-domain-panel';
 import { createClient } from '@/lib/supabase/server';
 

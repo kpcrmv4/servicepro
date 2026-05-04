@@ -162,7 +162,9 @@ export function BottomNav() {
   const moreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadUserRole()
+    void loadUserRole()
+    // loadUserRole is declared below — hoisted by `function`, safe here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

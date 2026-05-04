@@ -10,11 +10,7 @@ import {
   getDnsInstructions,
 } from '@/lib/vercel/domains';
 
-// ============================================================
-// Pricing for the custom_domain add-on (THB/year).
-// Bumps here automatically reflect in the renewal invoice + UI.
-// ============================================================
-export const CUSTOM_DOMAIN_PRICE_YEARLY = 1000;
+import { CUSTOM_DOMAIN_PRICE_YEARLY, type DomainStatus } from './custom-domain-pricing';
 
 // Validate a hostname like "www.mygarage.com" or "mygarage.com"
 const DOMAIN_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
@@ -123,16 +119,6 @@ export async function cancelCustomDomainAddon() {
 // ============================================================
 // Custom domain — request / verify
 // ============================================================
-
-export interface DomainStatus {
-  domain: string | null;
-  status: string | null;
-  verified: boolean;
-  verification?: Array<{ type: string; domain: string; value: string; reason: string }>;
-  dns_instructions?: ReturnType<typeof getDnsInstructions>;
-  added_at: string | null;
-  verified_at: string | null;
-}
 
 export async function getDomainStatus(): Promise<DomainStatus | null> {
   const ctx = await ensureOwner();

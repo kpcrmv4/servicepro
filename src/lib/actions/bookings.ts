@@ -10,6 +10,7 @@ import {
   isDateWithinWindow,
   generateTimeSlots,
 } from '@/lib/booking/config';
+import { rateLimit } from '@/lib/security/rate-limit';
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
   maintenance: 'เช็คระยะ/บำรุงรักษา',
@@ -59,6 +60,20 @@ function validate(input: CreateBookingInput): string | null {
 export async function submitPublicBooking(input: CreateBookingInput) {
   const v = validate(input);
   if (v) return { error: v };
+
+  // Per-phone rate limit: 5 submissions per hour. Stops drive-by spam
+  // without blocking legitimate edits/retries.
+  const rl = await rateLimit(
+    'booking:phone',
+    `${input.tenantSlug ?? 'default'}:${input.customerPhone}`,
+    5,
+    '1h',
+  );
+  if (!rl.ok) {
+    return {
+      error: `ส่งคำขอบ่อยเกินไป กรุณาลองใหม่ในอีก ${rl.retryAfter ?? 60} วินาที`,
+    };
+  }
 
   const supabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

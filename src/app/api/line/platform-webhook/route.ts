@@ -22,6 +22,7 @@ import {
   getPlatformLineProfile,
   buildOwnerLinkConfirmationFlex,
 } from '@/lib/line/platform-line';
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit';
 
 function service() {
   return createClient(
@@ -35,6 +36,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit('platform_webhook:ip', getClientIp(req.headers), 120, '1m');
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'rate_limited' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+    );
+  }
+
   const raw = await req.text();
   const signature = req.headers.get('x-line-signature') || '';
   if (!verifyPlatformSignature(raw, signature)) {
