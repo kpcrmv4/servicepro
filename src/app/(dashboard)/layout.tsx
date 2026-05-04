@@ -32,7 +32,7 @@ export default function DashboardLayout({
       >
         <Header onMenuClick={() => setMobileOpen(true)} />
 
-        <main className="flex-1 p-4 pb-24 lg:p-6 lg:pb-6">
+        <main className="flex-1 p-2 pb-24 sm:p-4 lg:p-6 lg:pb-6">
           {children}
         </main>
       </div>
