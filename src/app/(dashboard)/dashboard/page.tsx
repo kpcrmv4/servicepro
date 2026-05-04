@@ -92,39 +92,44 @@ export default async function DashboardPage() {
 
   const monthlyJobsCount = monthlyChart.reduce((s, d) => s + d.created, 0)
 
-  // Stat tiles — pastel 2x2 on mobile, 4-col on desktop
+  // Stat tiles — white card with pastel gradient edge accent
   const stats4 = [
     {
       label: "งานวันนี้",
       value: stats?.activeJobs ?? 0,
       hint: `เสร็จวันนี้ ${stats?.completedToday ?? 0}`,
       icon: Wrench,
-      bg: "bg-pastel-purple",
+      iconBg: "bg-pastel-purple",
       iconColor: "text-violet-600 dark:text-violet-300",
+      // RGB tuple for the pastel gradient + glow (matches CSS var --pastel-purple)
+      pastel: "232, 226, 255",
     },
     {
       label: "รายรับเดือนนี้",
       value: formatCurrency(stats?.monthlyRevenue ?? 0),
       hint: `${monthlyJobsCount} งาน`,
       icon: TrendingUp,
-      bg: "bg-pastel-mint",
+      iconBg: "bg-pastel-mint",
       iconColor: "text-emerald-600 dark:text-emerald-300",
+      pastel: "221, 245, 229",
     },
     {
       label: "ลูกค้าทั้งหมด",
       value: stats?.customersCount ?? 0,
       hint: "ในระบบ",
       icon: Users,
-      bg: "bg-pastel-pink",
+      iconBg: "bg-pastel-pink",
       iconColor: "text-pink-600 dark:text-pink-300",
+      pastel: "255, 226, 238",
     },
     {
       label: "ค้างชำระ",
       value: formatCurrency(stats?.pendingAmount ?? 0),
       hint: `${stats?.pendingInvoicesCount ?? 0} ใบ`,
       icon: AlertTriangle,
-      bg: "bg-pastel-amber",
+      iconBg: "bg-pastel-amber",
       iconColor: "text-amber-600 dark:text-amber-300",
+      pastel: "255, 239, 213",
     },
   ]
 
@@ -153,29 +158,51 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
-      {/* Stat tiles 2x2 mobile / 4-col desktop */}
+      {/* Stat tiles — white card with pastel gradient edge + soft pastel glow */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats4.map((s) => {
           const Icon = s.icon
           return (
             <div
               key={s.label}
-              className={cn(
-                "rounded-2xl p-3 shadow-[var(--shadow-resting)] sm:p-4",
-                s.bg,
-              )}
+              className="relative overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-resting)] sm:p-4"
+              style={{
+                boxShadow: `0 4px 24px -8px rgba(${s.pastel}, 0.9), var(--shadow-resting)`,
+              }}
             >
-              <div className="flex items-start justify-between">
+              {/* Top edge gradient accent — pastel fade */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-1"
+                style={{
+                  background: `linear-gradient(to right, rgb(${s.pastel}), rgba(${s.pastel}, 0.4))`,
+                }}
+              />
+              {/* Soft corner gradient wash */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-40 blur-2xl"
+                style={{ background: `rgb(${s.pastel})` }}
+              />
+
+              <div className="relative flex items-start justify-between">
                 <div className="min-w-0">
                   <p className="text-[11px] text-muted-foreground">{s.label}</p>
                   <p className="mt-1 text-xl font-bold sm:text-2xl">{s.value}</p>
                 </div>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 dark:bg-black/30">
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                    s.iconBg,
+                  )}
+                >
                   <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", s.iconColor)} />
                 </div>
               </div>
               {s.hint && (
-                <p className="mt-2 text-[11px] text-muted-foreground">{s.hint}</p>
+                <p className="relative mt-2 text-[11px] text-muted-foreground">
+                  {s.hint}
+                </p>
               )}
             </div>
           )

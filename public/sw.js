@@ -10,7 +10,7 @@
 // Also handles: Push notifications, background sync queue stub.
 // =============================================================================
 
-const VERSION = 'v4-2026-05-04-framer-translate'
+const VERSION = 'v5-2026-05-04-kanit-pastel-edge'
 const PRECACHE = `kpservicepro-precache-${VERSION}`
 const RUNTIME_HTML = `kpservicepro-runtime-html-${VERSION}`
 const RUNTIME_STATIC = `kpservicepro-runtime-static-${VERSION}`
