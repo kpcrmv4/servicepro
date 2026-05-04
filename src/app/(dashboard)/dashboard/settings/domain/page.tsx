@@ -28,8 +28,13 @@ export default async function DomainSettingsPage() {
       <PageHeader
         title="Custom Domain"
         description={`ใช้โดเมนของร้านเอง (เช่น www.mygarage.com) — ${CUSTOM_DOMAIN_PRICE_YEARLY.toLocaleString()}฿/ปี (ไม่รวมค่าโดเมน)`}
+        breadcrumb={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "ตั้งค่า", href: "/dashboard/settings" },
+          { title: "Custom Domain" },
+        ]}
       />
-      <div className="px-4 sm:px-6">
+      <div className="px-3 pb-6 sm:px-6">
         <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Globe className="h-4 w-4" />
           <span>SSL อัตโนมัติ (Let&apos;s Encrypt) ผ่าน Vercel</span>

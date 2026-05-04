@@ -50,7 +50,14 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="รายงาน" />
+      <PageHeader
+        title="รายงาน"
+        description="ภาพรวมรายรับ รายจ่าย และงานซ่อม"
+        breadcrumb={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "รายงาน" },
+        ]}
+      />
 
       {/* Financial Summary */}
       <div className="grid grid-cols-1 gap-3 px-4 sm:gap-4 sm:px-6 md:grid-cols-3">

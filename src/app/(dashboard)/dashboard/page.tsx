@@ -6,7 +6,10 @@ import {
   Car,
   Package,
   FileText,
+  Plus,
+  TrendingUp,
 } from "lucide-react"
+import Link from "next/link"
 import { cn, formatCurrency } from "@/lib/utils"
 import {
   getDashboardStats,
@@ -15,11 +18,8 @@ import {
   getTenantInfo,
 } from "@/lib/actions/dashboard"
 import { getParts } from "@/lib/actions/parts"
-import { HeroCard } from "@/components/dashboard/hero-card"
-import { QuickStatRow } from "@/components/dashboard/quick-stat-row"
 import { MonthlyJobsChart } from "@/components/dashboard/monthly-jobs-chart"
 import { JobStatusDonut } from "@/components/dashboard/job-status-donut"
-import Link from "next/link"
 
 const statusLabels: Record<string, string> = {
   pending: "รอดำเนินการ",
@@ -68,19 +68,8 @@ export default async function DashboardPage() {
 
   const lowStockParts = allParts.filter(
     (p: { stock_quantity: number; min_stock: number }) =>
-      Number(p.stock_quantity) <= Number(p.min_stock)
+      Number(p.stock_quantity) <= Number(p.min_stock),
   )
-
-  const monthlyJobsCount = monthlyChart.reduce((s, d) => s + d.created, 0)
-  const lastMonthAvg = monthlyJobsCount > 0 ? monthlyJobsCount / new Date().getDate() : 0
-  // Naive trend: compare today's daily run-rate vs the running average.
-  // Real "vs last month" comparison would need historical data — keep
-  // it simple for now so the badge feels alive.
-  const today = new Date().getDate()
-  const todayCount = monthlyChart[today - 1]?.created || 0
-  const trendPercent = lastMonthAvg > 0
-    ? ((todayCount - lastMonthAvg) / lastMonthAvg) * 100
-    : 0
 
   const profile = tenantInfo as
     | {
@@ -90,102 +79,123 @@ export default async function DashboardPage() {
     | null
   const greeting = greetingByHour(new Date().getHours())
   const userName = profile?.full_name || ""
-  const initials = userName ? userName.charAt(0).toUpperCase() : "?"
+  const firstName = userName.split(" ")[0]
   const shopName =
     (profile?.tenants?.settings as { brand?: { display_name?: string } })?.brand
       ?.display_name || profile?.tenants?.name || null
 
+  const todayDateLabel = new Date().toLocaleDateString("th-TH", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  })
+
+  const monthlyJobsCount = monthlyChart.reduce((s, d) => s + d.created, 0)
+
+  // Stat tiles — pastel 2x2 on mobile, 4-col on desktop
+  const stats4 = [
+    {
+      label: "งานวันนี้",
+      value: stats?.activeJobs ?? 0,
+      hint: `เสร็จวันนี้ ${stats?.completedToday ?? 0}`,
+      icon: Wrench,
+      bg: "bg-pastel-purple",
+      iconColor: "text-violet-600 dark:text-violet-300",
+    },
+    {
+      label: "รายรับเดือนนี้",
+      value: formatCurrency(stats?.monthlyRevenue ?? 0),
+      hint: `${monthlyJobsCount} งาน`,
+      icon: TrendingUp,
+      bg: "bg-pastel-mint",
+      iconColor: "text-emerald-600 dark:text-emerald-300",
+    },
+    {
+      label: "ลูกค้าทั้งหมด",
+      value: stats?.customersCount ?? 0,
+      hint: "ในระบบ",
+      icon: Users,
+      bg: "bg-pastel-pink",
+      iconColor: "text-pink-600 dark:text-pink-300",
+    },
+    {
+      label: "ค้างชำระ",
+      value: formatCurrency(stats?.pendingAmount ?? 0),
+      hint: `${stats?.pendingInvoicesCount ?? 0} ใบ`,
+      icon: AlertTriangle,
+      bg: "bg-pastel-amber",
+      iconColor: "text-amber-600 dark:text-amber-300",
+    },
+  ]
+
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Hero card */}
-      <HeroCard
-        greeting={`${greeting}${userName ? `, ${userName.split(" ")[0]}` : ""}`}
-        shopName={shopName}
-        monthlyRevenue={stats?.monthlyRevenue || 0}
-        monthlyJobsCount={monthlyJobsCount}
-        trendPercent={trendPercent}
-        initials={initials}
-      />
+    <div className="space-y-4 px-3 pb-6 sm:space-y-5 sm:px-6">
+      {/* Greeting bar — flat, no big hero gradient */}
+      <header className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-end sm:justify-between sm:pt-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {todayDateLabel}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">
+            {greeting}
+            {firstName ? `, ${firstName}` : ""} <span className="text-2xl">👋</span>
+          </h1>
+          {shopName && (
+            <p className="mt-0.5 text-sm text-muted-foreground">{shopName}</p>
+          )}
+        </div>
+        <Link
+          href="/dashboard/jobs/new"
+          className="inline-flex h-11 items-center gap-2 self-start rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-primary)] transition-colors hover:bg-primary/90 sm:h-10"
+        >
+          <Plus className="h-4 w-4" />
+          สร้างงานซ่อม
+        </Link>
+      </header>
 
-      {/* Quick stats */}
-      <QuickStatRow
-        stats={[
-          {
-            label: "งานที่ดำเนินการ",
-            value: stats?.activeJobs || 0,
-            hint: `เสร็จวันนี้ ${stats?.completedToday || 0}`,
-            icon: Wrench,
-            tone: "purple",
-          },
-          {
-            label: "ลูกค้าทั้งหมด",
-            value: stats?.customersCount || 0,
-            hint: "ในระบบ",
-            icon: Users,
-            tone: "pink",
-          },
-          {
-            label: "งานเสร็จเดือนนี้",
-            value: stats?.jobsByStatus?.completed || 0,
-            hint: `${stats?.totalJobs || 0} งานทั้งหมด`,
-            icon: CheckCircle2,
-            tone: "mint",
-          },
-        ]}
-      />
-
-      {/* Monthly chart */}
-      <MonthlyJobsChart data={monthlyChart} />
-
-      {/* Donut + Pending invoices */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
-        <JobStatusDonut jobsByStatus={stats?.jobsByStatus || {}} />
-
-        {/* Finance summary */}
-        <div className="rounded-3xl bg-card p-4 shadow-sm sm:p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold sm:text-lg">การเงิน</h2>
-            <Link
-              href="/dashboard/finance"
-              className="text-xs text-primary hover:underline"
+      {/* Stat tiles 2x2 mobile / 4-col desktop */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats4.map((s) => {
+          const Icon = s.icon
+          return (
+            <div
+              key={s.label}
+              className={cn(
+                "rounded-2xl p-3 shadow-[var(--shadow-resting)] sm:p-4",
+                s.bg,
+              )}
             >
-              ดูทั้งหมด →
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-2xl bg-pastel-mint p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/70 dark:bg-black/30">
-                  <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground">{s.label}</p>
+                  <p className="mt-1 text-xl font-bold sm:text-2xl">{s.value}</p>
                 </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">รายรับเดือนนี้</p>
-                  <p className="text-base font-bold">{formatCurrency(stats?.monthlyRevenue || 0)}</p>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 dark:bg-black/30">
+                  <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", s.iconColor)} />
                 </div>
               </div>
+              {s.hint && (
+                <p className="mt-2 text-[11px] text-muted-foreground">{s.hint}</p>
+              )}
             </div>
-            <div className="flex items-center justify-between rounded-2xl bg-pastel-amber p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/70 dark:bg-black/30">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-300" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">ค้างชำระ</p>
-                  <p className="text-base font-bold">{formatCurrency(stats?.pendingAmount || 0)}</p>
-                </div>
-              </div>
-              <span className="rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-semibold dark:bg-black/30">
-                {stats?.pendingInvoicesCount || 0} ใบ
-              </span>
-            </div>
-          </div>
+          )
+        })}
+      </div>
+
+      {/* Charts — chart 60% / donut 40% on desktop */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <MonthlyJobsChart data={monthlyChart} />
+        </div>
+        <div className="lg:col-span-2">
+          <JobStatusDonut jobsByStatus={stats?.jobsByStatus || {}} />
         </div>
       </div>
 
-      {/* Recent jobs + Low stock */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+      {/* Recent jobs + Low stock — side by side on desktop */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Recent Jobs */}
-        <div className="rounded-3xl bg-card p-4 shadow-sm sm:p-6">
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-resting)] sm:p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold sm:text-lg">งานล่าสุด</h2>
             <Link
@@ -195,7 +205,7 @@ export default async function DashboardPage() {
               ดูทั้งหมด →
             </Link>
           </div>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-1">
             {recentJobs.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 ยังไม่มีงาน
@@ -210,14 +220,14 @@ export default async function DashboardPage() {
                   <Link
                     key={job.id as string}
                     href={`/dashboard/jobs/${job.id}`}
-                    className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-muted/60"
+                    className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/60"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-purple text-violet-600 dark:bg-pastel-purple dark:text-violet-300">
-                      <Car className="h-5 w-5" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pastel-purple text-violet-600 dark:text-violet-300">
+                      <Car className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-muted-foreground">
+                        <span className="font-mono text-[11px] text-muted-foreground">
                           {job.job_number as string}
                         </span>
                         <span
@@ -228,7 +238,7 @@ export default async function DashboardPage() {
                         />
                       </div>
                       <p className="truncate text-sm font-semibold">
-                        {(customer?.name as string) || "-"}
+                        {(customer?.name as string) || "—"}
                       </p>
                       <p className="truncate text-[11px] text-muted-foreground">
                         {(vehicle?.license_plate as string) || ""}{" "}
@@ -252,7 +262,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Low stock */}
-        <div className="rounded-3xl bg-card p-4 shadow-sm sm:p-6">
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-resting)] sm:p-5">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
               อะไหล่ใกล้หมด
@@ -269,26 +279,27 @@ export default async function DashboardPage() {
               ดูทั้งหมด →
             </Link>
           </div>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-1">
             {lowStockParts.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
+                <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500/60" />
                 ไม่มีอะไหล่ใกล้หมด
               </div>
             ) : (
               lowStockParts.slice(0, 5).map((part: Record<string, unknown>) => (
                 <div
                   key={part.id as string}
-                  className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-muted/60"
+                  className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/60"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-amber text-amber-600 dark:text-amber-300">
-                    <Package className="h-5 w-5" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pastel-amber text-amber-600 dark:text-amber-300">
+                    <Package className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">
                       {part.name as string}
                     </p>
                     <p className="truncate text-[11px] text-muted-foreground">
-                      {(part.part_number as string) || "-"}
+                      {(part.part_number as string) || "—"}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
@@ -300,10 +311,10 @@ export default async function DashboardPage() {
                           : "text-amber-600",
                       )}
                     >
-                      เหลือ {part.stock_quantity as number}
+                      {part.stock_quantity as number}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      ขั้นต่ำ {part.min_stock as number}
+                      / {part.min_stock as number}
                     </p>
                   </div>
                 </div>

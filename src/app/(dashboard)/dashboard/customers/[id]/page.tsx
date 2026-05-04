@@ -16,6 +16,9 @@ import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getCustomer, getCustomerJobs, getCustomerInvoices } from "@/lib/actions/customers"
 import { EditCustomerButton } from "@/components/customers/customer-actions"
 import { AddVehicleButton, EditVehicleCard } from "@/components/customers/vehicle-actions"
+import { PageHeader } from "@/components/layout/page-header"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -66,36 +69,48 @@ export default async function CustomerDetailPage({
   const tier = customer.membership_tier as MembershipTier | null
   const tierInfo = tier ? tierConfig[tier] : null
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 pt-2 sm:px-6">
-        <Link href="/dashboard/customers" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted">
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-              {(customer.name as string).charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">{customer.name as string}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{customer.type === "company" ? "นิติบุคคล" : "บุคคล"}</span>
-                {tierInfo && (
-                  <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", tierInfo.bg, tierInfo.color)}>
-                    <Crown className="h-3 w-3" />
-                    {tierInfo.label}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <EditCustomerButton customer={customer as Record<string, unknown>} />
-        </div>
-      </div>
+  const breadcrumb = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "ลูกค้า", href: "/dashboard/customers" },
+    { title: customer.name as string },
+  ]
 
-      <div className="grid gap-4 px-4 sm:gap-6 sm:px-6 lg:grid-cols-3">
+  return (
+    <>
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-3">
+            <Avatar className="h-9 w-9 bg-primary/10 text-primary">
+              <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
+                {(customer.name as string).charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <span>{customer.name as string}</span>
+            {tierInfo && (
+              <Badge tone="warn" dot className="text-xs">
+                <Crown className="h-3 w-3" />
+                {tierInfo.label}
+              </Badge>
+            )}
+          </span>
+        }
+        description={customer.type === "company" ? "นิติบุคคล" : "บุคคล"}
+        breadcrumb={breadcrumb}
+        action={
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/customers"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              กลับ
+            </Link>
+            <EditCustomerButton customer={customer as Record<string, unknown>} />
+          </div>
+        }
+      />
+
+      <div className="grid gap-4 px-3 pb-6 sm:gap-6 sm:px-6 lg:grid-cols-3">
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Contact Info */}
@@ -296,6 +311,6 @@ export default async function CustomerDetailPage({
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

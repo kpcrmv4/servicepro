@@ -1,19 +1,35 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-2xl border border-border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+type CardElevation = "none" | "resting" | "raised"
+
+const elevationClass: Record<CardElevation, string> = {
+  none: "",
+  resting: "shadow-[var(--shadow-resting)]",
+  raised: "shadow-[var(--shadow-raised)]",
+}
+
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * Shadow elevation. Defaults to `resting` to preserve legacy look.
+   * Pass `none` for flat cards inside containers, or `raised` for hover/focus emphasis.
+   */
+  elevation?: CardElevation
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, elevation = "resting", ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-2xl border border-border bg-card text-card-foreground",
+        elevationClass[elevation],
+        className
+      )}
+      {...props}
+    />
+  )
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
@@ -76,3 +92,4 @@ const CardFooter = React.forwardRef<
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export type { CardProps, CardElevation }

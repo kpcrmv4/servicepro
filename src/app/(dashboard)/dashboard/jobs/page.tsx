@@ -32,6 +32,7 @@ import {
   JOB_TYPE_LABELS,
   QUEUE_COLUMNS,
 } from "@/lib/constants/status-config"
+import { JobsListTable } from "@/components/jobs/jobs-list-table"
 
 // =============================================================================
 // Tab definitions
@@ -507,129 +508,10 @@ export default async function JobsPage({
             </div>
 
             {/* Table */}
-            <div className="rounded-xl border border-border bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>เลขที่ Job</TableHead>
-                    <TableHead>ลูกค้า</TableHead>
-                    <TableHead>รถ</TableHead>
-                    <TableHead>ประเภท</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>สถานะ</TableHead>
-                    <TableHead>ช่าง</TableHead>
-                    <TableHead>วันที่รับ</TableHead>
-                    <TableHead className="text-right">ยอดรวม</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {listJobs.map((job: Record<string, unknown>) => {
-                    const customer = job.customers as Record<string, unknown> | null
-                    const vehicle = job.vehicles as Record<string, unknown> | null
-                    const tech = job.assigned_user as Record<string, unknown> | null
-                    const status = job.status as JobStatus
-                    const priority = job.priority as JobPriority
-                    const jobType = job.type as JobType
-                    const statusStyle = JOB_STATUS[status]
-                    const priorityStyle = JOB_PRIORITY[priority]
-
-                    return (
-                      <TableRow key={job.id as string}>
-                        <TableCell>
-                          <Link
-                            href={`/dashboard/jobs/${job.id}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {job.job_number as string}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="max-w-[120px] truncate">
-                              {(customer?.name as string) || "-"}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="text-xs text-muted-foreground">
-                              {(vehicle?.license_plate as string) || "-"}
-                            </div>
-                            <div className="text-sm">
-                              {vehicle?.brand as string} {vehicle?.model as string}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="rounded-md px-2 py-0.5 text-xs font-medium"
-                          >
-                            {JOB_TYPE_LABELS[jobType] || jobType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                              priorityStyle?.className
-                            )}
-                          >
-                            {priority === "urgent" && (
-                              <AlertTriangle className="mr-1 h-3 w-3" />
-                            )}
-                            {priorityStyle?.label || priority}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
-                                statusStyle?.className
-                              )}
-                            >
-                              {statusStyle?.label || status}
-                            </span>
-                            <StatusDots currentStatus={status} />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm">
-                              {(tech?.full_name as string) || "-"}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {formatDateShort(job.created_at as string)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(Number(job.grand_total) || 0)}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                  {listJobs.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={9}
-                        className="py-8 text-center text-muted-foreground"
-                      >
-                        {params.search
-                          ? "ไม่พบข้อมูลที่ค้นหา"
-                          : "ยังไม่มีงานซ่อม"}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <JobsListTable
+              jobs={listJobs as Parameters<typeof JobsListTable>[0]["jobs"]}
+              search={params.search}
+            />
           </div>
         )}
 

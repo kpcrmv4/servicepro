@@ -89,10 +89,13 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex flex-col gap-4 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
-          <h1 className="text-xl font-bold">การแจ้งเตือน</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Dashboard / การแจ้งเตือน
+          </p>
+          <h1 className="mt-0.5 text-xl font-bold sm:text-2xl">การแจ้งเตือน</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {unreadCount > 0 ? `${unreadCount} รายการที่ยังไม่ได้อ่าน` : "อ่านทั้งหมดแล้ว"}
           </p>
         </div>

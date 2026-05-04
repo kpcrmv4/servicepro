@@ -48,16 +48,31 @@
   --font-sans: "Figtree", "Inter", "Noto Sans Thai", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
-  /* Larger radii — modern soft rounded look */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-2xl: 2rem;
+  /* Radius — 4-step deterministic scale + back-compat 2xl/3xl */
+  --radius-sm: 0.5rem;    /* 8px  — input, badge, small chip */
+  --radius-md: 0.75rem;   /* 12px — button, small card */
+  --radius-lg: 1rem;      /* 16px — card, dialog, panel */
+  --radius-xl: 1.25rem;   /* 20px — hero, big section */
+  --radius-2xl: 1.5rem;   /* 24px — back-compat for existing components (was 2rem) */
+  --radius-3xl: 1.75rem;  /* 28px — back-compat (sparingly used) */
+
+  /* Shadow — 2-level hierarchy + brand-glow accent (values in :root/.dark) */
+  --shadow-resting: var(--shadow-resting-value);
+  --shadow-raised: var(--shadow-raised-value);
+  --shadow-primary: var(--shadow-primary-value);
+
+  /* Spacing scale — deterministic */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
 
   --sidebar-width: 260px;
-  --sidebar-width-collapsed: 70px;
-  --header-height: 64px;
+  --sidebar-width-collapsed: 72px;
+  --header-height: 56px;
+  --header-height-mobile: 48px;
+  --bottom-nav-height: 64px;
 
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-slide-in: slide-in 0.3s ease-out;
@@ -115,6 +130,11 @@
   --pastel-mint: #DDF5E5;
   --pastel-amber: #FFEFD5;
   --pastel-rose: #FFE0E0;
+
+  /* Shadow values (light) */
+  --shadow-resting-value: 0 1px 2px 0 rgba(15, 12, 40, 0.04), 0 1px 3px 0 rgba(15, 12, 40, 0.06);
+  --shadow-raised-value: 0 4px 6px -1px rgba(15, 12, 40, 0.06), 0 10px 15px -3px rgba(15, 12, 40, 0.08);
+  --shadow-primary-value: 0 8px 20px -4px rgba(124, 91, 251, 0.35);
 }
 
 .dark {
@@ -149,6 +169,11 @@
   --pastel-mint: #1F3D2C;
   --pastel-amber: #4A3A1F;
   --pastel-rose: #4A2424;
+
+  /* Shadow values (dark — heavier alpha to read against deep navy) */
+  --shadow-resting-value: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  --shadow-raised-value: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  --shadow-primary-value: 0 8px 20px -4px rgba(156, 132, 255, 0.4);
 }
 
 html {

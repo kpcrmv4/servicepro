@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { useScrollDirection } from "@/hooks/use-scroll-direction"
 import {
   LayoutDashboard,
   ClipboardList,
@@ -160,6 +161,9 @@ export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
+  const scrollDir = useScrollDirection({ threshold: 12, disabled: moreOpen })
+  // Hide while scrolling DOWN, reveal on scroll up or at top.
+  const hidden = scrollDir === "down"
 
   useEffect(() => {
     void loadUserRole()
@@ -296,9 +300,15 @@ export function BottomNav() {
         </div>
       )}
 
-      {/* Bottom Navigation Bar — floating pill style */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
-        <div className="rounded-full border border-border bg-card/95 shadow-2xl backdrop-blur-lg">
+      {/* Bottom Navigation Bar — floating pill style with scroll-hide */}
+      <nav
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] transition-transform duration-300 ease-out lg:hidden",
+          hidden ? "translate-y-[120%]" : "translate-y-0",
+        )}
+        aria-hidden={hidden}
+      >
+        <div className="rounded-full border border-border bg-card/85 shadow-[var(--shadow-raised)] backdrop-blur-md">
           <div className="relative flex items-end justify-around px-2 pt-1">
             {/* Left items (positions 1 & 2) */}
             {leftItems.map((item) => {
@@ -325,9 +335,10 @@ export function BottomNav() {
             <div className="flex flex-1 items-center justify-center">
               <Link
                 href={center.href}
-                className="relative -mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/40 transition-transform active:scale-95"
+                className="relative -mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-primary)] transition-transform active:scale-95"
+                aria-label={center.title}
               >
-                <div className="absolute inset-0 rounded-full bg-primary opacity-40 blur-lg" />
+                <div className="absolute inset-0 rounded-full bg-primary opacity-40 blur-lg" aria-hidden="true" />
                 <center.icon className="relative h-6 w-6 stroke-[2.5]" />
               </Link>
               <span className={cn(

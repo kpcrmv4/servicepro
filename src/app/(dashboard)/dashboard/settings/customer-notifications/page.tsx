@@ -10,8 +10,13 @@ export default async function CustomerNotifySettingsPage() {
       <PageHeader
         title="แจ้งเตือนลูกค้าผ่าน LINE"
         description="ตั้งค่าว่าจะส่งข้อความไหนเมื่อสถานะงานเปลี่ยน — ส่งอัตโนมัติ หรือถามก่อนทุกครั้ง"
+        breadcrumb={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "ตั้งค่า", href: "/dashboard/settings" },
+          { title: "แจ้งเตือนลูกค้า" },
+        ]}
       />
-      <div className="px-4 sm:px-6">
+      <div className="px-3 pb-6 sm:px-6">
         <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Send className="h-4 w-4" />
           <span>

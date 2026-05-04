@@ -66,6 +66,11 @@ export default async function SubscriptionSettingsPage() {
       <PageHeader
         title="สมาชิก & ต่ออายุ"
         description="จัดการแพลน รับการแจ้งเตือนต่ออายุผ่าน LINE และดูประวัติใบแจ้งหนี้"
+        breadcrumb={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "ตั้งค่า", href: "/dashboard/settings" },
+          { title: "สมาชิก" },
+        ]}
       />
 
       <div className="space-y-6 px-4 sm:px-6">

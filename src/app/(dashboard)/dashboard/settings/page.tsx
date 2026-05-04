@@ -50,7 +50,14 @@ export default async function SettingsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="ตั้งค่า" />
+      <PageHeader
+        title="ตั้งค่า"
+        description="จัดการข้อมูลร้าน ทีมงาน และโมดูลต่างๆ"
+        breadcrumb={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "ตั้งค่า" },
+        ]}
+      />
 
       <div className="flex flex-col gap-4 px-4 sm:flex-row sm:gap-6 sm:px-6">
         {/* Sidebar */}

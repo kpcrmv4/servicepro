@@ -1,13 +1,21 @@
 // =============================================================================
 // KPServicePro Service Worker
 // =============================================================================
-// Handles: PWA offline support, Push Notifications, Background Sync
+// Strategies:
+//   - Navigation (HTML)        → NetworkFirst, offline-fallback to /offline
+//   - Static assets            → StaleWhileRevalidate (JS/CSS/fonts/images)
+//   - Manifest + icons         → CacheFirst
+//   - API endpoints            → NetworkOnly (skip cache)
+//
+// Also handles: Push notifications, background sync queue stub.
 // =============================================================================
 
-const CACHE_NAME = 'kpservicepro-v1'
+const VERSION = 'v2-2026-05-04'
+const PRECACHE = `kpservicepro-precache-${VERSION}`
+const RUNTIME_HTML = `kpservicepro-runtime-html-${VERSION}`
+const RUNTIME_STATIC = `kpservicepro-runtime-static-${VERSION}`
 const OFFLINE_URL = '/offline'
 
-// Assets to cache for offline support
 const PRECACHE_ASSETS = [
   '/',
   '/offline',
@@ -17,84 +25,111 @@ const PRECACHE_ASSETS = [
 ]
 
 // =============================================================================
-// INSTALL EVENT - Cache essential assets
+// INSTALL — precache critical shell
 // =============================================================================
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...')
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Precaching assets')
-      return cache.addAll(PRECACHE_ASSETS)
-    })
+    caches.open(PRECACHE).then((cache) => cache.addAll(PRECACHE_ASSETS))
   )
-  // Activate immediately
   self.skipWaiting()
 })
 
 // =============================================================================
-// ACTIVATE EVENT - Clean up old caches
+// ACTIVATE — purge old versions
 // =============================================================================
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...')
+  const allow = new Set([PRECACHE, RUNTIME_HTML, RUNTIME_STATIC])
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => {
-            console.log('[SW] Deleting old cache:', name)
-            return caches.delete(name)
-          })
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(names.filter((n) => !allow.has(n)).map((n) => caches.delete(n)))
       )
-    })
+      .then(() => self.clients.claim())
   )
-  // Take control of all pages immediately
-  self.clients.claim()
 })
 
 // =============================================================================
-// FETCH EVENT - Network first, fallback to cache
+// FETCH — strategy-by-route
 // =============================================================================
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return
+  const { request } = event
+  if (request.method !== 'GET') return
 
-  // Skip API requests and auth requests
-  const url = new URL(event.request.url)
+  const url = new URL(request.url)
+  // Skip cross-origin requests
+  if (url.origin !== self.location.origin) return
+  // Skip API + auth — always live
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return
+  // Skip Sentry tunnel
+  if (url.pathname.startsWith('/monitoring/')) return
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cache successful responses
-        if (response.status === 200) {
-          const responseClone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone)
-          })
-        }
-        return response
-      })
-      .catch(() => {
-        // Fallback to cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse
-          // If no cache, show offline page for navigation requests
-          if (event.request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL)
-          }
-          return new Response('Offline', { status: 503 })
-        })
-      })
-  )
+  // Navigation requests → NetworkFirst, offline fallback
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request, RUNTIME_HTML, OFFLINE_URL))
+    return
+  }
+
+  // Manifest + icons → CacheFirst (rarely change)
+  if (url.pathname === '/manifest.json' || url.pathname.startsWith('/icons/')) {
+    event.respondWith(cacheFirst(request, PRECACHE))
+    return
+  }
+
+  // Everything else (Next.js _next/static, fonts, images) → StaleWhileRevalidate
+  event.respondWith(staleWhileRevalidate(request, RUNTIME_STATIC))
 })
 
+async function networkFirst(request, cacheName, offlineUrl) {
+  try {
+    const fresh = await fetch(request)
+    if (fresh && fresh.status === 200) {
+      const cache = await caches.open(cacheName)
+      cache.put(request, fresh.clone())
+    }
+    return fresh
+  } catch {
+    const cached = await caches.match(request)
+    if (cached) return cached
+    if (offlineUrl) {
+      const offline = await caches.match(offlineUrl)
+      if (offline) return offline
+    }
+    return new Response('Offline', { status: 503 })
+  }
+}
+
+async function cacheFirst(request, cacheName) {
+  const cached = await caches.match(request)
+  if (cached) return cached
+  try {
+    const fresh = await fetch(request)
+    if (fresh && fresh.status === 200) {
+      const cache = await caches.open(cacheName)
+      cache.put(request, fresh.clone())
+    }
+    return fresh
+  } catch {
+    return new Response('Offline', { status: 503 })
+  }
+}
+
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+  const networkPromise = fetch(request)
+    .then((fresh) => {
+      if (fresh && fresh.status === 200) cache.put(request, fresh.clone())
+      return fresh
+    })
+    .catch(() => undefined)
+  return cached || networkPromise || new Response('Offline', { status: 503 })
+}
+
 // =============================================================================
-// PUSH EVENT - Handle Push Notifications
+// PUSH NOTIFICATIONS
 // =============================================================================
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received')
-
   let data = {
     title: 'KPServicePro',
     body: 'คุณมีการแจ้งเตือนใหม่',
@@ -122,71 +157,60 @@ self.addEventListener('push', (event) => {
     vibrate: [100, 50, 100],
     requireInteraction: data.requireInteraction || false,
     actions: data.actions || [],
-    // Thai language support
     lang: 'th',
     dir: 'ltr',
     renotify: true,
     silent: false,
   }
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  )
+  event.waitUntil(self.registration.showNotification(data.title, options))
 })
 
-// =============================================================================
-// NOTIFICATION CLICK EVENT - Handle notification interactions
-// =============================================================================
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag)
   event.notification.close()
-
   const url = event.notification.data?.url || '/dashboard'
 
-  // Handle action buttons
-  if (event.action) {
-    switch (event.action) {
-      case 'view':
-        // Open the specific page
-        break
-      case 'dismiss':
-        // Just close the notification
-        return
-      case 'approve':
-        // Handle approve action (e.g., quotation approval)
-        break
-      default:
-        break
-    }
-  }
+  if (event.action === 'dismiss') return
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If a window is already open, focus it and navigate
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.focus()
-          client.navigate(url)
-          return
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.focus()
+            client.navigate(url)
+            return
+          }
         }
-      }
-      // Otherwise open a new window
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(url)
-      }
-    })
+        if (self.clients.openWindow) return self.clients.openWindow(url)
+      })
   )
 })
 
-// =============================================================================
-// NOTIFICATION CLOSE EVENT - Track dismissed notifications
-// =============================================================================
-self.addEventListener('notificationclose', (event) => {
-  console.log('[SW] Notification dismissed:', event.notification.tag)
-})
+self.addEventListener('notificationclose', () => {})
 
 // =============================================================================
-// MESSAGE EVENT - Handle messages from the main app
+// BACKGROUND SYNC — queue mutations made while offline
+// =============================================================================
+// The app posts {type:'queue-mutation', payload} to the SW.
+// We persist via cache (no IndexedDB to keep this lean) and replay on 'sync'.
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'kpservicepro-mutation-queue') {
+    event.waitUntil(replayQueue())
+  }
+})
+
+async function replayQueue() {
+  // No-op stub for Phase 1. Real queue persistence will land alongside the
+  // sync-queue indicator UI in Phase 6 (customer/LIFF) where offline writes
+  // matter most. Leaving the listener registered keeps the API surface stable.
+  return undefined
+}
+
+// =============================================================================
+// MESSAGE — control channel from app (skipWaiting, etc.)
 // =============================================================================
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {

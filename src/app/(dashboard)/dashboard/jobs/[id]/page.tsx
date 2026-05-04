@@ -1,10 +1,12 @@
-import { ArrowLeft, Car, User, Calendar, Wrench, DollarSign, Clock, Package, FileText } from "lucide-react"
+import { Car, User, Calendar, Wrench, DollarSign, Clock, Package, FileText, ArrowLeft } from "lucide-react"
 import { cn, formatCurrency, formatDateShort } from "@/lib/utils"
 import { getJob } from "@/lib/actions/jobs"
 import { getQuotationByJobId } from "@/lib/actions/quotations"
 import { checkCustomerLineLinked } from "@/lib/actions/line-link"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/layout/page-header"
 import { JobStatusActions } from "@/components/jobs/job-status-actions"
 import { ReceptionStatusActions } from "@/components/reception/reception-status-actions"
 import { LineLinkCard } from "@/components/reception/line-link-card"
@@ -13,15 +15,26 @@ import { listAdditionalWorkForJob } from "@/lib/actions/additional-work"
 
 const receptionPhaseStatuses = ["pending", "diagnosing", "quoted"]
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: "รอตรวจสอบ", color: "bg-warning/10 text-warning" },
-  diagnosing: { label: "กำลังตรวจสอบ", color: "bg-purple-100 text-purple-700" },
-  quoted: { label: "รอลูกค้าอนุมัติ", color: "bg-blue-100 text-blue-700" },
-  in_progress: { label: "กำลังซ่อม", color: "bg-primary/10 text-primary" },
-  quality_check: { label: "ตรวจ QC", color: "bg-purple-100 text-purple-700" },
-  waiting_pickup: { label: "รอลูกค้ารับ", color: "bg-info/10 text-info" },
-  completed: { label: "เสร็จแล้ว", color: "bg-success/10 text-success" },
-  cancelled: { label: "ยกเลิก", color: "bg-error/10 text-error" },
+const statusToneMap: Record<string, "warn" | "info" | "success" | "error" | "neutral"> = {
+  pending: "warn",
+  diagnosing: "info",
+  quoted: "info",
+  in_progress: "info",
+  quality_check: "info",
+  waiting_pickup: "info",
+  completed: "success",
+  cancelled: "error",
+}
+
+const statusLabelMap: Record<string, string> = {
+  pending: "รอตรวจสอบ",
+  diagnosing: "กำลังตรวจสอบ",
+  quoted: "รอลูกค้าอนุมัติ",
+  in_progress: "กำลังซ่อม",
+  quality_check: "ตรวจ QC",
+  waiting_pickup: "รอลูกค้ารับ",
+  completed: "เสร็จแล้ว",
+  cancelled: "ยกเลิก",
 }
 
 export default async function JobDetailPage({
@@ -50,33 +63,38 @@ export default async function JobDetailPage({
   const status = job.status as string
   const quotationId = (job.quotation_id as string) || (quotation?.id as string) || null
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 pt-2 sm:px-6">
-        <Link
-          href={receptionPhaseStatuses.includes(status) ? "/dashboard/reception" : "/dashboard/jobs"}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-muted"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold">{job.job_number as string}</h1>
-            <span className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium",
-              statusConfig[status]?.color || "bg-muted text-muted-foreground"
-            )}>
-              {statusConfig[status]?.label || status}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            สร้างเมื่อ {formatDateShort(job.created_at as string)}
-          </p>
-        </div>
-      </div>
+  const isReception = receptionPhaseStatuses.includes(status)
+  const breadcrumb = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: isReception ? "รับรถ" : "งานซ่อม", href: isReception ? "/dashboard/reception" : "/dashboard/jobs" },
+    { title: job.job_number as string },
+  ]
 
-      <div className="grid gap-4 px-4 sm:gap-6 sm:px-6 lg:grid-cols-3">
+  return (
+    <>
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-3">
+            <span>{job.job_number as string}</span>
+            <Badge tone={statusToneMap[status] || "neutral"} dot>
+              {statusLabelMap[status] || status}
+            </Badge>
+          </span>
+        }
+        description={`สร้างเมื่อ ${formatDateShort(job.created_at as string)}`}
+        breadcrumb={breadcrumb}
+        action={
+          <Link
+            href={isReception ? "/dashboard/reception" : "/dashboard/jobs"}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            กลับ
+          </Link>
+        }
+      />
+
+      <div className="grid gap-4 px-3 pb-6 sm:gap-6 sm:px-6 lg:grid-cols-3">
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
           {/* Description */}
@@ -316,6 +334,6 @@ export default async function JobDetailPage({
           )}
         </div>
       </div>
-    </div>
+    </>
   )
 }

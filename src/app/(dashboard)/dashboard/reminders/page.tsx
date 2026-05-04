@@ -88,14 +88,19 @@ export default function RemindersPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Bell className="h-7 w-7 text-orange-600" />
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Dashboard / แจ้งเตือนลูกค้า
+          </p>
+          <h1 className="mt-0.5 text-xl font-bold flex items-center gap-2 sm:text-2xl">
+            <Bell className="h-6 w-6 text-orange-600 sm:h-7 sm:w-7" />
             แจ้งเตือนบริการ
           </h1>
-          <p className="text-gray-500 mt-1">Smart Service Reminders - แจ้งเตือนลูกค้าเมื่อถึงรอบบริการ</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Smart Service Reminders — แจ้งเตือนลูกค้าเมื่อถึงรอบบริการ
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
