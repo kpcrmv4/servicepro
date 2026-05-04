@@ -10,7 +10,7 @@
 // Also handles: Push notifications, background sync queue stub.
 // =============================================================================
 
-const VERSION = 'v2-2026-05-04'
+const VERSION = 'v3-2026-05-04-dialog-fix'
 const PRECACHE = `kpservicepro-precache-${VERSION}`
 const RUNTIME_HTML = `kpservicepro-runtime-html-${VERSION}`
 const RUNTIME_STATIC = `kpservicepro-runtime-static-${VERSION}`

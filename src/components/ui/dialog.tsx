@@ -63,12 +63,31 @@ function DialogContent({
 }: React.HTMLAttributes<HTMLDivElement>) {
   const { open, setOpen } = React.useContext(DialogContext)
 
+  // Lock body scroll while dialog is open (prevents background shift)
+  React.useEffect(() => {
+    if (!open) return
+    const orig = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = orig
+    }
+  }, [open])
+
+  // Esc to close
+  React.useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [open, setOpen])
+
   return (
     <AnimatePresence>
       {open && (
         <DialogPortal>
-          {/* Backdrop — separate fixed layer so the centering wrapper isn't
-              forced into flex/grid that can shrink the dialog on mobile. */}
+          {/* Backdrop — fixed full-viewport overlay, click to dismiss */}
           <motion.div
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
@@ -78,43 +97,39 @@ function DialogContent({
             onClick={() => setOpen(false)}
           />
 
-          {/* Centering wrapper — grid place-items-center is more reliable
-              than flex for centered children that need w-full. p-4 guarantees
-              the dialog never touches viewport edges. overflow-y-auto allows
-              long forms to scroll on small screens. */}
+          {/*
+            Dialog — absolute-positioned with translate centering (Radix
+            pattern). Independent of any flex/grid parent so it never
+            shrinks unexpectedly on mobile. Width = (100vw - 2rem) capped
+            at max-w-lg. max-h with internal scroll keeps tall forms
+            usable on short viewports.
+          */}
           <motion.div
-            className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            className={cn(
+              "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+              "w-[calc(100vw-2rem)] max-w-lg",
+              "max-h-[calc(100vh-2rem)] overflow-y-auto",
+              "grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-raised)] sm:p-6",
+              className,
+            )}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            onClick={() => setOpen(false)}
+            {...(props as React.ComponentProps<typeof motion.div>)}
           >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "relative z-50 grid w-full max-w-lg gap-4 rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-raised)] sm:p-6",
-                className,
-              )}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              {...(props as React.ComponentProps<typeof motion.div>)}
+            {children}
+            <button
+              type="button"
+              className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:right-4 sm:top-4"
+              onClick={() => setOpen(false)}
+              aria-label="ปิด"
             >
-              {children}
-              <button
-                type="button"
-                className="absolute right-3 top-3 rounded-md p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:right-4 sm:top-4"
-                onClick={() => setOpen(false)}
-                aria-label="ปิด"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </button>
-            </motion.div>
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
           </motion.div>
         </DialogPortal>
       )}
